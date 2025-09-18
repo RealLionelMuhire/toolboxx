@@ -35,7 +35,6 @@ Thumbs.db
 stripe_*.tar.gz
 
 # Sensitive documentation
-StripeKeysSetupGuide.md
 *SetupGuide.md
 
 # Media
