@@ -34,7 +34,7 @@ Thumbs.db
 *.tgz
 
 # Sensitive documentation
-*SetupGuide.md
+
 
 # Media
 media/
