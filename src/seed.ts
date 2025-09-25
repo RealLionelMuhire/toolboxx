@@ -1,8 +1,6 @@
 import { getPayload } from "payload";
 import config from "@payload-config";
 
-import { stripe } from "./lib/stripe";
-
 const categories = [
   {
     name: "All",
@@ -142,20 +140,26 @@ const categories = [
 const seed = async () => {
   const payload = await getPayload({ config });
 
-  const adminAccount = await stripe.accounts.create({});
-
-  // Create admin tenant
+  // Create admin tenant with Rwanda-specific fields
   const adminTenant = await payload.create({
     collection: "tenants",
     data: {
       name: "admin",
       slug: "admin",
-      stripeAccountId: adminAccount.id,
+      tinNumber: "100000001", // Sample admin TIN
+      storeManagerId: "ADMIN001",
+      paymentMethod: "bank_transfer" as const,
+      bankName: "Bank of Kigali",
+      bankAccountNumber: "4000000000001",
+      isVerified: true,
+      verificationStatus: "document_verified" as const,
+      canAddMerchants: true,
+      verifiedAt: new Date().toISOString(),
     },
   });
 
   // Create admin user
-  await payload.create({
+  const adminUser = await payload.create({
     collection: "users",
     data: {
       email: "admin@demo.com",
@@ -167,6 +171,15 @@ const seed = async () => {
           tenant: adminTenant.id,
         },
       ],
+    },
+  });
+
+  // Update admin tenant with verifiedBy field
+  await payload.update({
+    collection: "tenants",
+    id: adminTenant.id,
+    data: {
+      verifiedBy: adminUser.id,
     },
   });
 

@@ -1,7 +1,6 @@
 import { TRPCError } from "@trpc/server";
 import { headers as getHeaders } from "next/headers";
 
-import { stripe } from "@/lib/stripe";
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 
 import { generateAuthCookie } from "../utils";
@@ -37,12 +36,21 @@ export const authRouter = createTRPCRouter({
         });
       }
 
-      const account = await stripe.accounts.create({});
+      // Check if TIN number is already taken
+      const existingTinData = await ctx.db.find({
+        collection: "tenants",
+        limit: 1,
+        where: {
+          tinNumber: {
+            equals: input.tinNumber,
+          },
+        },
+      });
 
-      if (!account) {
+      if (existingTinData.docs[0]) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Failed to create Stripe account",
+          message: "TIN Number already registered",
         });
       }
 
@@ -51,7 +59,19 @@ export const authRouter = createTRPCRouter({
         data: {
           name: input.username,
           slug: input.username,
-          stripeAccountId: account.id,
+          tinNumber: input.tinNumber,
+          storeManagerId: input.storeManagerId,
+          paymentMethod: input.paymentMethod,
+          ...(input.paymentMethod === "bank_transfer" && {
+            bankName: input.bankName,
+            bankAccountNumber: input.bankAccountNumber,
+          }),
+          ...(input.paymentMethod === "momo_pay" && {
+            momoPayCode: input.momoPayCode,
+          }),
+          isVerified: false,
+          verificationStatus: "pending",
+          canAddMerchants: false,
         }
       })
 

@@ -21,4 +21,23 @@ export const registerSchema = z.object({
       "Username cannot contain consecutive hyphens"
     )
     .transform((val) => val.toLowerCase()),
+  // Rwanda-specific fields
+  tinNumber: z.string().min(9, "TIN Number must be at least 9 characters"),
+  storeManagerId: z.string().min(5, "Store Manager ID/Passport must be at least 5 characters"),
+  paymentMethod: z.enum(["bank_transfer", "momo_pay"]),
+  // Conditional fields based on payment method
+  bankName: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+  momoPayCode: z.string().optional(),
+}).refine((data) => {
+  if (data.paymentMethod === "bank_transfer") {
+    return data.bankName && data.bankAccountNumber;
+  }
+  if (data.paymentMethod === "momo_pay") {
+    return data.momoPayCode;
+  }
+  return true;
+}, {
+  message: "Payment method details are required",
+  path: ["paymentMethod"],
 });

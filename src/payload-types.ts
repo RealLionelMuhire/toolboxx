@@ -152,6 +152,13 @@ export interface User {
   hash?: string | null;
   loginAttempts?: number | null;
   lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
   password?: string | null;
 }
 /**
@@ -170,13 +177,74 @@ export interface Tenant {
   slug: string;
   image?: (string | null) | Media;
   /**
-   * Stripe Account ID associated with your shop
+   * Tax Identification Number (TIN) - Required for Rwandan businesses
    */
-  stripeAccountId: string;
+  tinNumber: string;
   /**
-   * You cannot create products until you submit your Stripe details
+   * Store Manager ID or Passport Number
    */
-  stripeDetailsSubmitted?: boolean | null;
+  storeManagerId: string;
+  /**
+   * Rwanda Development Board (RDB) Registration Certificate (required for verification)
+   */
+  rdbCertificate?: (string | null) | Media;
+  /**
+   * Choose your preferred payment method
+   */
+  paymentMethod: 'bank_transfer' | 'momo_pay';
+  /**
+   * Bank name for transfers
+   */
+  bankName?: string | null;
+  /**
+   * Bank account number for transfers
+   */
+  bankAccountNumber?: string | null;
+  /**
+   * Mobile Money (MOMO) Pay Code
+   */
+  momoPayCode?: string | null;
+  /**
+   * Tenant verification status - can only be set by super admin
+   */
+  isVerified?: boolean | null;
+  /**
+   * Verification stage - can only be updated by super admin
+   */
+  verificationStatus?: ('pending' | 'document_verified' | 'physically_verified' | 'rejected') | null;
+  /**
+   * Admin notes about verification process
+   */
+  verificationNotes?: string | null;
+  /**
+   * 3-8 images from physical verification visit
+   */
+  physicalVerificationImages?:
+    | {
+        image: string | Media;
+        /**
+         * Brief description of what this image shows
+         */
+        description?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Signed consent document (PDF) from physical verification
+   */
+  signedConsent?: (string | null) | Media;
+  /**
+   * Allow this tenant to add merchants - enabled after document verification
+   */
+  canAddMerchants?: boolean | null;
+  /**
+   * Date when tenant was verified
+   */
+  verifiedAt?: string | null;
+  /**
+   * Super admin who verified this tenant
+   */
+  verifiedBy?: (string | null) | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -428,6 +496,13 @@ export interface UsersSelect<T extends boolean = true> {
   hash?: T;
   loginAttempts?: T;
   lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -499,8 +574,27 @@ export interface TenantsSelect<T extends boolean = true> {
   name?: T;
   slug?: T;
   image?: T;
-  stripeAccountId?: T;
-  stripeDetailsSubmitted?: T;
+  tinNumber?: T;
+  storeManagerId?: T;
+  rdbCertificate?: T;
+  paymentMethod?: T;
+  bankName?: T;
+  bankAccountNumber?: T;
+  momoPayCode?: T;
+  isVerified?: T;
+  verificationStatus?: T;
+  verificationNotes?: T;
+  physicalVerificationImages?:
+    | T
+    | {
+        image?: T;
+        description?: T;
+        id?: T;
+      };
+  signedConsent?: T;
+  canAddMerchants?: T;
+  verifiedAt?: T;
+  verifiedBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }
