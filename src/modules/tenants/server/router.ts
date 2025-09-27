@@ -1,11 +1,42 @@
+import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 
-import { protectedProcedure, createTRPCRouter } from "@/trpc/init";
+import { baseProcedure, protectedProcedure, createTRPCRouter } from "@/trpc/init";
 import { isSuperAdmin } from "@/lib/access";
+import { Media, Tenant } from "@/payload-types";
 
 import { verifyTenantSchema } from "../schemas";
 
 export const tenantsRouter = createTRPCRouter({
+  // Get tenant by slug
+  getOne: baseProcedure
+    .input(
+      z.object({
+        slug: z.string(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const tenantsData = await ctx.db.find({
+        collection: "tenants",
+        depth: 1, // "tenant.image" is a type of "Media"
+        where: {
+          slug: {
+            equals: input.slug,
+          },
+        },
+        limit: 1,
+        pagination: false,
+      });
+
+      const tenant = tenantsData.docs[0];
+
+      if (!tenant) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Tenant not found" });
+      }
+
+      return tenant as Tenant & { image: Media | null };
+    }),
+
   // Get current user's tenant
   getCurrentTenant: protectedProcedure.query(async ({ ctx }) => {
     const userData = await ctx.db.findByID({

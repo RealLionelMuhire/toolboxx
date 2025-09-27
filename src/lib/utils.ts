@@ -22,9 +22,9 @@ export function generateTenantURL(tenantSlug: string) {
 };
 
 export function formatCurrency(value: number | string) {
-  return new Intl.NumberFormat("rw-RW", {
-    style: "currency",
-    currency: "RWF",
-    maximumFractionDigits: 0,
-  }).format(Number(value));
+  const num = Number(value);
+  if (isNaN(num)) return "RWF 0";
+  
+  // Use a more reliable format that works consistently across server/client
+  return `RWF ${num.toLocaleString('en-US')}`;
 };

@@ -22,12 +22,8 @@ export const formatAsCurrency = (value: string) => {
   const numberValue = parseFloat(formattedValue);
   if (isNaN(numberValue)) return "";
 
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(numberValue);
+  // Use consistent formatting with the main formatCurrency function
+  return `RWF ${numberValue.toLocaleString('en-US')}`;
 };
 
 export const PriceFilter = ({
@@ -54,12 +50,12 @@ export const PriceFilter = ({
         <Label className="font-medium text-base">
           Minimum price
         </Label>
-        <Input
-          type="text"
-          placeholder="$0"
-          value={minPrice ? formatAsCurrency(minPrice) : ""}
-          onChange={handleMinPriceChange}
-        />
+          <Input
+            type="text"
+            placeholder="RWF 0"
+            value={minPrice ? formatAsCurrency(minPrice) : ""}
+            onChange={handleMinPriceChange}
+          />
       </div>
       <div className="flex flex-col gap-2">
         <Label className="font-medium text-base">
@@ -67,7 +63,7 @@ export const PriceFilter = ({
         </Label>
         <Input
           type="text"
-          placeholder="∞" // Infinity sign
+          placeholder="RWF ∞" // Infinity sign with RWF prefix
           value={maxPrice ? formatAsCurrency(maxPrice) : ""}
           onChange={handleMaxPriceChange}
         />

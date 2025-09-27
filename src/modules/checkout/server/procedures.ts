@@ -1,13 +1,10 @@
 import { z } from "zod";
-import type Stripe from "stripe";
 
 import { TRPCError } from "@trpc/server";
 
-import { stripe } from "@/lib/stripe";
 import { Media, Tenant } from "@/payload-types";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
-import { CheckoutMetadata, ProductMetadata } from "../types";
 import { PLATFORM_FEE_PERCENTAGE } from "@/constants";
 import { generateTenantURL } from "@/lib/utils";
 
@@ -40,7 +37,14 @@ export const checkoutRouter = createTRPCRouter({
         });
       }
 
-      // Redirect to Rwanda verification system instead of Stripe
+      // Check if tenant is verified for Rwanda business requirements
+      if (!tenant.verificationStatus || tenant.verificationStatus !== "physically_verified") {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Tenant verification required. Please complete Rwanda business verification.",
+        });
+      }
+
       const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL!}/dashboard`;
 
       return { url: dashboardUrl };
@@ -50,6 +54,9 @@ export const checkoutRouter = createTRPCRouter({
       z.object({
         productIds: z.array(z.string()).min(1),
         tenantSlug: z.string().min(1),
+        paymentMethod: z.enum(["bank", "momo"]),
+        accountNumber: z.string().min(1),
+        transactionId: z.string().min(1),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -101,65 +108,43 @@ export const checkoutRouter = createTRPCRouter({
         })
       }
 
-      if (!tenant.stripeDetailsSubmitted) {
+      if (!tenant.verificationStatus || tenant.verificationStatus !== "physically_verified") {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: "Tenant not allowed to sell products",
+          message: "Tenant not verified to sell products",
         })
       }
 
-      const lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] =
-        products.docs.map((product) => ({
-          quantity: 1,
-          price_data: {
-            unit_amount: product.price * 100, // Stripe handles prices in cents
-            currency: "usd",
-            product_data: {
-              name: product.name,
-              metadata: {
-                stripeAccountId: tenant.stripeAccountId,
-                id: product.id,
-                name: product.name,
-                price: product.price,
-              } as ProductMetadata
-            }
-          }
-        }));
+      const totalAmount = products.docs.reduce((acc, item) => acc + item.price, 0);
+      const platformFeeAmount = Math.round(totalAmount * (PLATFORM_FEE_PERCENTAGE / 100));
 
-      const totalAmount = products.docs.reduce(
-        (acc, item) => acc + item.price * 100,
-        0
-      );
-      const platformFeeAmount = Math.round(
-        totalAmount * (PLATFORM_FEE_PERCENTAGE / 100)
+      // Create order record for each product (current Orders schema is per product)
+      const orders = await Promise.all(
+        input.productIds.map(async (productId) => {
+          const productDoc = products.docs.find(p => p.id === productId);
+          return await ctx.db.create({
+            collection: "orders",
+            data: {
+              name: `Order for ${productDoc?.name}`,
+              user: ctx.session.user.id,
+              product: productId,
+              transactionId: input.transactionId,
+              paymentMethod: input.paymentMethod === "bank" ? "bank_transfer" : "mobile_money",
+              bankName: input.paymentMethod === "bank" ? "Bank Transfer" : "Mobile Money",
+              accountNumber: input.accountNumber,
+              amount: productDoc?.price || 0,
+              currency: "RWF",
+            } as any
+          });
+        })
       );
 
       const domain = generateTenantURL(input.tenantSlug);
-
-      const checkout = await stripe.checkout.sessions.create({
-        customer_email: ctx.session.user.email,
-        success_url: `${domain}/checkout?success=true`,
-        cancel_url: `${domain}/checkout?cancel=true`,
-        mode: "payment",
-        line_items: lineItems,
-        invoice_creation: {
-          enabled: true,
-        },
-        metadata: {
-          userId: ctx.session.user.id,
-        } as CheckoutMetadata,
-        payment_intent_data: {
-          application_fee_amount: platformFeeAmount,
-        }
-      }, {
-        stripeAccount: tenant.stripeAccountId,
-      });
-
-      if (!checkout.url) {
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create checkout session" });
-      }
-
-      return { url: checkout.url };
+      
+      return { 
+        url: `${domain}/checkout?success=true&orderIds=${orders.map(o => o.id).join(',')}`,
+        orderIds: orders.map(o => o.id)
+      };
     })
   ,
   getProducts: baseProcedure
