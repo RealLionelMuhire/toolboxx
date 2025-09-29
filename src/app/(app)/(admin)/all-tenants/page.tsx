@@ -16,6 +16,19 @@ const AllTenantsPage = async () => {
   try {
     const allTenants = await caller.tenants.getAllTenants();
 
+    // Debug logging
+    console.log('🔍 ALL TENANTS DEBUG:');
+    console.log('Total tenants returned:', allTenants.totalDocs);
+    console.log('Tenants docs length:', allTenants.docs.length);
+    console.log('Tenants data:', allTenants.docs.map(t => ({
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+      tinNumber: t.tinNumber,
+      verificationStatus: t.verificationStatus,
+      isVerified: t.isVerified
+    })));
+
     const getStatusColor = (status: string) => {
       switch (status) {
         case 'pending': return 'bg-yellow-100 text-yellow-800';

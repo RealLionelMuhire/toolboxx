@@ -99,7 +99,21 @@ export const tenantsRouter = createTRPCRouter({
       collection: "tenants",
       limit: 100,
       sort: "-createdAt",
+      overrideAccess: true, // Bypass access control for super admin
     });
+
+    // Debug logging
+    console.log('🔍 TRPC getAllTenants DEBUG:');
+    console.log('User roles:', ctx.session.user.roles);
+    console.log('Is super admin:', isSuperAdmin(ctx.session.user));
+    console.log('Total tenants found:', tenants.totalDocs);
+    console.log('Tenants returned:', tenants.docs.length);
+    console.log('Tenant details:', tenants.docs.map(t => ({
+      id: t.id,
+      name: t.name,
+      slug: t.slug,
+      tinNumber: t.tinNumber
+    })));
 
     return tenants;
   }),
@@ -131,6 +145,7 @@ export const tenantsRouter = createTRPCRouter({
       },
       limit: 50,
       sort: "-createdAt",
+      overrideAccess: true, // Bypass access control for super admin
     });
 
     return tenants;

@@ -6,13 +6,15 @@ export const Tenants: CollectionConfig = {
   slug: 'tenants',
   access: {
     read: ({ req }) => {
-      // Super admin can read all tenants
+      // Super admin can read all tenants - return true to bypass ALL filtering
       if (isSuperAdmin(req.user)) {
+        console.log('🔧 Super admin access - returning true to bypass all filtering');
         return true;
       }
       
       // Regular users can only read their own tenant
       if (req.user?.tenants) {
+        console.log('🔧 Regular user access - filtering by tenant');
         return {
           id: {
             in: req.user.tenants.map((tenantRel) => 
@@ -22,6 +24,7 @@ export const Tenants: CollectionConfig = {
         };
       }
       
+      console.log('🔧 No access - returning false');
       return false;
     },
     create: () => true, // Allow tenant creation during registration
@@ -48,6 +51,10 @@ export const Tenants: CollectionConfig = {
     useAsTitle: 'slug',
     // Ensure admin can see the collection
     hidden: false,
+    // Optimize admin panel performance
+    pagination: {
+      defaultLimit: 25, // Reduce default items per page
+    },
   },
   fields: [
     {
@@ -84,6 +91,7 @@ export const Tenants: CollectionConfig = {
       type: "text",
       required: true,
       unique: true,
+      index: true, // Add index for faster lookups
       admin: {
         description: "Tax Identification Number (TIN) - Required for Rwandan businesses",
       },
@@ -157,6 +165,7 @@ export const Tenants: CollectionConfig = {
       name: "verificationStatus",
       type: "select",
       defaultValue: "pending",
+      index: true, // Add index for faster filtering by status
       options: [
         { label: "Pending", value: "pending" },
         { label: "Document Verified", value: "document_verified" },
