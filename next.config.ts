@@ -1,5 +1,10 @@
 import { withPayload } from "@payloadcms/next/withPayload";
+import withBundleAnalyzer from '@next/bundle-analyzer';
 import type { NextConfig } from "next";
+
+const bundleAnalyzer = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 const nextConfig: NextConfig = {
   // Basic performance optimizations
@@ -19,4 +24,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withPayload(nextConfig);
+export default bundleAnalyzer(withPayload(nextConfig));

@@ -13,17 +13,73 @@ export const Products: CollectionConfig = {
 
       return Boolean(tenant?.isVerified);
     },
+    read: ({ req }) => {
+      if (isSuperAdmin(req.user)) return true;
+
+      // For regular tenants, only show products they own
+      const tenant = req.user?.tenants?.[0]?.tenant;
+      if (tenant) {
+        return {
+          tenant: {
+            equals: tenant,
+          },
+        };
+      }
+
+      return false;
+    },
+    update: ({ req }) => {
+      if (isSuperAdmin(req.user)) return true;
+
+      // For regular tenants, only allow updating their own products
+      const tenant = req.user?.tenants?.[0]?.tenant;
+      if (tenant) {
+        return {
+          tenant: {
+            equals: tenant,
+          },
+        };
+      }
+
+      return false;
+    },
     delete: ({ req }) => isSuperAdmin(req.user),
   },
   admin: {
     useAsTitle: "name",
-    description: "You must verify your account before creating products"
+    description: "You must verify your account before creating products",
+    defaultColumns: ["name", "description", "price", "category", "tenant"],
+    listSearchableFields: ["name", "description"],
+  },
+  hooks: {
+    beforeChange: [
+      ({ req, data }) => {
+        // Auto-assign tenant for non-super-admin users
+        if (!isSuperAdmin(req.user) && req.user?.tenants?.[0]?.tenant) {
+          data.tenant = req.user.tenants[0].tenant;
+        }
+        return data;
+      },
+    ],
   },
   fields: [
     {
       name: "name",
       type: "text",
       required: true,
+    },
+    {
+      name: "tenant",
+      type: "relationship",
+      relationTo: "tenants",
+      required: true,
+      admin: {
+        condition: (data, siblingData, { user }) => {
+          // Only show tenant field to super admins
+          return isSuperAdmin(user);
+        },
+        description: "🏢 Tenant who owns this product",
+      },
     },
     {
       name: "description",
