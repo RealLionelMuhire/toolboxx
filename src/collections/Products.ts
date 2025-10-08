@@ -50,6 +50,7 @@ export const Products: CollectionConfig = {
     description: "You must verify your account before creating products",
     defaultColumns: ["name", "description", "price", "category", "tenant"],
     listSearchableFields: ["name", "description"],
+
   },
   hooks: {
     beforeChange: [
@@ -63,10 +64,66 @@ export const Products: CollectionConfig = {
     ],
   },
   fields: [
+    // Image first - eBay style
+    {
+      name: "image",
+      type: "upload",
+      relationTo: "media",
+      required: true,
+      admin: {
+        description: "Main product image - this will be the first thing customers see",
+      },
+    },
+    {
+      name: "cover",
+      type: "upload",
+      relationTo: "media",
+      admin: {
+        description: "Additional product image (optional)",
+      },
+    },
     {
       name: "name",
       type: "text",
       required: true,
+      admin: {
+        placeholder: "Enter product name...",
+      },
+    },
+    {
+      name: "description",
+      type: "richText",
+      admin: {
+        description: "Describe your product's key features and condition",
+      },
+    },
+    {
+      name: "price",
+      type: "number",
+      required: true,
+      admin: {
+        description: "Price in Rwandan Francs (RWF)",
+        step: 100,
+      }
+    },
+    {
+      name: "category",
+      type: "relationship",
+      relationTo: "categories",
+      hasMany: false,
+      required: true,
+      admin: {
+        description: "Select the most appropriate category for your product",
+      },
+    },
+    {
+      name: "tags",
+      type: "relationship",
+      relationTo: "tags",
+      hasMany: true,
+      admin: {
+        description: "Add tags to help customers find your product",
+      },
     },
     {
       name: "tenant",
@@ -78,42 +135,8 @@ export const Products: CollectionConfig = {
           // Only show tenant field to super admins
           return isSuperAdmin(user);
         },
-        description: "🏢 Tenant who owns this product",
+        description: "Tenant who owns this product",
       },
-    },
-    {
-      name: "description",
-      type: "richText",
-    },
-    {
-      name: "price",
-      type: "number",
-      required: true,
-      admin: {
-        description: "Price in Rwandan Francs (RWF)"
-      }
-    },
-    {
-      name: "category",
-      type: "relationship",
-      relationTo: "categories",
-      hasMany: false,
-    },
-    {
-      name: "tags",
-      type: "relationship",
-      relationTo: "tags",
-      hasMany: true,
-    },
-    {
-      name: "image",
-      type: "upload",
-      relationTo: "media",
-    },
-    {
-      name: "cover",
-      type: "upload",
-      relationTo: "media",
     },
     {
       name: "refundPolicy",
@@ -145,6 +168,15 @@ export const Products: CollectionConfig = {
       type: "checkbox",
       admin: {
         description: "If checked, this product will be archived"
+      },
+    },
+    {
+      name: "livePreview",
+      type: "ui",
+      admin: {
+        components: {
+          Field: '@/components/admin/ProductLivePreviewField',
+        },
       },
     },
   ],
