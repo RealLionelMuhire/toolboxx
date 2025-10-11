@@ -1,3 +1,4 @@
+import { default as default_1e2e402e0a627aa710399a87d12cd77b } from '@/components/admin/AccountVerificationSection'
 import { RscEntryLexicalCell as RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { RscEntryLexicalField as RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { LexicalDiffComponent as LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
@@ -21,9 +22,15 @@ import { StrikethroughFeatureClient as StrikethroughFeatureClient_e70f5e05f09f93
 import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+import { default as default_a5a9f5d9a6f11e5ce71498f67210f9e2 } from '@/components/admin/TenantVerificationCell'
+import { default as default_17417a7d6db9be315dc2dbedf16f7fbc } from '@/components/admin/VerificationRequestedCell'
+import { default as default_f402e65b9a853a1a95660bc4eb1bd787 } from '@/components/admin/TenantVerificationUI'
+import { default as default_2408a2fd7e20ebb9496e085c702455c4 } from '@/components/admin/TenantVerificationListView'
+import { default as default_2837fafbe816b12f64987280154e7abd } from '@/components/admin/UserVerificationBadge'
 import { VercelBlobClientUploadHandler as VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-vercel-blob/client'
 
 export const importMap = {
+  "@/components/admin/AccountVerificationSection#default": default_1e2e402e0a627aa710399a87d12cd77b,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalCell": RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalField": RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#LexicalDiffComponent": LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e,
@@ -47,5 +54,10 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#UnderlineFeatureClient": UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+  "@/components/admin/TenantVerificationCell#default": default_a5a9f5d9a6f11e5ce71498f67210f9e2,
+  "@/components/admin/VerificationRequestedCell#default": default_17417a7d6db9be315dc2dbedf16f7fbc,
+  "@/components/admin/TenantVerificationUI#default": default_f402e65b9a853a1a95660bc4eb1bd787,
+  "@/components/admin/TenantVerificationListView#default": default_2408a2fd7e20ebb9496e085c702455c4,
+  "@/components/admin/UserVerificationBadge#default": default_2837fafbe816b12f64987280154e7abd,
   "@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler": VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e
 }

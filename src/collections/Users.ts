@@ -91,5 +91,19 @@ export const Users: CollectionConfig = {
         },
       ],
     },
+    // Verification section for account page
+    {
+      name: "verificationSection",
+      type: "ui",
+      admin: {
+        components: {
+          Field: '@/components/admin/AccountVerificationSection',
+        },
+        condition: (data) => {
+          // Only show for non-super-admin users
+          return !data.roles?.includes('super-admin');
+        },
+      },
+    },
   ],
 };

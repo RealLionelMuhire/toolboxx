@@ -69,6 +69,11 @@ export const Tenants: CollectionConfig = {
     pagination: {
       defaultLimit: 25, // Reduce default items per page
     },
+    components: {
+      beforeList: ['@/components/admin/TenantVerificationListView'],
+    },
+    listSearchableFields: ['name', 'slug', 'verificationStatus'],
+    defaultColumns: ['name', 'slug', 'verificationStatus', 'verificationRequested', 'updatedAt'],
   },
   fields: [
     {
@@ -191,6 +196,9 @@ export const Tenants: CollectionConfig = {
       },
       admin: {
         description: "🔍 SUPER ADMIN: Set verification stage. 'Document Verified' allows selling. 'Physically Verified' allows merchant management.",
+        components: {
+          Cell: '@/components/admin/TenantVerificationCell',
+        },
       },
     },
     {
@@ -201,6 +209,40 @@ export const Tenants: CollectionConfig = {
       },
       admin: {
         description: "📝 SUPER ADMIN: Add notes about verification decision, document quality, or follow-up actions needed.",
+      },
+    },
+    {
+      name: "verificationRequested",
+      type: "checkbox",
+      defaultValue: false,
+      admin: {
+        description: "📋 Tenant has requested verification review",
+        readOnly: true,
+        components: {
+          Cell: '@/components/admin/VerificationRequestedCell',
+        },
+      },
+    },
+    {
+      name: "verificationRequestedAt",
+      type: "date",
+      admin: {
+        description: "📅 When verification was requested",
+        readOnly: true,
+      },
+    },
+    // Verification Management UI for Super Admins
+    {
+      name: "verificationManagement",
+      type: "ui",
+      admin: {
+        components: {
+          Field: '@/components/admin/TenantVerificationUI',
+        },
+        condition: (data, req) => {
+          // Only show for super admins
+          return req.user?.roles?.includes('super-admin');
+        },
       },
     },
     {

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { Button, Banner } from '@payloadcms/ui';
 
 interface TenantVerificationUIProps {
   value?: string;
@@ -58,131 +59,103 @@ export const TenantVerificationUI: React.FC<TenantVerificationUIProps> = ({
 
   const currentStatus = data?.verificationStatus || 'pending';
 
-  const buttonStyle = {
-    padding: '8px 16px',
-    margin: '5px',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontWeight: 'bold',
+  const getStatusBanner = () => {
+    switch (currentStatus) {
+      case 'document_verified':
+        return { type: 'success' as const, text: 'DOCUMENT VERIFIED' };
+      case 'physically_verified':
+        return { type: 'success' as const, text: 'PHYSICALLY VERIFIED' };
+      case 'rejected':
+        return { type: 'error' as const, text: 'REJECTED' };
+      default:
+        return { type: 'info' as const, text: 'PENDING' };
+    }
   };
 
-  const primaryButton = {
-    ...buttonStyle,
-    backgroundColor: '#0070f3',
-    color: 'white',
-  };
-
-  const secondaryButton = {
-    ...buttonStyle,
-    backgroundColor: '#666',
-    color: 'white',
-  };
-
-  const dangerButton = {
-    ...buttonStyle,
-    backgroundColor: '#e53e3e',
-    color: 'white',
-  };
+  const statusBanner = getStatusBanner();
 
   return (
-    <div style={{ 
-      padding: '20px', 
-      border: '2px solid #0070f3', 
-      borderRadius: '8px',
-      backgroundColor: '#f8f9fa',
-      margin: '20px 0'
-    }}>
-      <h3 style={{ color: '#0070f3', marginTop: 0 }}>
-        🔐 Super Admin Verification Actions
-      </h3>
-      
-      <div style={{ marginBottom: '15px' }}>
-        <strong>Current Status: </strong>
-        <span style={{ 
-          padding: '4px 8px',
-          borderRadius: '4px',
-          backgroundColor: currentStatus === 'pending' ? '#fff3cd' : 
-                          currentStatus === 'document_verified' ? '#d1ecf1' :
-                          currentStatus === 'physically_verified' ? '#d4edda' :
-                          '#f8d7da',
-          color: currentStatus === 'pending' ? '#856404' : 
-                 currentStatus === 'document_verified' ? '#0c5460' :
-                 currentStatus === 'physically_verified' ? '#155724' :
-                 '#721c24'
-        }}>
-          {currentStatus.replace('_', ' ').toUpperCase()}
-        </span>
-      </div>
-
-      <div style={{ marginBottom: '15px' }}>
-        {currentStatus === 'pending' && (
-          <>
-            <button 
-              style={primaryButton}
-              onClick={() => handleVerification('document_verified')}
-            >
-              ✅ Verify Documents
-            </button>
-            <button 
-              style={dangerButton}
-              onClick={() => handleVerification('rejected')}
-            >
-              ❌ Reject
-            </button>
-          </>
-        )}
-
-        {currentStatus === 'document_verified' && (
-          <>
-            <button 
-              style={primaryButton}
-              onClick={() => handleVerification('physically_verified')}
-            >
-              🏠 Mark Physically Verified
-            </button>
-            <button 
-              style={dangerButton}
-              onClick={() => handleVerification('rejected')}
-            >
-              ❌ Reject
-            </button>
-          </>
-        )}
-
-        {(currentStatus === 'physically_verified' || currentStatus === 'rejected') && (
-          <>
-            <button 
-              style={secondaryButton}
-              onClick={() => handleVerification('document_verified')}
-            >
-              📄 Reset to Document Verified
-            </button>
-            <button 
-              style={secondaryButton}
-              onClick={() => handleVerification('pending')}
-            >
-              🔄 Reset to Pending
-            </button>
-          </>
-        )}
-      </div>
-
-      {data?.verificationNotes && (
-        <div style={{ 
-          padding: '10px',
-          backgroundColor: '#fff',
-          border: '1px solid #ddd',
-          borderRadius: '4px',
-          marginTop: '10px'
-        }}>
-          <strong>Admin Notes:</strong>
-          <div style={{ marginTop: '5px', fontStyle: 'italic' }}>
-            {data.verificationNotes}
+    <div style={{ margin: '20px 0' }}>
+      <Banner type="info">
+        <div>
+          <h3 style={{ margin: '0 0 12px 0' }}>
+            🔐 Super Admin Verification Actions
+          </h3>
+          
+          <div style={{ marginBottom: '15px' }}>
+            <strong>Current Status: </strong>
+            <Banner type={statusBanner.type}>
+              {statusBanner.text}
+            </Banner>
           </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '15px' }}>
+            {currentStatus === 'pending' && (
+              <>
+                <Button 
+                  buttonStyle="primary"
+                  onClick={() => handleVerification('document_verified')}
+                >
+                  ✅ Verify Documents
+                </Button>
+                <Button 
+                  buttonStyle="secondary"
+                  onClick={() => handleVerification('rejected')}
+                >
+                  ❌ Reject
+                </Button>
+              </>
+            )}
+
+            {currentStatus === 'document_verified' && (
+              <>
+                <Button 
+                  buttonStyle="primary"
+                  onClick={() => handleVerification('physically_verified')}
+                >
+                  🏠 Mark Physically Verified
+                </Button>
+                <Button 
+                  buttonStyle="secondary"
+                  onClick={() => handleVerification('rejected')}
+                >
+                  ❌ Reject
+                </Button>
+              </>
+            )}
+
+            {(currentStatus === 'physically_verified' || currentStatus === 'rejected') && (
+              <>
+                <Button 
+                  buttonStyle="secondary"
+                  onClick={() => handleVerification('document_verified')}
+                >
+                  📄 Reset to Document Verified
+                </Button>
+                <Button 
+                  buttonStyle="secondary"
+                  onClick={() => handleVerification('pending')}
+                >
+                  🔄 Reset to Pending
+                </Button>
+              </>
+            )}
+          </div>
+
+          {data?.verificationNotes && (
+            <Banner type="default">
+              <div>
+                <strong>Admin Notes:</strong>
+                <div style={{ marginTop: '5px', fontStyle: 'italic' }}>
+                  {data.verificationNotes}
+                </div>
+              </div>
+            </Banner>
+          )}
         </div>
-      )}
+      </Banner>
     </div>
   );
 };
+
+export default TenantVerificationUI;
