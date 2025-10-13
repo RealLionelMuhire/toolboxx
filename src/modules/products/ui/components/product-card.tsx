@@ -2,9 +2,8 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { StarIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
 
-import { formatCurrency, generateTenantURL } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 
 interface ProductCardProps {
   id: string;
@@ -27,58 +26,74 @@ export const ProductCard = ({
   reviewCount,
   price,
 }: ProductCardProps) => {
-  const router = useRouter();
+  // Generate URLs consistently for server/client
+  const productUrl = `/tenants/${tenantSlug}/products/${id}`;
+  const tenantUrl = `/tenants/${tenantSlug}`;
 
-  const handleUserClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleTenantClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
-    router.push(generateTenantURL(tenantSlug));
+    window.location.href = tenantUrl;
   };
 
   return (
-    <Link href={`${generateTenantURL(tenantSlug)}/products/${id}`}>
-      <div className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow border rounded-md bg-white overflow-hidden h-full flex flex-col">
+    <div className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow border rounded-md bg-white overflow-hidden h-full flex flex-col">
+      <Link href={productUrl} className="block" prefetch={false}>
         <div className="relative aspect-square">
           <Image
             alt={name}
             fill
             src={imageUrl || "/placeholder.png"}
             className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            loading="lazy"
+            quality={75}
           />
         </div>
-        <div className="p-4 border-y flex flex-col gap-3 flex-1">
-          <h2 className="text-lg font-medium line-clamp-4">{name}</h2>
-          <div className="flex items-center gap-2" onClick={handleUserClick}>
-            {tenantImageUrl && (
-              <Image
-                alt={tenantSlug}
-                src={tenantImageUrl}
-                width={16}
-                height={16}
-                className="rounded-full border shrink-0 size-[16px]"
-              />
-            )}
-            <p className="text-sm underline font-medium">{tenantSlug}</p>
-          </div>
-          {reviewCount > 0 && (
-            <div className="flex items-center gap-1">
-              <StarIcon className="size-3.5 fill-black" />
-              <p className="text-sm font-medium">
-                {reviewRating} ({reviewCount})
-              </p>
-            </div>
+      </Link>
+      
+      <div className="p-4 border-y flex flex-col gap-3 flex-1">
+        <Link href={productUrl} className="block" prefetch={false}>
+          <h2 className="text-lg font-medium line-clamp-4 hover:text-gray-700">{name}</h2>
+        </Link>
+        
+        <button 
+          type="button"
+          className="flex items-center gap-2 hover:opacity-80 w-fit cursor-pointer"
+          onClick={handleTenantClick}
+        >
+          {tenantImageUrl && (
+            <Image
+              alt={tenantSlug}
+              src={tenantImageUrl}
+              width={16}
+              height={16}
+              className="rounded-full border shrink-0 size-[16px]"
+              loading="lazy"
+              quality={75}
+            />
           )}
-        </div>
-        <div className="p-4">
-          <div className="relative px-2 py-1 border bg-pink-400 w-fit">
+          <p className="text-sm underline font-medium">{tenantSlug}</p>
+        </button>
+        
+        {reviewCount > 0 && (
+          <div className="flex items-center gap-1">
+            <StarIcon className="size-3.5 fill-black" />
             <p className="text-sm font-medium">
-              {formatCurrency(price)}
+              {reviewRating.toFixed(1)} ({reviewCount})
             </p>
           </div>
-        </div>
+        )}
       </div>
-    </Link>
+      
+      <Link href={productUrl} className="block p-4" prefetch={false}>
+        <div className="relative px-2 py-1 border bg-pink-400 w-fit">
+          <p className="text-sm font-medium">
+            {formatCurrency(price)}
+          </p>
+        </div>
+      </Link>
+    </div>
   )
 };
 

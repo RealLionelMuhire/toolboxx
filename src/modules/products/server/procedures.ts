@@ -4,10 +4,16 @@ import type { Sort, Where } from "payload";
 import { headers as getHeaders } from "next/headers";
 
 import { DEFAULT_LIMIT } from "@/constants";
-import { Category, Media, Tenant } from "@/payload-types";
+import { Category, Media, Tenant, Product } from "@/payload-types";
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 
 import { sortValues } from "../search-params";
+
+// Type for product with populated relationships
+type PopulatedProduct = Product & {
+  image?: Media | null;
+  tenant?: Tenant & { image?: Media | null };
+};
 
 export const productsRouter = createTRPCRouter({
   getOne: baseProcedure
@@ -106,8 +112,8 @@ export const productsRouter = createTRPCRouter({
       return {
         ...product,
         isPurchased,
-        image: product.image as Media | null,
-        tenant: product.tenant as Tenant & { image: Media | null },
+        image: (product as PopulatedProduct).image,
+        tenant: (product as PopulatedProduct).tenant as Tenant & { image: Media | null },
         reviewRating,
         reviewCount: reviews.totalDocs,
         ratingDistribution,
@@ -236,35 +242,47 @@ export const productsRouter = createTRPCRouter({
         },
       });
 
-      const dataWithSummarizedReviews = await Promise.all(
-        data.docs.map(async (doc) => {
-          const reviewsData = await ctx.db.find({
-            collection: "reviews",
-            pagination: false,
-            where: {
-              product: {
-                equals: doc.id,
-              },
-            },
-          });
+      // Fetch all reviews for all products in one query to avoid N+1 problem
+      const productIds = data.docs.map(doc => doc.id);
+      const allReviewsData = await ctx.db.find({
+        collection: "reviews",
+        pagination: false,
+        where: {
+          product: {
+            in: productIds,
+          },
+        },
+      });
 
-          return {
-            ...doc,
-            reviewCount: reviewsData.totalDocs,
-            reviewRating:
-              reviewsData.docs.length === 0
-                ? 0
-                : reviewsData.docs.reduce((acc, review) => acc + review.rating, 0) / reviewsData.totalDocs
-          }
-        })
-      );
+      // Group reviews by product ID for efficient lookup
+      const reviewsByProduct = allReviewsData.docs.reduce((acc, review) => {
+        const productId = typeof review.product === 'string' ? review.product : review.product.id;
+        if (!acc[productId]) {
+          acc[productId] = [];
+        }
+        acc[productId].push(review);
+        return acc;
+      }, {} as Record<string, typeof allReviewsData.docs>);
+
+      // Calculate review stats for each product
+      const dataWithSummarizedReviews = data.docs.map((doc) => {
+        const productReviews = reviewsByProduct[doc.id] || [];
+        
+        return {
+          ...doc,
+          reviewCount: productReviews.length,
+          reviewRating: productReviews.length === 0
+            ? 0
+            : productReviews.reduce((acc, review) => acc + review.rating, 0) / productReviews.length
+        };
+      });
 
       return {
         ...data,
         docs: dataWithSummarizedReviews.map((doc) => ({
           ...doc,
-          image: doc.image as Media | null,
-          tenant: doc.tenant as Tenant & { image: Media | null },
+          image: (doc as PopulatedProduct).image,
+          tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null },
         }))
       }
     }),

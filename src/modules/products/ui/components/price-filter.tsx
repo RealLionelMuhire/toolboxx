@@ -22,8 +22,8 @@ export const formatAsCurrency = (value: string) => {
   const numberValue = parseFloat(formattedValue);
   if (isNaN(numberValue)) return "";
 
-  // Use consistent formatting with the main formatCurrency function
-  return `RWF ${numberValue.toLocaleString('en-US')}`;
+  // Use consistent formatting that matches our main formatCurrency function
+  return `RWF ${numberValue.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 };
 
 export const PriceFilter = ({

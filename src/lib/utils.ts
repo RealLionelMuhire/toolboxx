@@ -25,6 +25,6 @@ export function formatCurrency(value: number | string) {
   const num = Number(value);
   if (isNaN(num)) return "RWF 0";
   
-  // Use a more reliable format that works consistently across server/client
-  return `RWF ${num.toLocaleString('en-US')}`;
+  // Use a simple format that's consistent between server and client
+  return `RWF ${num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 };
