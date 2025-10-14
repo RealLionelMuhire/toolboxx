@@ -185,15 +185,14 @@ export const Products: CollectionConfig = {
         description: "If checked, this product will be archived"
       },
     },
-    // Live preview temporarily disabled due to useFormFields compatibility issue
-    // {
-    //   name: "livePreview",
-    //   type: "ui",
-    //   admin: {
-    //     components: {
-    //       Field: '@/components/admin/ProductLivePreviewField',
-    //     },
-    //   },
-    // },
+    {
+      name: "previewUI",
+      type: "ui",
+      admin: {
+        components: {
+          Field: '@/components/admin/ProductPreviewUI',
+        },
+      },
+    },
   ],
 };
