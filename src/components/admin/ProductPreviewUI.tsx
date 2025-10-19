@@ -104,6 +104,7 @@ const ProductPreviewUI: React.FC<ProductPreviewUIProps> = () => {
   }
 // testing the coment
   // Add CSS to create a two-column layout when this component is rendered
+  // Some other comment
   useEffect(() => {
     const style = document.createElement('style')
     style.textContent = `
