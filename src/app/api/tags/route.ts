@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getPayload } from 'payload';
-import config from '@payload-config';
+import { NextRequest, NextResponse } from "next/server";
+import { getPayloadSingleton } from '@/lib/payload-singleton';
 
 export async function GET(request: NextRequest) {
   try {
-    const payload = await getPayload({ config });
+    const payload = await getPayloadSingleton();
     
     // Get query parameters for searching/filtering
     const { searchParams } = new URL(request.url);
@@ -34,7 +33,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const payload = await getPayload({ config });
+    const payload = await getPayloadSingleton();
     const body = await request.json();
     
     const result = await payload.create({

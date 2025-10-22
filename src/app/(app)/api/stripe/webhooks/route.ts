@@ -1,6 +1,5 @@
 import type { Stripe } from "stripe";
-import { getPayload } from "payload";
-import config from "@payload-config";
+import { getPayloadSingleton } from "@/lib/payload-singleton";
 import { NextResponse } from "next/server";
 
 import { stripe } from "@/lib/stripe";
@@ -37,7 +36,7 @@ export async function POST(req: Request) {
     "account.updated"
   ];
 
-  const payload = await getPayload({ config });
+  const payload = await getPayloadSingleton();
 
   if (permittedEvents.includes(event.type)) {
     let data;

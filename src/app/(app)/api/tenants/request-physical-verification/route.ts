@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import { getPayload } from "payload";
-import config from "@payload-config";
+import { NextRequest, NextResponse } from "next/server";
+import { getPayloadSingleton } from "@/lib/payload-singleton";
 import { headers as getHeaders } from "next/headers";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
-    const payload = await getPayload({ config });
+    const { tenantId } = await req.json();
+    const payload = await getPayloadSingleton();
     const headers = await getHeaders();
     
     // Check authentication

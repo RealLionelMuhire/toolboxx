@@ -1,5 +1,4 @@
-import { getPayload } from "payload";
-import config from "@payload-config";
+import { getPayloadSingleton } from "./lib/payload-singleton";
 
 const categories = [
   {
@@ -112,8 +111,10 @@ const categories = [
   },
 ]
 
-const seed = async () => {
-  const payload = await getPayload({ config });
+async function seed() {
+  console.log("🌱 Seeding database...");
+
+  const payload = await getPayloadSingleton();
 
   // Create admin tenant with Rwanda-specific fields
   const adminTenant = await payload.create({

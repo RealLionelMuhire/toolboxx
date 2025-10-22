@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getPayload } from 'payload';
-import config from '@payload-config';
+import { NextRequest, NextResponse } from "next/server";
+import { getPayloadSingleton } from "@/lib/payload-singleton";
 
 export async function GET(request: NextRequest) {
   try {
-    const payload = await getPayload({ config });
+    const payload = await getPayloadSingleton();
     const url = new URL(request.url);
     const type = url.searchParams.get('type');
 

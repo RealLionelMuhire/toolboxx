@@ -1,10 +1,7 @@
-import configPromise from '@payload-config'
-import { getPayload } from 'payload'
+import { getPayloadSingleton } from '@/lib/payload-singleton'
 
 export const GET = async () => {
-  const payload = await getPayload({
-    config: configPromise,
-  })
+  const payload = await getPayloadSingleton()
 
   const data = await payload.find({
     collection: "categories",

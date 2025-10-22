@@ -1,6 +1,5 @@
 import { initTRPC, TRPCError } from '@trpc/server';
-import { getPayload } from 'payload';
-import config from "@payload-config";
+import { getPayloadSingleton } from '@/lib/payload-singleton';
 import superjson from "superjson";
 import { headers as getHeaders } from 'next/headers';
 
@@ -11,7 +10,7 @@ export const createTRPCContext = cache(async () => {
    */
   try {
     const headers = await getHeaders();
-    const payload = await getPayload({ config });
+    const payload = await getPayloadSingleton();
     const session = await payload.auth({ headers });
     
     return { 
@@ -24,7 +23,7 @@ export const createTRPCContext = cache(async () => {
     return { 
       userId: null,
       user: null,
-      db: await getPayload({ config })
+      db: await getPayloadSingleton()
     };
   }
 });
@@ -42,7 +41,7 @@ const t = initTRPC.create({
 export const createTRPCRouter = t.router;
 export const createCallerFactory = t.createCallerFactory;
 export const baseProcedure = t.procedure.use(async ({ next }) => {
-  const payload = await getPayload({ config });
+  const payload = await getPayloadSingleton();
 
   return next({ ctx: { db: payload } });
 });
