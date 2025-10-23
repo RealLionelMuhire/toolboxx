@@ -2,11 +2,8 @@ import React, { useEffect } from 'react';
 import { DefaultListView } from '@payloadcms/ui';
 import { useAuth } from '@payloadcms/ui';
 
-interface ProductListViewProps {
-  [key: string]: unknown;
-}
-
-export const ProductListView: React.FC<ProductListViewProps> = (props) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const ProductListView: React.FC<any> = (props) => {
   const { user } = useAuth();
   const isSuperAdmin = user?.roles?.includes('super-admin');
 

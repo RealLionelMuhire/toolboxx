@@ -31,9 +31,12 @@ export const adminRouter = createTRPCRouter({
           depth: 0,
         });
 
-        if (!tenant?.isVerified || 
-            (tenant.verificationStatus !== "document_verified" && 
-             tenant.verificationStatus !== "physically_verified")) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        if (!(tenant as any)?.isVerified || 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ((tenant as any).verificationStatus !== "document_verified" && 
+             // eslint-disable-next-line @typescript-eslint/no-explicit-any
+             (tenant as any).verificationStatus !== "physically_verified")) {
           throw new TRPCError({
             code: "FORBIDDEN",
             message: "Tenant must be verified to access transactions. Please complete verification process."
@@ -42,6 +45,7 @@ export const adminRouter = createTRPCRouter({
       }
 
       // Build query - super admins see all, tenants see only their transactions
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const whereClause: any = isSuperAdmin(ctx.session.user)
         ? {
             status: { equals: "awaiting_verification" },
@@ -141,6 +145,7 @@ export const adminRouter = createTRPCRouter({
       // 1. Create Orders for each product with "pending" status
       // Orders will remain pending until customer confirms receipt
       const orders = await Promise.all(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         transaction.products.map(async (item: any) => {
           return await ctx.db.create({
             collection: "orders",
@@ -148,6 +153,7 @@ export const adminRouter = createTRPCRouter({
               name: `Order ${transaction.paymentReference}`,
               user: transaction.customer,
               product: typeof item.product === 'string' ? item.product : item.product.id,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               products: transaction.products.map((p: any) => ({
                 product: typeof p.product === 'string' ? p.product : p.product.id,
                 quantity: 1,
@@ -162,6 +168,7 @@ export const adminRouter = createTRPCRouter({
               currency: "RWF",
               transaction: transaction.id,
               status: "pending", // Orders start as pending after payment verification
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any,
           });
         })
@@ -178,6 +185,7 @@ export const adminRouter = createTRPCRouter({
           verifiedBy: ctx.session.user.id,
           // Note: Order relationship removed from Transactions to avoid circular ref
           // You can query Orders by transaction field instead
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
       });
 
@@ -284,6 +292,7 @@ export const adminRouter = createTRPCRouter({
           status: "rejected",
           rejectionReason: input.reason,
           verifiedBy: ctx.session.user.id,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
       });
 

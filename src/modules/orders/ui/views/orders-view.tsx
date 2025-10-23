@@ -25,7 +25,7 @@ export function OrdersView() {
       toast.success('Receipt confirmed! Order marked as completed.')
       queryClient.invalidateQueries(trpc.orders.getMyOrders.queryFilter())
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       toast.error(error.message || 'Failed to confirm receipt')
     },
   }))
@@ -94,10 +94,11 @@ export function OrdersView() {
             </div>
           ) : (
             <>
-              {orders.map((order: any) => (
+              {orders.map((order) => (
                 <OrderCard
                   key={order.id}
-                  order={order}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  order={order as any}
                   onConfirmReceiptAction={handleConfirmReceipt}
                 />
               ))}

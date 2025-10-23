@@ -45,7 +45,7 @@ export function PerformanceMonitor() {
 
     try {
       observer.observe({ entryTypes: ['navigation', 'measure'] });
-    } catch (e) {
+    } catch {
       // Some browsers don't support all entry types
     }
 

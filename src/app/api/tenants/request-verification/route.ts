@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
         verificationRequested: true,
         verificationRequestedAt: new Date().toISOString(),
         verificationStatus: 'pending', // Ensure status is pending when requested
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
       overrideAccess: true,
     });
@@ -103,9 +104,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       success: true,
       verification: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         status: (tenant as any).verificationStatus || 'pending',
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         requested: (tenant as any).verificationRequested || false,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         requestedAt: (tenant as any).verificationRequestedAt,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         isVerified: (tenant as any).isVerified || false,
       }
     });

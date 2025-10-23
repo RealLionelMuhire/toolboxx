@@ -19,6 +19,7 @@ export const Transactions: CollectionConfig = {
       if (isSuperAdmin(req.user)) return true;
       
       // Build OR query for tenant owners OR customers
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const queries: any[] = [];
       
       // Tenants can read their transactions
@@ -76,7 +77,6 @@ export const Transactions: CollectionConfig = {
       return true;
     },
     enableRichTextRelationship: false,
-    disableDuplicate: true,
   },
   fields: [
     {

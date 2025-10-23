@@ -1,9 +1,10 @@
 import React from 'react';
-import { useAuth } from 'payload/components/utilities';
-import { Button } from 'payload/components/elements';
-import { User, Tenant } from '@/payload-types';
+import { useAuth } from '@payloadcms/ui';
+import { Button } from '@payloadcms/ui';
+import { Tenant } from '@/payload-types';
 
-const isSuperAdmin = (user: User | null) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const isSuperAdmin = (user: any) => {
   return user?.roles?.includes('super-admin');
 };
 

@@ -82,11 +82,24 @@ export async function POST(req: Request) {
             await payload.create({
               collection: "orders",
               data: {
-                stripeCheckoutSessionId: data.id,
-                stripeAccountId: event.account,
+                // Legacy Stripe webhook - creating minimal order
                 user: user.id,
                 product: item.price.product.metadata.id,
+                products: [{
+                  product: item.price.product.metadata.id,
+                  quantity: 1,
+                  priceAtPurchase: item.amount_total || 0,
+                }],
                 name: item.price.product.name,
+                orderNumber: `STRIPE-${data.id.slice(-8)}`,
+                totalAmount: item.amount_total || 0,
+                amount: item.amount_total || 0,
+                transactionId: data.id,
+                status: 'pending',
+                paymentMethod: 'bank_transfer', // Legacy Stripe payments treated as bank transfer
+                bankName: 'Stripe',
+                accountNumber: 'N/A',
+                currency: 'RWF',
               },
             });
           }
@@ -94,17 +107,19 @@ export async function POST(req: Request) {
         case "account.updated":
           data = event.data.object as Stripe.Account;
 
-          await payload.update({
-            collection: "tenants",
-            where: {
-              stripeAccountId: {
-                equals: data.id,
-              },
-            },
-            data: {
-              stripeDetailsSubmitted: data.details_submitted,
-            },
-          });
+          // Legacy Stripe account update - no longer using Stripe
+          // await payload.update({
+          //   collection: "tenants",
+          //   where: {
+          //     stripeAccountId: {
+          //       equals: data.id,
+          //     },
+          //   },
+          //   data: {
+          //     stripeDetailsSubmitted: data.details_submitted,
+          //   },
+          // });
+          console.log('Stripe account updated (legacy):', data.id);
 
         break;
         default:

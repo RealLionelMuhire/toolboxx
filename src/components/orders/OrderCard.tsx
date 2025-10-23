@@ -168,7 +168,6 @@ export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
               Have you received your order? Confirm receipt to complete this order.
             </p>
             <ConfirmReceiptButton 
-              orderId={order.id} 
               onConfirmAction={() => onConfirmReceiptAction(order.id)}
             />
           </div>

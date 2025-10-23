@@ -55,9 +55,9 @@ export function TRPCReactProvider(
           // Add better error handling
           fetch: (input, init) => {
             return fetch(input, {
-              ...init,
+              ...(init || {}),
               credentials: 'include', // Include cookies for auth
-            });
+            } as RequestInit);
           },
         }),
       ],

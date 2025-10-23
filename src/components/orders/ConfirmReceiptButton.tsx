@@ -16,12 +16,11 @@ import {
 } from '@/components/ui/alert-dialog'
 
 interface ConfirmReceiptButtonProps {
-  orderId: string
   onConfirmAction: () => Promise<void>
   disabled?: boolean
 }
 
-export function ConfirmReceiptButton({ orderId, onConfirmAction, disabled }: ConfirmReceiptButtonProps) {
+export function ConfirmReceiptButton({ onConfirmAction, disabled }: ConfirmReceiptButtonProps) {
   const [isConfirming, setIsConfirming] = useState(false)
 
   const handleConfirm = async () => {

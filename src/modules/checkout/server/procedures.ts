@@ -235,8 +235,15 @@ export const checkoutRouter = createTRPCRouter({
             collection: "orders",
             data: {
               name: `Order for ${productDoc?.name}`,
+              orderNumber: `ORD-${Date.now()}-${productId.slice(-6)}`,
               user: ctx.session.user.id,
               product: productId,
+              products: [{
+                product: productId,
+                quantity: 1,
+                priceAtPurchase: productDoc?.price || 0,
+              }],
+              totalAmount: productDoc?.price || 0,
               transactionId: input.transactionId,
               paymentMethod: input.paymentMethod === "bank" ? "bank_transfer" : "mobile_money",
               bankName: input.paymentMethod === "bank" ? "Bank Transfer" : "Mobile Money",

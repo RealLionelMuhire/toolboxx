@@ -4,18 +4,19 @@ import config from '@payload-config';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const payload = await getPayload({ config });
     const body = await request.json();
+    const { id } = await params;
     
     const { verificationStatus, verificationNotes, isVerified, verifiedAt } = body;
     
     // Update the tenant
     const updatedTenant = await payload.update({
       collection: 'tenants',
-      id: params.id,
+      id,
       data: {
         verificationStatus,
         verificationNotes,
