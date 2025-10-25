@@ -37,29 +37,29 @@ export const ProductCard = ({
   };
 
   return (
-    <div className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow border rounded-md bg-white overflow-hidden h-full flex flex-col">
-      <Link href={productUrl} className="block" prefetch={false}>
-        <div className="relative aspect-square">
-          <Image
-            alt={name}
-            fill
-            src={imageUrl || "/placeholder.png"}
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            loading="lazy"
-            quality={75}
-          />
-        </div>
-      </Link>
+    <Link 
+      href={productUrl} 
+      className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow border rounded-md bg-white overflow-hidden h-full flex flex-col cursor-pointer" 
+      prefetch={false}
+    >
+      <div className="relative aspect-square">
+        <Image
+          alt={name}
+          fill
+          src={imageUrl || "/placeholder.png"}
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          loading="lazy"
+          quality={75}
+        />
+      </div>
       
       <div className="p-4 border-y flex flex-col gap-3 flex-1">
-        <Link href={productUrl} className="block" prefetch={false}>
-          <h2 className="text-lg font-medium line-clamp-4 hover:text-gray-700">{name}</h2>
-        </Link>
+        <h2 className="text-lg font-medium line-clamp-4 hover:text-gray-700">{name}</h2>
         
         <button 
           type="button"
-          className="flex items-center gap-2 hover:opacity-80 w-fit cursor-pointer"
+          className="flex items-center gap-2 hover:opacity-80 w-fit cursor-pointer z-10"
           onClick={handleTenantClick}
         >
           {tenantImageUrl && (
@@ -86,14 +86,14 @@ export const ProductCard = ({
         )}
       </div>
       
-      <Link href={productUrl} className="block p-4" prefetch={false}>
+      <div className="p-4">
         <div className="relative px-2 py-1 border bg-pink-400 w-fit">
           <p className="text-sm font-medium">
             {formatCurrency(price)}
           </p>
         </div>
-      </Link>
-    </div>
+      </div>
+    </Link>
   )
 };
 
