@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Upload, X, ImageIcon, FileVideo } from "lucide-react";
+import { X, FileVideo, Plus } from "lucide-react";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 interface ImageUploadProps {
@@ -171,104 +170,169 @@ export const ImageUpload = ({
     loadUploadedFiles();
   }, [value, loadUploadedFiles]);
 
-  const videoCount = uploadedFiles.filter((f) => f.fileType === "video").length;
-  const imageCount = uploadedFiles.filter((f) => f.fileType === "image").length;
+  // Create slots array (uploaded files + empty slots up to visible limit)
+  const visibleSlots = 8; // Show 8 slots initially
+  const slots = [...uploadedFiles];
+  const emptySlots = Math.min(visibleSlots - slots.length, maxImages - slots.length);
+  
+  for (let i = 0; i < emptySlots; i++) {
+    slots.push(null as any);
+  }
 
   return (
     <div className="space-y-4">
-      {/* Info text */}
-      <div className="text-sm text-gray-600">
-        You can add up to 24 photos and a 1-minute video. Buyers want to see all details and angles.
+      {/* Header section */}
+      <div>
+        <h3 className="text-xl font-semibold mb-2">Photos & Video</h3>
+        <p className="text-sm text-gray-600 mb-1">
+          You can add up to 24 photos and a 1-minute video. Buyers want to see all details and angles.
+        </p>
+        <a href="#" className="text-sm text-blue-600 hover:underline">
+          Tips for taking pro photos
+        </a>
       </div>
 
-      {/* File counter */}
-      <div className="text-sm font-medium">
-        {imageCount}/{maxImages}
-      </div>
-
-      {/* Upload area */}
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`
-          border-2 border-dashed rounded-lg p-8 text-center transition-colors
-          ${isDragging ? "border-black bg-gray-50" : "border-gray-300"}
-          ${isUploading ? "opacity-50 pointer-events-none" : ""}
-        `}
-      >
-        <div className="flex flex-col items-center gap-4">
-          <div className="p-4 bg-gray-100 rounded-full">
-            <Upload className="w-8 h-8 text-gray-600" />
-          </div>
-          
-          <div className="space-y-2">
-            <p className="font-medium">Drag and drop files</p>
-            {isUploading && <p className="text-sm text-gray-500">Uploading...</p>}
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
-            >
-              Upload from computer
-            </Button>
-            
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*,video/*"
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Uploaded files grid */}
+      {/* Counter (only show when there are images) */}
       {uploadedFiles.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {uploadedFiles.map((file) => (
-            <div key={file.id} className="relative group aspect-square border rounded-lg overflow-hidden bg-gray-100">
-              {file.fileType === "image" ? (
-                <Image
-                  src={file.url}
-                  alt={file.alt}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 50vw, 200px"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <FileVideo className="w-12 h-12 text-gray-400" />
-                </div>
-              )}
-              
-              {/* Remove button */}
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium">
+            {uploadedFiles.length}/{maxImages}
+          </span>
+          <button type="button" className="text-sm text-blue-600 hover:underline">
+            Select
+          </button>
+        </div>
+      )}
+
+      {/* Show large upload area when no images */}
+      {uploadedFiles.length === 0 ? (
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`
+            border-2 border-dashed rounded-lg p-12 text-center transition-colors
+            ${isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 bg-white"}
+            ${isUploading ? "opacity-50 pointer-events-none" : ""}
+          `}
+        >
+          <div className="flex flex-col items-center gap-4">
+            {/* Upload icon */}
+            <div className="p-4 bg-gray-100 rounded-full">
+              <svg className="w-12 h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            
+            <div className="space-y-2">
+              <p className="font-medium text-lg">Drag and drop files</p>
+              {isUploading && <p className="text-sm text-gray-500">Uploading...</p>}
+            </div>
+
+            <div className="flex flex-col gap-2 w-full max-w-xs">
               <button
                 type="button"
-                onClick={() => handleRemove(file.id)}
-                className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                className="w-full px-6 py-3 border border-gray-300 rounded-full font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <X className="w-4 h-4 text-red-600" />
+                Upload from computer
               </button>
               
-              {/* File type indicator */}
-              <div className="absolute bottom-2 left-2">
-                {file.fileType === "video" && (
-                  <div className="px-2 py-1 bg-black/70 text-white text-xs rounded">
-                    Video
+              <button
+                type="button"
+                className="w-full px-6 py-3 border border-gray-300 rounded-full font-medium hover:bg-gray-50 transition-colors"
+                disabled
+              >
+                Upload from mobile
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Grid layout when images exist */
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {slots.map((file, index) => (
+            <div 
+              key={file?.id || `empty-${index}`} 
+              className="relative aspect-square border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-50 hover:border-gray-400 transition-colors"
+            >
+              {file ? (
+                <>
+                  {/* Uploaded file */}
+                  {file.fileType === "image" ? (
+                    <Image
+                      src={file.url}
+                      alt={file.alt}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 50vw, 200px"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full bg-gray-200">
+                      <FileVideo className="w-12 h-12 text-gray-400" />
+                    </div>
+                  )}
+                  
+                  {/* Main badge for first image */}
+                  {index === 0 && (
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+                      <span className="px-3 py-1 bg-gray-700 text-white text-xs font-medium rounded-full">
+                        Main
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Remove button */}
+                  <button
+                    type="button"
+                    onClick={() => handleRemove(file.id)}
+                    className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
+                    aria-label="Remove image"
+                  >
+                    <X className="w-4 h-4 text-gray-700" />
+                  </button>
+
+                  {/* Video indicator */}
+                  {file.fileType === "video" && (
+                    <div className="absolute top-2 left-2">
+                      <span className="px-2 py-1 bg-black/70 text-white text-xs rounded">
+                        Video
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* Empty slot with Add button */
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading || uploadedFiles.length >= maxImages}
+                  className="w-full h-full flex flex-col items-center justify-center gap-2 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  <div className={`p-3 rounded-full ${isDragging ? 'bg-blue-100' : 'bg-gray-200'}`}>
+                    <Plus className="w-6 h-6 text-gray-600" />
                   </div>
-                )}
-              </div>
+                  <span className="text-sm text-gray-600">Add</span>
+                </button>
+              )}
             </div>
           ))}
         </div>
       )}
+
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*,video/*"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
     </div>
   );
 };

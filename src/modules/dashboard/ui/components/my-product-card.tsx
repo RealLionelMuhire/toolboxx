@@ -5,11 +5,13 @@ import { StarIcon, EyeOffIcon, ArchiveIcon, Edit2Icon, Trash2Icon } from "lucide
 
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { ImageCarousel } from "./image-carousel";
 
 interface MyProductCardProps {
   id: string;
   name: string;
   imageUrl?: string | null;
+  gallery?: Array<{ url: string; alt: string }> | null;
   tenantSlug: string;
   tenantImageUrl?: string | null;
   reviewRating: number;
@@ -25,6 +27,7 @@ export const MyProductCard = ({
   id,
   name,
   imageUrl,
+  gallery,
   tenantSlug,
   tenantImageUrl,
   reviewRating,
@@ -38,20 +41,37 @@ export const MyProductCard = ({
   // Generate URLs consistently for server/client
   const productUrl = `/tenants/${tenantSlug}/products/${id}`;
 
+  // Prepare images for carousel
+  const images = gallery && gallery.length > 0
+    ? gallery
+    : imageUrl
+    ? [{ url: imageUrl, alt: name }]
+    : [{ url: "/placeholder.png", alt: name }];
+
   return (
     <div className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow border rounded-md bg-white overflow-hidden h-full flex flex-col">
       <Link href={productUrl} className="relative aspect-square group" prefetch={false}>
-        <Image
-          alt={name}
-          fill
-          src={imageUrl || "/placeholder.png"}
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          loading="lazy"
-          quality={75}
-        />
+        {images.length > 1 ? (
+          <ImageCarousel
+            images={images}
+            className="aspect-square"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            loading="lazy"
+            quality={75}
+          />
+        ) : (
+          <Image
+            alt={name}
+            fill
+            src={images[0]?.url || "/placeholder.png"}
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            loading="lazy"
+            quality={75}
+          />
+        )}
         {/* Status badges */}
-        <div className="absolute top-2 right-2 flex flex-col gap-1">
+        <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
           {isPrivate && (
             <div className="flex items-center gap-1 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-medium">
               <EyeOffIcon className="size-3" />

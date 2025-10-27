@@ -51,23 +51,42 @@ export const MyProductsList = ({ searchQuery, onEdit, onDelete }: Props) => {
   return (
     <>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {data?.pages.flatMap((page) => page.docs).map((product) => (
-          <MyProductCard
-            key={product.id}
-            id={product.id}
-            name={product.name}
-            imageUrl={product.image?.url}
-            tenantSlug={product.tenant?.slug}
-            tenantImageUrl={product.tenant?.image?.url}
-            reviewRating={product.reviewRating}
-            reviewCount={product.reviewCount}
-            price={product.price}
-            isPrivate={product.isPrivate ?? false}
-            isArchived={product.isArchived ?? false}
-            onEdit={onEdit}
-            onDelete={onDelete}
-          />
-        ))}
+        {data?.pages.flatMap((page) => page.docs).map((product) => {
+          // Build gallery array from product data
+          const gallery: Array<{ url: string; alt: string }> = [];
+          
+          // Type assertion for gallery field
+          const productWithGallery = product as any;
+          if (productWithGallery.gallery && Array.isArray(productWithGallery.gallery)) {
+            productWithGallery.gallery.forEach((item: any) => {
+              if (item.media && typeof item.media === 'object' && item.media.url) {
+                gallery.push({
+                  url: item.media.url,
+                  alt: item.media.alt || product.name,
+                });
+              }
+            });
+          }
+
+          return (
+            <MyProductCard
+              key={product.id}
+              id={product.id}
+              name={product.name}
+              imageUrl={product.image?.url}
+              gallery={gallery.length > 0 ? gallery : null}
+              tenantSlug={product.tenant?.slug}
+              tenantImageUrl={product.tenant?.image?.url}
+              reviewRating={product.reviewRating}
+              reviewCount={product.reviewCount}
+              price={product.price}
+              isPrivate={product.isPrivate ?? false}
+              isArchived={product.isArchived ?? false}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          );
+        })}
       </div>
       <div className="flex justify-center pt-8">
         {hasNextPage && (
