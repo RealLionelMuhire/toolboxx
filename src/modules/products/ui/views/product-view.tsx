@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { StarRating } from "@/components/star-rating";
 import { formatCurrency, generateTenantURL } from "@/lib/utils";
+import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
 
 const CartButton = dynamic(
   () => import("../components/cart-button").then(
@@ -36,30 +37,50 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
   const [isCopied, setIsCopied] = useState(false);
 
+  // Build gallery array from product data
+  const images: Array<{ url: string; alt: string }> = [];
+  
+  // Type assertion for gallery field
+  const productWithGallery = data as any;
+  if (productWithGallery.gallery && Array.isArray(productWithGallery.gallery)) {
+    productWithGallery.gallery.forEach((item: any) => {
+      if (item.media && typeof item.media === 'object' && item.media.url) {
+        images.push({
+          url: item.media.url,
+          alt: item.media.alt || data.name,
+        });
+      }
+    });
+  }
+  
+  // Fallback to main image if no gallery
+  if (images.length === 0 && data.image?.url) {
+    images.push({
+      url: data.image.url,
+      alt: data.name,
+    });
+  }
+
   return (
     <div className="px-4 lg:px-12 py-10">
       <div className="border rounded-sm bg-white overflow-hidden">
-        <div className="relative aspect-[3.9] border-b">
-          <Image
-            src={data.image?.url || "/placeholder.png"}
-            alt={data.name}
-            fill
-            className="object-cover"
-          />
-        </div>
-        <div className="grid grid-cols-1 lg:grid-cols-6">
-          <div className="col-span-4">
+        {/* Two-column layout: Details on left (lg:order-1), Images on right (lg:order-2) */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+          
+          {/* LEFT SIDE - Product Details (Desktop: left, Mobile: bottom) */}
+          <div className="order-2 lg:order-1 border-t lg:border-t-0 lg:border-r">
             <div className="p-6">
               <h1 className="text-4xl font-medium">{data.name}</h1>
             </div>
-            <div className="border-y flex">
+            
+            <div className="border-y flex flex-wrap">
               <div className="px-6 py-4 flex items-center justify-center border-r">
                 <div className="px-2 py-1 border bg-pink-400 w-fit">
                   <p className="text-base font-medium">{formatCurrency(data.price)}</p>
                 </div>
               </div>
 
-              <div className="px-6 py-4 flex items-center justify-center lg:border-r">
+              <div className="px-6 py-4 flex items-center justify-center border-r">
                 <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2">
                   {data.tenant.image?.url && (
                     <Image
@@ -76,7 +97,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                 </Link>
               </div>
 
-              <div className="hidden lg:flex px-6 py-4 items-center justify-center">
+              <div className="px-6 py-4 flex items-center justify-center">
                 <div className="flex items-center gap-2">
                   <StarRating
                     rating={data.reviewRating}
@@ -89,19 +110,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
               </div>
             </div>
 
-            <div className="block lg:hidden px-6 py-4 items-center justify-center border-b">
-              <div className="flex items-center gap-2">
-                <StarRating
-                  rating={data.reviewRating}
-                  iconClassName="size-4"
-                />
-                <p className="text-base font-medium">
-                  {data.reviewCount} ratings
-                </p>
-              </div>
-            </div>
-
-            <div className="p-6">
+            <div className="p-6 border-b">
               {data.description ? (
                 <RichText data={data.description} />
               ) : (
@@ -110,69 +119,89 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                 </p>
               )}
             </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-4 p-6 border-b">
+              <div className="flex flex-row items-center gap-2">
+                <CartButton
+                  isPurchased={data.isPurchased}
+                  productId={productId}
+                  tenantSlug={tenantSlug}
+                />
+                <Button
+                  className="size-12"
+                  variant="elevated"
+                  onClick={() => {
+                    setIsCopied(true);
+                    navigator.clipboard.writeText(window.location.href);
+                    toast.success("URL copied to clipboard")
+
+                    setTimeout(() => {
+                      setIsCopied(false);
+                    }, 1000);
+                  }}
+                  disabled={isCopied}
+                >
+                  {isCopied ? <CheckIcon /> : <LinkIcon />}
+                </Button>
+              </div>
+
+              <p className="text-center font-medium">
+                {data.refundPolicy === "no-refunds"
+                  ? "No refunds"
+                  : `${data.refundPolicy} money back guarantee`
+                }
+              </p>
+            </div>
+
+            {/* Ratings Section */}
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-medium">Ratings</h3>
+                <div className="flex items-center gap-x-1 font-medium">
+                  <StarIcon className="size-4 fill-black" />
+                  <p>({data.reviewRating})</p>
+                  <p className="text-base">{data.reviewCount} ratings</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-[auto_1fr_auto] gap-3">
+                {[5, 4, 3, 2, 1].map((stars) => (
+                  <Fragment key={stars}>
+                    <div className="font-medium">{stars} {stars === 1 ? "star" : "stars"}</div>
+                    <Progress
+                      value={data.ratingDistribution[stars]}
+                      className="h-[1lh]"
+                    />
+                    <div className="font-medium">
+                      {data.ratingDistribution[stars]}%
+                    </div>
+                  </Fragment>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="col-span-2">
-            <div className="border-t lg:border-t-0 lg:border-l h-full">
-              <div className="flex flex-col gap-4 p-6 border-b">
-                <div className="flex flex-row items-center gap-2">
-                  <CartButton
-                    isPurchased={data.isPurchased}
-                    productId={productId}
-                    tenantSlug={tenantSlug}
-                  />
-                  <Button
-                    className="size-12"
-                    variant="elevated"
-                    onClick={() => {
-                      setIsCopied(true);
-                      navigator.clipboard.writeText(window.location.href);
-                      toast.success("URL copied to clipboard")
-
-                      setTimeout(() => {
-                        setIsCopied(false);
-                      }, 1000);
-                    }}
-                    disabled={isCopied}
-                  >
-                    {isCopied ? <CheckIcon /> : <LinkIcon />}
-                  </Button>
-                </div>
-
-                <p className="text-center font-medium">
-                  {data.refundPolicy === "no-refunds"
-                    ? "No refunds"
-                    : `${data.refundPolicy} money back guarantee`
-                  }
-                </p>
-              </div>
-
-              <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-medium">Ratings</h3>
-                  <div className="flex items-center gap-x-1 font-medium">
-                    <StarIcon className="size-4 fill-black" />
-                    <p>({data.reviewRating})</p>
-                    <p className="text-base">{data.reviewCount} ratings</p>
-                  </div>
-                </div>
-                <div
-                  className="grid grid-cols-[auto_1fr_auto] gap-3 mt-4"
-                >
-                  {[5, 4, 3, 2, 1].map((stars) => (
-                    <Fragment key={stars}>
-                      <div className="font-medium">{stars} {stars === 1 ? "star" : "stars"}</div>
-                      <Progress
-                        value={data.ratingDistribution[stars]}
-                        className="h-[1lh]"
-                      />
-                      <div className="font-medium">
-                        {data.ratingDistribution[stars]}%
-                      </div>
-                    </Fragment>
-                  ))}
-                </div>
-              </div>
+          {/* RIGHT SIDE - Product Images (Desktop: right, Mobile: top) */}
+          <div className="order-1 lg:order-2">
+            <div className="relative aspect-square bg-gray-50">
+              {images.length > 1 ? (
+                <ImageCarousel
+                  images={images}
+                  className="aspect-square"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  loading="eager"
+                  quality={90}
+                />
+              ) : (
+                <Image
+                  src={images[0]?.url || "/placeholder.png"}
+                  alt={data.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
+              )}
             </div>
           </div>
         </div>
