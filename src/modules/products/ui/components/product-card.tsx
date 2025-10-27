@@ -4,11 +4,13 @@ import Image from "next/image";
 import { StarIcon } from "lucide-react";
 
 import { formatCurrency } from "@/lib/utils";
+import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
 
 interface ProductCardProps {
   id: string;
   name: string;
   imageUrl?: string | null;
+  gallery?: Array<{ url: string; alt: string }> | null;
   tenantSlug: string;
   tenantImageUrl?: string | null;
   reviewRating: number;
@@ -20,6 +22,7 @@ export const ProductCard = ({
   id,
   name,
   imageUrl,
+  gallery,
   tenantSlug,
   tenantImageUrl,
   reviewRating,
@@ -36,6 +39,13 @@ export const ProductCard = ({
     window.location.href = tenantUrl;
   };
 
+  // Prepare images for carousel
+  const images = gallery && gallery.length > 0
+    ? gallery
+    : imageUrl
+    ? [{ url: imageUrl, alt: name }]
+    : [{ url: "/placeholder.png", alt: name }];
+
   return (
     <Link 
       href={productUrl} 
@@ -43,15 +53,25 @@ export const ProductCard = ({
       prefetch={false}
     >
       <div className="relative aspect-square">
-        <Image
-          alt={name}
-          fill
-          src={imageUrl || "/placeholder.png"}
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          loading="lazy"
-          quality={75}
-        />
+        {images.length > 1 ? (
+          <ImageCarousel
+            images={images}
+            className="aspect-square"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            loading="lazy"
+            quality={75}
+          />
+        ) : (
+          <Image
+            alt={name}
+            fill
+            src={images[0]?.url || "/placeholder.png"}
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            loading="lazy"
+            quality={75}
+          />
+        )}
       </div>
       
       <div className="p-4 border-y flex flex-col gap-3 flex-1">

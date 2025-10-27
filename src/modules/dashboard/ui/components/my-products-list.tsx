@@ -3,34 +3,28 @@
 import { InboxIcon } from "lucide-react";
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query";
 
-import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
 import { DEFAULT_LIMIT } from "@/constants";
 import { Button } from "@/components/ui/button";
 
-import { ProductCard, ProductCardSkeleton } from "./product-card";
-import { useProductFilters } from "../../hooks/use-product-filters";
+import { MyProductCard, MyProductCardSkeleton } from "@/modules/dashboard/ui/components/my-product-card";
 
 interface Props {
-  category?: string;
-  tenantSlug?: string;
-  narrowView?: boolean;
-};
+  searchQuery?: string;
+  onEdit?: (productId: string) => void;
+  onDelete?: (productId: string, productName: string) => void;
+}
 
-export const ProductList = ({ category, tenantSlug, narrowView }: Props) => {
-  const [filters] = useProductFilters();
-
+export const MyProductsList = ({ searchQuery, onEdit, onDelete }: Props) => {
   const trpc = useTRPC();
   const { 
     data, 
     hasNextPage, 
     isFetchingNextPage, 
     fetchNextPage
-  } = useSuspenseInfiniteQuery(trpc.products.getMany.infiniteQueryOptions(
+  } = useSuspenseInfiniteQuery(trpc.products.getMyProducts.infiniteQueryOptions(
     {
-      ...filters,
-      category,
-      tenantSlug,
+      search: searchQuery || null,
       limit: DEFAULT_LIMIT,
     },
     {
@@ -45,17 +39,18 @@ export const ProductList = ({ category, tenantSlug, narrowView }: Props) => {
       <div className="border border-black border-dashed flex items-center justify-center p-8 flex-col gap-y-4 bg-white w-full rounded-lg">
         <InboxIcon />
         <p className="text-base font-medium">No products found</p>
+        <p className="text-sm text-gray-600">
+          {searchQuery 
+            ? "Try adjusting your search terms" 
+            : "Create your first product to get started"}
+        </p>
       </div>
     )
   }
 
-
   return (
     <>
-      <div className={cn(
-        "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4",
-        narrowView && "lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3"
-      )}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {data?.pages.flatMap((page) => page.docs).map((product) => {
           // Build gallery array from product data
           const gallery: Array<{ url: string; alt: string }> = [];
@@ -74,7 +69,7 @@ export const ProductList = ({ category, tenantSlug, narrowView }: Props) => {
           }
 
           return (
-            <ProductCard
+            <MyProductCard
               key={product.id}
               id={product.id}
               name={product.name}
@@ -85,6 +80,10 @@ export const ProductList = ({ category, tenantSlug, narrowView }: Props) => {
               reviewRating={product.reviewRating}
               reviewCount={product.reviewCount}
               price={product.price}
+              isPrivate={product.isPrivate ?? false}
+              isArchived={product.isArchived ?? false}
+              onEdit={onEdit}
+              onDelete={onDelete}
             />
           );
         })}
@@ -105,14 +104,11 @@ export const ProductList = ({ category, tenantSlug, narrowView }: Props) => {
   );
 };
 
-export const ProductListSkeleton = ({ narrowView }: Props) => {
+export const MyProductsListSkeleton = () => {
   return (
-    <div className={cn(
-      "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4",
-      narrowView && "lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3"
-    )}>
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {Array.from({ length: DEFAULT_LIMIT }).map((_, index) => (
-        <ProductCardSkeleton key={index} />
+        <MyProductCardSkeleton key={index} />
       ))}
     </div>
   );
