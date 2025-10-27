@@ -110,7 +110,7 @@ const TenantDashboardPage = async () => {
                       <span className="text-sm text-gray-600">See how your store appears to customers</span>
                     </div>
                     <Link 
-                      href={`/store/${tenant.slug}`}
+                      href={`/tenants/${tenant.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"

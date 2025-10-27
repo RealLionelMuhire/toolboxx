@@ -61,6 +61,15 @@ const customerNavbarItems = [
   { href: "/contact", children: "Contact" },
 ];
 
+const tenantNavbarItems = [
+  { href: "/", children: "Home" },
+  { href: "/my-products", children: "My Products" },
+  { href: "/my-account", children: "My Account" },
+  { href: "/orders", children: "My Orders" },
+  { href: "/about", children: "About" },
+  { href: "/contact", children: "Contact" },
+];
+
 export const Navbar = () => {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -68,8 +77,12 @@ export const Navbar = () => {
   const trpc = useTRPC();
   const session = useQuery(trpc.auth.session.queryOptions());
   
-  // Show customer items if logged in, otherwise show public items
-  const navbarItems = session.data?.user ? customerNavbarItems : publicNavbarItems;
+  // Show tenant items if user is a tenant, customer items if logged in, otherwise show public items
+  const navbarItems = session.data?.user 
+    ? session.data.user.roles?.includes('tenant') 
+      ? tenantNavbarItems 
+      : customerNavbarItems 
+    : publicNavbarItems;
 
   return (
     <nav className="h-20 flex border-b justify-between font-medium bg-white">

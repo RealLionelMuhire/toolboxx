@@ -5,7 +5,7 @@ import { headers as getHeaders } from "next/headers";
 
 import { DEFAULT_LIMIT } from "@/constants";
 import { Category, Media, Tenant, Product } from "@/payload-types";
-import { baseProcedure, createTRPCRouter } from "@/trpc/init";
+import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
 import { sortValues } from "../search-params";
 
@@ -14,6 +14,35 @@ type PopulatedProduct = Product & {
   image?: Media | null;
   tenant?: Tenant & { image?: Media | null };
 };
+
+// Validation schemas for product CRUD
+const createProductSchema = z.object({
+  name: z.string().min(1, "Product name is required"),
+  description: z.any().optional(), // Rich text
+  price: z.number().min(0, "Price must be positive"),
+  category: z.string().min(1, "Category is required"),
+  tags: z.array(z.string()).optional(),
+  image: z.string().min(1, "Product image is required"),
+  cover: z.string().optional(),
+  refundPolicy: z.enum(["30-day", "14-day", "7-day", "3-day", "1-day", "no-refunds"]).default("30-day"),
+  content: z.any().optional(), // Rich text
+  isPrivate: z.boolean().default(false),
+});
+
+const updateProductSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).optional(),
+  description: z.any().optional(),
+  price: z.number().min(0).optional(),
+  category: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  image: z.string().optional(),
+  cover: z.string().optional(),
+  refundPolicy: z.enum(["30-day", "14-day", "7-day", "3-day", "1-day", "no-refunds"]).optional(),
+  content: z.any().optional(),
+  isPrivate: z.boolean().optional(),
+  isArchived: z.boolean().optional(),
+});
 
 export const productsRouter = createTRPCRouter({
   getOne: baseProcedure
@@ -285,5 +314,254 @@ export const productsRouter = createTRPCRouter({
           tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null },
         }))
       }
+    }),
+  
+  // Get products for current tenant (dashboard view)
+  getMyProducts: protectedProcedure
+    .input(
+      z.object({
+        cursor: z.number().default(1),
+        limit: z.number().default(DEFAULT_LIMIT),
+        search: z.string().nullable().optional(),
+        includeArchived: z.boolean().default(false),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+      });
+
+      if (!userData.tenants?.[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No tenant found for user",
+        });
+      }
+
+      const tenantId = typeof userData.tenants[0].tenant === 'string' 
+        ? userData.tenants[0].tenant 
+        : userData.tenants[0].tenant.id;
+
+      const where: Where = {
+        tenant: {
+          equals: tenantId,
+        },
+      };
+
+      if (!input.includeArchived) {
+        where.isArchived = {
+          not_equals: true,
+        };
+      }
+
+      if (input.search) {
+        where["name"] = {
+          like: input.search,
+        };
+      }
+
+      const data = await ctx.db.find({
+        collection: "products",
+        depth: 1,
+        where,
+        sort: "-createdAt",
+        page: input.cursor,
+        limit: input.limit,
+        select: {
+          content: false,
+        },
+      });
+
+      // Fetch all reviews for all products in one query
+      const productIds = data.docs.map(doc => doc.id);
+      const allReviewsData = await ctx.db.find({
+        collection: "reviews",
+        pagination: false,
+        where: {
+          product: {
+            in: productIds,
+          },
+        },
+      });
+
+      // Group reviews by product ID
+      const reviewsByProduct = allReviewsData.docs.reduce((acc, review) => {
+        const productId = typeof review.product === 'string' ? review.product : review.product.id;
+        if (!acc[productId]) {
+          acc[productId] = [];
+        }
+        acc[productId].push(review);
+        return acc;
+      }, {} as Record<string, typeof allReviewsData.docs>);
+
+      // Calculate review stats for each product
+      const dataWithSummarizedReviews = data.docs.map((doc) => {
+        const productReviews = reviewsByProduct[doc.id] || [];
+        
+        return {
+          ...doc,
+          reviewCount: productReviews.length,
+          reviewRating: productReviews.length === 0
+            ? 0
+            : productReviews.reduce((acc, review) => acc + review.rating, 0) / productReviews.length
+        };
+      });
+
+      return {
+        ...data,
+        docs: dataWithSummarizedReviews.map((doc) => ({
+          ...doc,
+          image: (doc as PopulatedProduct).image,
+          tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null },
+        }))
+      };
+    }),
+
+  // Create a new product
+  createProduct: protectedProcedure
+    .input(createProductSchema)
+    .mutation(async ({ ctx, input }) => {
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+      });
+
+      if (!userData.tenants?.[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No tenant found for user",
+        });
+      }
+
+      const tenantId = typeof userData.tenants[0].tenant === 'string' 
+        ? userData.tenants[0].tenant 
+        : userData.tenants[0].tenant.id;
+
+      // Check if tenant is verified
+      const tenant = await ctx.db.findByID({
+        collection: "tenants",
+        id: tenantId,
+      });
+
+      if (!tenant.isVerified) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Your account must be verified before creating products",
+        });
+      }
+
+      // Create the product
+      const product = await ctx.db.create({
+        collection: "products",
+        data: {
+          ...input,
+          tenant: tenantId,
+        },
+      });
+
+      return product;
+    }),
+
+  // Update an existing product
+  updateProduct: protectedProcedure
+    .input(updateProductSchema)
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...updateData } = input;
+
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+      });
+
+      if (!userData.tenants?.[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No tenant found for user",
+        });
+      }
+
+      const tenantId = typeof userData.tenants[0].tenant === 'string' 
+        ? userData.tenants[0].tenant 
+        : userData.tenants[0].tenant.id;
+
+      // Verify the product belongs to this tenant
+      const existingProduct = await ctx.db.findByID({
+        collection: "products",
+        id,
+      });
+
+      const productTenantId = typeof existingProduct.tenant === 'string'
+        ? existingProduct.tenant
+        : existingProduct.tenant?.id;
+
+      if (productTenantId !== tenantId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only update your own products",
+        });
+      }
+
+      // Update the product
+      const product = await ctx.db.update({
+        collection: "products",
+        id,
+        data: updateData,
+      });
+
+      return product;
+    }),
+
+  // Delete a product (archive it)
+  deleteProduct: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+      });
+
+      if (!userData.tenants?.[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No tenant found for user",
+        });
+      }
+
+      const tenantId = typeof userData.tenants[0].tenant === 'string' 
+        ? userData.tenants[0].tenant 
+        : userData.tenants[0].tenant.id;
+
+      // Verify the product belongs to this tenant
+      const existingProduct = await ctx.db.findByID({
+        collection: "products",
+        id: input.id,
+      });
+
+      const productTenantId = typeof existingProduct.tenant === 'string'
+        ? existingProduct.tenant
+        : existingProduct.tenant?.id;
+
+      if (productTenantId !== tenantId) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only delete your own products",
+        });
+      }
+
+      // Archive the product instead of deleting
+      const product = await ctx.db.update({
+        collection: "products",
+        id: input.id,
+        data: {
+          isArchived: true,
+        },
+      });
+
+      return product;
     }),
 });
