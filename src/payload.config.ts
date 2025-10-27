@@ -25,8 +25,10 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
+  serverURL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   admin: {
     user: Users.slug,
+    autoLogin: false,
     importMap: {
       baseDir: path.resolve(dirname),
     },
