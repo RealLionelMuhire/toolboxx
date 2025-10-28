@@ -191,7 +191,8 @@ export const ImageUpload = ({
 
       // Handle completion
       xhr.addEventListener("load", async () => {
-        if (xhr.status === 200) {
+        // Accept both 200 (OK) and 201 (Created) as success
+        if (xhr.status === 200 || xhr.status === 201) {
           try {
             const contentType = xhr.getResponseHeader("content-type");
             
