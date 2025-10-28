@@ -57,13 +57,82 @@ export const ImageUpload = ({
     }
   }, [value]);
 
+  // Resize image to max dimensions while maintaining aspect ratio
+  const resizeImage = async (file: File, maxWidth = 1920, maxHeight = 1920, quality = 0.9): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = (e) => {
+        const img = new window.Image();
+        
+        img.onload = () => {
+          // Calculate new dimensions
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > maxWidth || height > maxHeight) {
+            const aspectRatio = width / height;
+            
+            if (width > height) {
+              width = maxWidth;
+              height = width / aspectRatio;
+            } else {
+              height = maxHeight;
+              width = height * aspectRatio;
+            }
+          }
+          
+          // Create canvas and resize
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Failed to get canvas context'));
+            return;
+          }
+          
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // Convert to blob
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Failed to create blob'));
+                return;
+              }
+              
+              // Create new file from blob
+              const resizedFile = new File([blob], file.name, {
+                type: file.type,
+                lastModified: Date.now(),
+              });
+              
+              console.log(`Image resized: ${(file.size / 1024).toFixed(0)}KB → ${(resizedFile.size / 1024).toFixed(0)}KB`);
+              resolve(resizedFile);
+            },
+            file.type,
+            quality
+          );
+        };
+        
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Upload files to Payload CMS
   const uploadFiles = async (files: File[]) => {
     setIsUploading(true);
     const newMediaIds: string[] = [];
 
     try {
-      for (const file of files) {
+      for (let file of files) {
         // Check file type
         const isVideo = file.type.startsWith("video/");
         const isImage = file.type.startsWith("image/");
@@ -85,6 +154,22 @@ export const ImageUpload = ({
         if (value.length + newMediaIds.length >= maxImages) {
           toast.error(`Maximum ${maxImages} files allowed`);
           break;
+        }
+
+        // Resize image before uploading (skip videos)
+        if (isImage) {
+          try {
+            const originalSize = file.size;
+            file = await resizeImage(file, 1920, 1920, 0.9);
+            
+            if (originalSize > file.size) {
+              toast.info(`${file.name} optimized: ${(originalSize / 1024).toFixed(0)}KB → ${(file.size / 1024).toFixed(0)}KB`);
+            }
+          } catch (error) {
+            console.error('Image resize error:', error);
+            // If resize fails, continue with original file
+            toast.warning(`Could not optimize ${file.name}, uploading original`);
+          }
         }
 
         // Create form data
