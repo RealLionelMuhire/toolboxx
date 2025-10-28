@@ -430,7 +430,7 @@ export const ImageUpload = ({
       <div>
         <h3 className="text-xl font-semibold mb-2">Photos & Video</h3>
         <p className="text-sm text-gray-600 mb-1">
-          You can add up to 24 photos and a 1-minute video. Buyers want to see all details and angles.
+          You can add up to 24 photos and a 1-minute video. <strong>The first photo will be your cover image.</strong> Buyers want to see all details and angles.
         </p>
         <a href="#" className="text-sm text-blue-600 hover:underline">
           Tips for taking pro photos
@@ -471,6 +471,7 @@ export const ImageUpload = ({
             
             <div className="space-y-2">
               <p className="font-medium text-lg">Drag and drop files</p>
+              <p className="text-sm text-gray-500">First image will be your cover photo</p>
               {isUploading && <p className="text-sm text-gray-500">Uploading...</p>}
             </div>
 
@@ -527,8 +528,8 @@ export const ImageUpload = ({
                   {/* Main badge for first image */}
                   {index === 0 && (
                     <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
-                      <span className="px-3 py-1 bg-gray-700 text-white text-xs font-medium rounded-full">
-                        Main
+                      <span className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-lg">
+                        Cover Photo
                       </span>
                     </div>
                   )}
