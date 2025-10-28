@@ -19,6 +19,13 @@ interface UploadedFile {
   fileType: "image" | "video";
 }
 
+interface UploadProgress {
+  fileName: string;
+  progress: number;
+  status: 'uploading' | 'processing' | 'complete' | 'error';
+  error?: string;
+}
+
 export const ImageUpload = ({
   value = [],
   onChange,
@@ -28,6 +35,7 @@ export const ImageUpload = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mobileInputRef = useRef<HTMLInputElement>(null);
@@ -126,6 +134,116 @@ export const ImageUpload = ({
     });
   };
 
+  // Upload a single file with progress tracking using XHR
+  const uploadSingleFile = (file: File, fileName: string): Promise<string | null> => {
+    return new Promise((resolve) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("alt", fileName.replace(/\.[^/.]+$/, "")); // Remove extension
+
+      const xhr = new XMLHttpRequest();
+
+      // Track upload progress
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = (e.loaded / e.total) * 100;
+          setUploadProgress(prev => 
+            prev.map(p => 
+              p.fileName === fileName 
+                ? { ...p, progress: percentComplete, status: 'uploading' }
+                : p
+            )
+          );
+        }
+      });
+
+      // Handle completion
+      xhr.addEventListener("load", async () => {
+        if (xhr.status === 200) {
+          try {
+            const contentType = xhr.getResponseHeader("content-type");
+            
+            if (contentType && contentType.includes("application/json")) {
+              const data = JSON.parse(xhr.responseText);
+              
+              // Mark as processing (server-side processing complete)
+              setUploadProgress(prev => 
+                prev.map(p => 
+                  p.fileName === fileName 
+                    ? { ...p, progress: 100, status: 'complete' }
+                    : p
+                )
+              );
+
+              toast.success(`${fileName} uploaded successfully`);
+              resolve(data.doc.id);
+            } else {
+              console.error("Non-JSON response from /api/media:", xhr.responseText);
+              setUploadProgress(prev => 
+                prev.map(p => 
+                  p.fileName === fileName 
+                    ? { ...p, status: 'error', error: `Upload failed: ${xhr.status}` }
+                    : p
+                )
+              );
+              toast.error(`Upload failed: ${xhr.status} ${xhr.statusText}`);
+              resolve(null);
+            }
+          } catch (error) {
+            console.error("Upload parse error:", error);
+            setUploadProgress(prev => 
+              prev.map(p => 
+                p.fileName === fileName 
+                  ? { ...p, status: 'error', error: 'Failed to parse response' }
+                  : p
+              )
+            );
+            toast.error(`Failed to upload ${fileName}`);
+            resolve(null);
+          }
+        } else {
+          setUploadProgress(prev => 
+            prev.map(p => 
+              p.fileName === fileName 
+                ? { ...p, status: 'error', error: `HTTP ${xhr.status}` }
+                : p
+            )
+          );
+          toast.error(`Failed to upload ${fileName}: ${xhr.status}`);
+          resolve(null);
+        }
+      });
+
+      // Handle errors
+      xhr.addEventListener("error", () => {
+        setUploadProgress(prev => 
+          prev.map(p => 
+            p.fileName === fileName 
+              ? { ...p, status: 'error', error: 'Network error' }
+              : p
+          )
+        );
+        toast.error(`Network error uploading ${fileName}`);
+        resolve(null);
+      });
+
+      xhr.addEventListener("abort", () => {
+        setUploadProgress(prev => 
+          prev.map(p => 
+            p.fileName === fileName 
+              ? { ...p, status: 'error', error: 'Upload cancelled' }
+              : p
+          )
+        );
+        resolve(null);
+      });
+
+      // Send the request
+      xhr.open("POST", "/api/media");
+      xhr.send(formData);
+    });
+  };
+
   // Upload files to Payload CMS
   const uploadFiles = async (files: File[]) => {
     setIsUploading(true);
@@ -156,57 +274,61 @@ export const ImageUpload = ({
           break;
         }
 
+        let processedFile = file;
+        const originalFileName = file.name;
+
         // Resize image before uploading (skip videos)
         if (isImage) {
           try {
+            // Add processing status
+            setUploadProgress(prev => [...prev, {
+              fileName: originalFileName,
+              progress: 0,
+              status: 'processing'
+            }]);
+
             const originalSize = file.size;
-            file = await resizeImage(file, 1920, 1920, 0.9);
+            processedFile = await resizeImage(file, 1920, 1920, 0.9);
             
-            if (originalSize > file.size) {
-              toast.info(`${file.name} optimized: ${(originalSize / 1024).toFixed(0)}KB → ${(file.size / 1024).toFixed(0)}KB`);
+            if (originalSize > processedFile.size) {
+              toast.info(`${originalFileName} optimized: ${(originalSize / 1024).toFixed(0)}KB → ${(processedFile.size / 1024).toFixed(0)}KB`);
             }
+
+            // Update to uploading status
+            setUploadProgress(prev => 
+              prev.map(p => 
+                p.fileName === originalFileName 
+                  ? { ...p, status: 'uploading' }
+                  : p
+              )
+            );
           } catch (error) {
             console.error('Image resize error:', error);
             // If resize fails, continue with original file
-            toast.warning(`Could not optimize ${file.name}, uploading original`);
+            toast.warning(`Could not optimize ${originalFileName}, uploading original`);
+            
+            // Add to progress with uploading status
+            setUploadProgress(prev => [...prev, {
+              fileName: originalFileName,
+              progress: 0,
+              status: 'uploading'
+            }]);
           }
-        }
-
-        // Create form data
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("alt", file.name.replace(/\.[^/.]+$/, "")); // Remove extension
-
-        // Upload to Payload CMS
-        const response = await fetch("/api/media", {
-          method: "POST",
-          body: formData,
-        });
-
-        // Handle non-JSON responses (e.g., error pages from Vercel)
-        let data;
-        const contentType = response.headers.get("content-type");
-        
-        if (contentType && contentType.includes("application/json")) {
-          data = await response.json();
         } else {
-          // Not JSON - likely an error page or text response
-          const text = await response.text();
-          console.error("Non-JSON response from /api/media:", text);
-          toast.error(`Upload failed: ${response.status} ${response.statusText}`);
-          continue;
+          // Video - add to progress directly
+          setUploadProgress(prev => [...prev, {
+            fileName: originalFileName,
+            progress: 0,
+            status: 'uploading'
+          }]);
         }
 
-        if (!response.ok) {
-          const errorMsg = data.error || `Failed to upload ${file.name}`;
-          console.error("Upload error:", errorMsg, data);
-          toast.error(errorMsg);
-          continue;
-        }
-
-        newMediaIds.push(data.doc.id);
+        // Upload with progress tracking
+        const mediaId = await uploadSingleFile(processedFile, originalFileName);
         
-        toast.success(`${file.name} uploaded successfully`);
+        if (mediaId) {
+          newMediaIds.push(mediaId);
+        }
       }
 
       // Update the value with new media IDs
@@ -214,6 +336,11 @@ export const ImageUpload = ({
         const updatedValue = [...value, ...newMediaIds];
         onChange(updatedValue);
       }
+
+      // Clear progress after 2 seconds
+      setTimeout(() => {
+        setUploadProgress([]);
+      }, 2000);
       
     } catch (error: any) {
       console.error("Upload error:", error);
@@ -474,6 +601,63 @@ export const ImageUpload = ({
         onChange={handleFileSelect}
         className="hidden"
       />
+
+      {/* Upload Progress Indicators */}
+      {uploadProgress.length > 0 && (
+        <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm">
+          {uploadProgress.map((progress, index) => (
+            <div
+              key={`${progress.fileName}-${index}`}
+              className="bg-white rounded-lg shadow-lg border border-gray-200 p-4"
+            >
+              <div className="flex items-start gap-3">
+                {/* Icon based on status */}
+                <div className="flex-shrink-0 mt-1">
+                  {progress.status === 'processing' && (
+                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {progress.status === 'uploading' && (
+                    <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                  )}
+                  {progress.status === 'complete' && (
+                    <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                  {progress.status === 'error' && (
+                    <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+
+                {/* Progress info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {progress.fileName}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {progress.status === 'processing' && 'Optimizing...'}
+                    {progress.status === 'uploading' && `Uploading ${Math.round(progress.progress)}%`}
+                    {progress.status === 'complete' && 'Upload complete'}
+                    {progress.status === 'error' && (progress.error || 'Upload failed')}
+                  </p>
+
+                  {/* Progress bar for uploading */}
+                  {progress.status === 'uploading' && (
+                    <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
+                      <div
+                        className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
+                        style={{ width: `${progress.progress}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
