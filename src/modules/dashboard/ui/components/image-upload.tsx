@@ -28,7 +28,9 @@ export const ImageUpload = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mobileInputRef = useRef<HTMLInputElement>(null);
 
   // Load uploaded files from media IDs
   const loadUploadedFiles = useCallback(async () => {
@@ -170,6 +172,19 @@ export const ImageUpload = ({
     loadUploadedFiles();
   }, [value, loadUploadedFiles]);
 
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        window.innerWidth < 768; // Also consider screen width
+      setIsMobile(isMobileDevice);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // Create slots array (uploaded files + empty slots up to visible limit)
   const visibleSlots = 8; // Show 8 slots initially
   const slots = [...uploadedFiles];
@@ -230,22 +245,27 @@ export const ImageUpload = ({
             </div>
 
             <div className="flex flex-col gap-2 w-full max-w-xs">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading}
-                className="w-full px-6 py-3 border border-gray-300 rounded-full font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Upload from computer
-              </button>
-              
-              <button
-                type="button"
-                className="w-full px-6 py-3 border border-gray-300 rounded-full font-medium hover:bg-gray-50 transition-colors"
-                disabled
-              >
-                Upload from mobile
-              </button>
+              {isMobile ? (
+                /* Mobile: Show camera/gallery button */
+                <button
+                  type="button"
+                  onClick={() => mobileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="w-full px-6 py-3 border border-gray-300 rounded-full font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Upload from mobile
+                </button>
+              ) : (
+                /* Desktop: Show computer upload button */
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="w-full px-6 py-3 border border-gray-300 rounded-full font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Upload from computer
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -306,7 +326,13 @@ export const ImageUpload = ({
                 /* Empty slot with Add button */
                 <button
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => {
+                    if (isMobile) {
+                      mobileInputRef.current?.click();
+                    } else {
+                      fileInputRef.current?.click();
+                    }
+                  }}
                   disabled={isUploading || uploadedFiles.length >= maxImages}
                   className="w-full h-full flex flex-col items-center justify-center gap-2 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   onDragOver={handleDragOver}
@@ -324,12 +350,24 @@ export const ImageUpload = ({
         </div>
       )}
 
-      {/* Hidden file input */}
+      {/* Hidden file inputs */}
+      {/* Desktop/Computer file input */}
       <input
         ref={fileInputRef}
         type="file"
         multiple
         accept="image/*,video/*"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
+      
+      {/* Mobile file input with camera capture */}
+      <input
+        ref={mobileInputRef}
+        type="file"
+        multiple
+        accept="image/*,video/*"
+        capture="environment" // This enables camera on mobile
         onChange={handleFileSelect}
         className="hidden"
       />
