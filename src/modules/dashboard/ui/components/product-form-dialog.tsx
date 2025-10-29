@@ -178,6 +178,8 @@ export const ProductFormDialog = ({
   }));
 
   const onSubmit = (data: ProductFormData) => {
+    console.log('[ProductFormDialog] Form data before processing:', data);
+    
     // Automatically set the first gallery image as the main product image
     if (data.gallery && data.gallery.length > 0) {
       data.image = data.gallery[0]!;
@@ -190,10 +192,18 @@ export const ProductFormDialog = ({
       return;
     }
 
+    // Ensure category is a string ID (not an object)
+    const sanitizedData = {
+      ...data,
+      category: typeof data.category === 'string' ? data.category : (data.category as any)?.id || data.category,
+    };
+
+    console.log('[ProductFormDialog] Sanitized data:', sanitizedData);
+
     if (mode === "create") {
-      createMutation.mutate(data);
+      createMutation.mutate(sanitizedData);
     } else if (mode === "edit" && productId) {
-      updateMutation.mutate({ id: productId, ...data });
+      updateMutation.mutate({ id: productId, ...sanitizedData });
     }
   };
 

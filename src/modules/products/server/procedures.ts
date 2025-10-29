@@ -482,6 +482,8 @@ export const productsRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       const { id, ...updateData } = input;
 
+      console.log('[updateProduct] Received input:', { id, updateData });
+
       // Get current user's tenant
       const userData = await ctx.db.findByID({
         collection: "users",
@@ -518,11 +520,19 @@ export const productsRouter = createTRPCRouter({
 
       // Transform gallery array to Payload format if provided
       const finalUpdateData: any = { ...updateData };
+      
       if (updateData.gallery && Array.isArray(updateData.gallery)) {
         finalUpdateData.gallery = updateData.gallery.map((mediaId: string) => ({
           media: mediaId,
         }));
       }
+
+      // Ensure category is a string ID (safety check)
+      if (finalUpdateData.category && typeof finalUpdateData.category !== 'string') {
+        finalUpdateData.category = (finalUpdateData.category as any).id || finalUpdateData.category;
+      }
+
+      console.log('[updateProduct] Final data to update:', finalUpdateData);
 
       // Update the product
       const product = await ctx.db.update({
