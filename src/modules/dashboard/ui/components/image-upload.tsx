@@ -47,6 +47,8 @@ export const ImageUpload = ({
       return;
     }
 
+    console.log('[ImageUpload] Loading files for IDs:', value);
+
     try {
       const response = await fetch(`/api/media?ids=${value.join(",")}`);
       const data = await response.json();
@@ -58,6 +60,7 @@ export const ImageUpload = ({
           alt: doc.alt || "",
           fileType: doc.mimeType?.startsWith("video/") ? "video" : "image",
         }));
+        console.log('[ImageUpload] Loaded files:', files.map((f: any) => ({ id: f.id, url: f.url })));
         setUploadedFiles(files);
       }
     } catch (error) {
@@ -379,9 +382,12 @@ export const ImageUpload = ({
         }
       }
 
-      // Update the value with new media IDs (prepend to show newest first)
+      // Update the value with new media IDs (append to end to maintain grid stability)
       if (newMediaIds.length > 0) {
-        const updatedValue = [...newMediaIds, ...value];
+        console.log('[ImageUpload] Before update - existing value:', value);
+        console.log('[ImageUpload] New media IDs to add:', newMediaIds);
+        const updatedValue = [...value, ...newMediaIds];
+        console.log('[ImageUpload] After update - new value:', updatedValue);
         onChange(updatedValue);
       }
 
@@ -447,6 +453,7 @@ export const ImageUpload = ({
 
   // Load files when value changes
   useEffect(() => {
+    console.log('[ImageUpload] Value prop changed:', value);
     loadUploadedFiles();
   }, [value, loadUploadedFiles]);
 
@@ -463,10 +470,9 @@ export const ImageUpload = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Create slots array (uploaded files + empty slots up to visible limit)
-  const visibleSlots = 8; // Show 8 slots initially
+  // Create slots array - always show all 24 slots (uploaded + empty)
   const slots = [...uploadedFiles];
-  const emptySlots = Math.min(visibleSlots - slots.length, maxImages - slots.length);
+  const emptySlots = maxImages - slots.length;
   
   for (let i = 0; i < emptySlots; i++) {
     slots.push(null as any);
@@ -549,13 +555,21 @@ export const ImageUpload = ({
           </div>
         </div>
       ) : (
-        /* Grid layout when images exist */
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {slots.map((file, index) => (
-            <div 
-              key={file?.id || `empty-${index}`} 
-              className="relative aspect-square border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-50 hover:border-gray-400 transition-colors"
-            >
+        /* Grid layout when images exist - Show all 24 slots with scroll */
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-white">
+          <div className="max-h-[200px] md:max-h-[400px] overflow-y-auto pr-2">
+            <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+              {slots.map((file, index) => (
+              <div 
+                key={file?.id || `empty-${index}`} 
+                className={`
+                  relative border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-50 hover:border-gray-400 transition-colors
+                  ${index === 0 
+                    ? 'col-span-2 row-span-2 aspect-square md:col-span-2 md:row-span-2' // Cover photo: 2x2 grid (4 slots)
+                    : 'col-span-1 row-span-1 aspect-square' // Other photos: 1x1 grid
+                  }
+                `}
+              >
               {file ? (
                 <>
                   {/* Uploaded file */}
@@ -565,7 +579,10 @@ export const ImageUpload = ({
                       alt={file.alt}
                       fill
                       className="object-cover"
-                      sizes="(max-width: 768px) 50vw, 200px"
+                      sizes={index === 0 
+                        ? "(max-width: 768px) 100vw, 400px" // Larger size for cover
+                        : "(max-width: 768px) 50vw, 200px" // Smaller for others
+                      }
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full bg-gray-200">
@@ -573,9 +590,9 @@ export const ImageUpload = ({
                     </div>
                   )}
                   
-                  {/* Main badge for first image */}
+                  {/* Cover badge for first image */}
                   {index === 0 && (
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10">
                       <span className="px-3 py-1 bg-blue-600 text-white text-xs font-semibold rounded-full shadow-lg">
                         Cover Photo
                       </span>
@@ -586,7 +603,7 @@ export const ImageUpload = ({
                   <button
                     type="button"
                     onClick={() => handleRemove(file.id)}
-                    className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
+                    className="absolute top-2 right-2 p-1 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors z-10"
                     aria-label="Remove image"
                   >
                     <X className="w-4 h-4 text-gray-700" />
@@ -594,7 +611,7 @@ export const ImageUpload = ({
 
                   {/* Video indicator */}
                   {file.fileType === "video" && (
-                    <div className="absolute top-2 left-2">
+                    <div className="absolute top-2 left-2 z-10">
                       <span className="px-2 py-1 bg-black/70 text-white text-xs rounded">
                         Video
                       </span>
@@ -619,13 +636,15 @@ export const ImageUpload = ({
                   onDrop={handleDrop}
                 >
                   <div className={`p-3 rounded-full ${isDragging ? 'bg-blue-100' : 'bg-gray-200'}`}>
-                    <Plus className="w-6 h-6 text-gray-600" />
+                    <Plus className={`${index === 0 ? 'w-8 h-8' : 'w-6 h-6'} text-gray-600`} />
                   </div>
-                  <span className="text-sm text-gray-600">Add</span>
+                  <span className="text-sm text-gray-600">{index === 0 ? 'Add Cover' : 'Add'}</span>
                 </button>
               )}
             </div>
           ))}
+        </div>
+          </div>
         </div>
       )}
 
