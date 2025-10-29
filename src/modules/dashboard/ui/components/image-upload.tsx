@@ -47,6 +47,8 @@ export const ImageUpload = ({
       return;
     }
 
+    console.log('[ImageUpload] Loading files for IDs:', value);
+
     try {
       const response = await fetch(`/api/media?ids=${value.join(",")}`);
       const data = await response.json();
@@ -58,6 +60,7 @@ export const ImageUpload = ({
           alt: doc.alt || "",
           fileType: doc.mimeType?.startsWith("video/") ? "video" : "image",
         }));
+        console.log('[ImageUpload] Loaded files:', files.map((f: any) => ({ id: f.id, url: f.url })));
         setUploadedFiles(files);
       }
     } catch (error) {
@@ -378,9 +381,12 @@ export const ImageUpload = ({
         }
       }
 
-      // Update the value with new media IDs (prepend to show newest first)
+      // Update the value with new media IDs (append to end to maintain grid stability)
       if (newMediaIds.length > 0) {
-        const updatedValue = [...newMediaIds, ...value];
+        console.log('[ImageUpload] Before update - existing value:', value);
+        console.log('[ImageUpload] New media IDs to add:', newMediaIds);
+        const updatedValue = [...value, ...newMediaIds];
+        console.log('[ImageUpload] After update - new value:', updatedValue);
         onChange(updatedValue);
       }
 
@@ -446,6 +452,7 @@ export const ImageUpload = ({
 
   // Load files when value changes
   useEffect(() => {
+    console.log('[ImageUpload] Value prop changed:', value);
     loadUploadedFiles();
   }, [value, loadUploadedFiles]);
 
@@ -462,10 +469,9 @@ export const ImageUpload = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Create slots array (uploaded files + empty slots up to visible limit)
-  const visibleSlots = 8; // Show 8 slots initially
+  // Create slots array - always show all 24 slots (uploaded + empty)
   const slots = [...uploadedFiles];
-  const emptySlots = Math.min(visibleSlots - slots.length, maxImages - slots.length);
+  const emptySlots = maxImages - slots.length;
   
   for (let i = 0; i < emptySlots; i++) {
     slots.push(null as any);
@@ -548,19 +554,21 @@ export const ImageUpload = ({
           </div>
         </div>
       ) : (
-        /* Grid layout when images exist - First image larger (cover photo) */
-        <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
-          {slots.map((file, index) => (
-            <div 
-              key={file?.id || `empty-${index}`} 
-              className={`
-                relative border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-50 hover:border-gray-400 transition-colors
-                ${index === 0 
-                  ? 'col-span-2 row-span-2 aspect-square md:col-span-2 md:row-span-2' // Cover photo: 2x2 grid (4 slots)
-                  : 'col-span-1 row-span-1 aspect-square' // Other photos: 1x1 grid
-                }
-              `}
-            >
+        /* Grid layout when images exist - Show all 24 slots with scroll */
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-white">
+          <div className="max-h-[200px] md:max-h-[400px] overflow-y-auto pr-2">
+            <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+              {slots.map((file, index) => (
+              <div 
+                key={file?.id || `empty-${index}`} 
+                className={`
+                  relative border-2 border-gray-300 rounded-lg overflow-hidden bg-gray-50 hover:border-gray-400 transition-colors
+                  ${index === 0 
+                    ? 'col-span-2 row-span-2 aspect-square md:col-span-2 md:row-span-2' // Cover photo: 2x2 grid (4 slots)
+                    : 'col-span-1 row-span-1 aspect-square' // Other photos: 1x1 grid
+                  }
+                `}
+              >
               {file ? (
                 <>
                   {/* Uploaded file */}
@@ -634,6 +642,8 @@ export const ImageUpload = ({
               )}
             </div>
           ))}
+        </div>
+          </div>
         </div>
       )}
 
