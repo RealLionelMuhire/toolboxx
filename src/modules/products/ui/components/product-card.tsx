@@ -33,24 +33,55 @@ export const ProductCard = ({
 }: ProductCardProps) => {
   const router = useRouter();
   
+  console.log('[ProductCard] Rendering card:', { id, name, tenantSlug });
+  
   // Generate URLs consistently for server/client
   const productUrl = `/tenants/${tenantSlug}/products/${id}`;
   const tenantUrl = `/tenants/${tenantSlug}`;
+  
+  console.log('[ProductCard] Generated URLs:', { productUrl, tenantUrl });
 
   const handleCardClick = (e: React.MouseEvent) => {
+    console.log('[ProductCard] Card clicked');
+    console.log('[ProductCard] Product ID:', id);
+    console.log('[ProductCard] Product URL:', productUrl);
+    console.log('[ProductCard] Event target:', e.target);
+    console.log('[ProductCard] Current target:', e.currentTarget);
+    
     // Only navigate if not clicking on interactive elements
     const target = e.target as HTMLElement;
-    if (target.closest('button')) {
+    const closestButton = target.closest('button');
+    
+    console.log('[ProductCard] Closest button:', closestButton);
+    
+    if (closestButton) {
+      console.log('[ProductCard] Click on button detected - skipping navigation');
       return; // Let button handle its own click
     }
+    
+    console.log('[ProductCard] Navigating to:', productUrl);
     e.preventDefault();
-    router.push(productUrl);
+    
+    try {
+      router.push(productUrl);
+      console.log('[ProductCard] router.push() called successfully');
+    } catch (error) {
+      console.error('[ProductCard] router.push() error:', error);
+    }
   };
 
   const handleTenantClick = (e: React.MouseEvent) => {
+    console.log('[ProductCard] Tenant button clicked');
+    console.log('[ProductCard] Tenant URL:', tenantUrl);
     e.preventDefault();
     e.stopPropagation();
-    router.push(tenantUrl);
+    
+    try {
+      router.push(tenantUrl);
+      console.log('[ProductCard] router.push() called for tenant');
+    } catch (error) {
+      console.error('[ProductCard] Tenant router.push() error:', error);
+    }
   };
 
   // Prepare images for carousel
