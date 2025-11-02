@@ -53,7 +53,16 @@ export const ImageUpload = ({
     console.log('[ImageUpload] Loading files for IDs:', value);
 
     try {
-      const response = await fetch(`/api/media?ids=${value.join(",")}`);
+      // Add cache busting and proper cache control headers
+      const response = await fetch(
+        `/api/media?ids=${value.join(",")}&t=${Date.now()}`, // Cache buster
+        {
+          cache: 'no-store', // Disable browser cache
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+          },
+        }
+      );
       const data = await response.json();
       
       if (data.docs) {
@@ -63,8 +72,22 @@ export const ImageUpload = ({
           alt: doc.alt || "",
           fileType: doc.mimeType?.startsWith("video/") ? "video" : "image",
         }));
-        console.log('[ImageUpload] Loaded files:', files.map((f: any) => ({ id: f.id, url: f.url })));
-        setUploadedFiles(files);
+        
+        // Update state - sort files to match the order of value array
+        const sortedFiles = value
+          .map(id => files.find((f: any) => f.id === id))
+          .filter(Boolean); // Remove any undefined (shouldn't happen)
+        
+        console.log('[ImageUpload] Loaded files:', sortedFiles.map((f: any) => ({ id: f.id, url: f.url })));
+        
+        // Verify we got all expected files
+        if (sortedFiles.length === value.length) {
+          setUploadedFiles(sortedFiles as UploadedFile[]);
+        } else {
+          console.warn('[ImageUpload] Missing files in response. Expected:', value.length, 'Got:', sortedFiles.length);
+          // Still update with what we got - better than showing nothing
+          setUploadedFiles(sortedFiles as UploadedFile[]);
+        }
       }
     } catch (error) {
       console.error("Failed to load uploaded files:", error);
@@ -453,23 +476,36 @@ export const ImageUpload = ({
     try {
       console.log('[ImageUpload] Removing media ID:', idToRemove);
       
+      // Optimistic update (immediate visual feedback)
+      const previousFiles = uploadedFiles;
+      const previousValue = value;
+      
+      setUploadedFiles(prev => prev.filter(file => file.id !== idToRemove));
+      
+      // Update parent state immediately
+      const updatedValue = value.filter((id) => id !== idToRemove);
+      onChange(updatedValue);
+      
       // Show loading toast
       const loadingToast = toast.loading('Deleting image...');
       
-      // Delete from server
-      const response = await fetch(`/api/media?id=${idToRemove}`, {
-        method: 'DELETE',
-      });
+      // Delete from server with cache busting
+      const response = await fetch(
+        `/api/media?id=${idToRemove}&t=${Date.now()}`, // Cache buster
+        {
+          method: 'DELETE',
+          cache: 'no-store',
+        }
+      );
 
       if (!response.ok) {
+        // Rollback on error
+        setUploadedFiles(previousFiles);
+        onChange(previousValue);
         throw new Error('Failed to delete media from server');
       }
 
       console.log('[ImageUpload] Successfully deleted from server:', idToRemove);
-      
-      // Remove from local state
-      const updatedValue = value.filter((id) => id !== idToRemove);
-      onChange(updatedValue);
       
       // Update toast
       toast.success('Image deleted successfully', { id: loadingToast });
@@ -507,7 +543,7 @@ export const ImageUpload = ({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-1.5">
       {/* Header section */}
       <div>
         <h3 className="text-xl font-semibold mb-2">Photos & Video</h3>
@@ -584,9 +620,9 @@ export const ImageUpload = ({
         </div>
       ) : (
         /* Grid layout when images exist - Show all 24 slots with scroll */
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-white">
-          <div className="max-h-[200px] md:max-h-[400px] overflow-y-auto pr-2">
-            <div className="grid grid-cols-4 md:grid-cols-6 gap-3">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-1.5 bg-white">
+          <div className="max-h-[200px] md:max-h-[400px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-4 md:grid-cols-6 gap-1">
               {slots.map((file, index) => (
               <div 
                 key={file?.id || `empty-${index}`} 
