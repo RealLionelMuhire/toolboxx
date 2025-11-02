@@ -489,12 +489,16 @@ export const ImageUpload = ({
       // Show loading toast
       const loadingToast = toast.loading('Deleting image...');
       
-      // Delete from server with cache busting
+      // Delete from server - send ID in both query param and body for compatibility
       const response = await fetch(
-        `/api/media?id=${idToRemove}&t=${Date.now()}`, // Cache buster
+        `/api/media?id=${idToRemove}`,
         {
           method: 'DELETE',
           cache: 'no-store',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id: idToRemove }),
         }
       );
 
