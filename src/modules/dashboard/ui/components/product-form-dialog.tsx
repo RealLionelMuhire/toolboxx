@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import dynamic from "next/dynamic";
 
 import { useTRPC } from "@/trpc/client";
 import {
@@ -27,7 +28,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ImageUpload } from "./image-upload";
+
+// Dynamic import with ssr: false to prevent server-side rendering issues
+const ImageUpload = dynamic(() => import("./image-upload").then(mod => ({ default: mod.ImageUpload })), {
+  ssr: false,
+  loading: () => <div className="h-40 flex items-center justify-center border rounded-md">Loading...</div>
+});
 
 interface ProductFormData {
   name: string;

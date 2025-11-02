@@ -1,5 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Ensure proper output for Railway deployment
+  output: 'standalone',
+  // Ensure client components are properly bundled
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '100mb',
+    },
+    // Optimize package imports to reduce bundle size
+    optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react'],
+  },
   images: {
     remotePatterns: [
       {
@@ -41,12 +51,6 @@ const nextConfig = {
         hostname: 'localhost',
       },
     ],
-  },
-  // Allow larger request body sizes for file uploads
-  experimental: {
-    serverActions: {
-      bodySizeLimit: '100mb',
-    },
   },
 };
 

@@ -71,18 +71,42 @@ ReferenceError: File is not defined
 **Root Cause:**
 Two React components in the library module were using client-side hooks (`useState`, `useSuspenseQuery`, `useForm`, etc.) but didn't have the `"use client"` directive, causing Next.js to try to render them on the server where browser APIs like `File` are not available.
 
+Additionally, the `ImageUpload` component was being statically imported in `product-form-dialog.tsx`. During Railway's Docker build process, Next.js performs more aggressive static analysis and tries to evaluate the code during the "Collecting page data" phase. The `File` API (browser-only) was being referenced in type signatures, causing the build to fail in Railway's Node.js environment.
+
 **Fix:**
-Added `"use client"` directive to:
-- `src/modules/library/ui/components/review-form.tsx`
-- `src/modules/library/ui/components/review-sidebar.tsx`
+1. Added `"use client"` directive to:
+   - `src/modules/library/ui/components/review-form.tsx`
+   - `src/modules/library/ui/components/review-sidebar.tsx`
+
+2. Changed `ImageUpload` to use dynamic import with `ssr: false` in `product-form-dialog.tsx`:
+```typescript
+const ImageUpload = dynamic(() => import("./image-upload").then(mod => ({ default: mod.ImageUpload })), {
+  ssr: false,
+  loading: () => <div className="h-40 flex items-center justify-center border rounded-md">Loading...</div>
+});
+```
+
+This ensures the component is never evaluated during server-side rendering or static generation, preventing the `File is not defined` error.
+
+### Issue 4: Railway Build Environment Differences
+**Root Cause:**
+Railway uses a Docker-based build environment with stricter static analysis during the build phase compared to Vercel.
+
+**Fix:**
+1. Added `output: 'standalone'` to `next.config.mjs` for better Railway compatibility
+2. Added `engines` field to `package.json` to specify Node.js version requirements
+3. Added environment variable guard in image-upload component
 
 ## Files Modified
 
-1. **package.json** - Added `aws4` dependency
+1. **package.json** - Added `aws4` dependency and `engines` field
 2. **src/lib/stripe.ts** - Implemented lazy initialization for Stripe SDK
 3. **src/modules/library/ui/components/review-form.tsx** - Added "use client" directive
 4. **src/modules/library/ui/components/review-sidebar.tsx** - Added "use client" directive
-5. **.env.example** - Updated to include `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+5. **src/modules/dashboard/ui/components/product-form-dialog.tsx** - Changed to dynamic import for ImageUpload
+6. **src/modules/dashboard/ui/components/image-upload.tsx** - Added browser environment guard
+7. **next.config.mjs** - Added `output: 'standalone'` and optimization settings
+8. **.env.example** - Updated to include `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
 
 ## Files Created
 

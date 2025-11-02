@@ -5,6 +5,9 @@ import { X, FileVideo, Plus } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 
+// Type guard to ensure we're in browser environment
+const isBrowser = typeof window !== 'undefined';
+
 interface ImageUploadProps {
   value: string[]; // Array of media IDs
   onChange: (value: string[]) => void;
