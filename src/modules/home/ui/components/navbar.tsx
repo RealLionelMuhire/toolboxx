@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon } from "lucide-react";
+import { MenuIcon, LogOut } from "lucide-react";
 import { Poppins } from "next/font/google";
-import { usePathname } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { usePathname, useRouter } from "next/navigation";
+import { useQuery, useMutation } from "@tanstack/react-query";
 
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 import { NavbarSidebar } from "./navbar-sidebar";
 
@@ -72,10 +73,26 @@ const tenantNavbarItems = [
 
 export const Navbar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const trpc = useTRPC();
   const session = useQuery(trpc.auth.session.queryOptions());
+  
+  const logout = useMutation(trpc.auth.logout.mutationOptions({
+    onSuccess: () => {
+      toast.success("Logged out successfully");
+      router.push("/");
+      router.refresh();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to logout");
+    },
+  }));
+
+  const handleLogout = () => {
+    logout.mutate();
+  };
   
   // Show tenant items if user is a tenant, customer items if logged in, otherwise show public items
   const navbarItems = session.data?.user 
@@ -96,6 +113,9 @@ export const Navbar = () => {
         items={navbarItems}
         open={isSidebarOpen}
         onOpenChange={setIsSidebarOpen}
+        isLoggedIn={!!session.data?.user}
+        onLogout={handleLogout}
+        isLoggingOut={logout.isPending}
       />
 
       <div className="items-center gap-4 hidden lg:flex">
@@ -111,7 +131,7 @@ export const Navbar = () => {
       </div>
 
       {session.data?.user ? (
-        <div className="hidden lg:flex">
+        <div className="hidden lg:flex items-center">
           <Button
             asChild
             className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-lg"
@@ -122,6 +142,14 @@ export const Navbar = () => {
             >
               {session.data.user.roles?.includes('super-admin') ? "Admin Panel" : session.data.user.roles?.includes('tenant') ? "Dashboard" : "My Account"}
             </Link>
+          </Button>
+          <Button
+            onClick={handleLogout}
+            disabled={logout.isPending}
+            className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-red-600 text-white hover:bg-red-700 transition-colors text-lg flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            {logout.isPending ? "Logging out..." : "Logout"}
           </Button>
         </div>
       ) : (

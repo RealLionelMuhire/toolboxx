@@ -3,7 +3,7 @@ import { headers as getHeaders } from "next/headers";
 
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 
-import { generateAuthCookie } from "../utils";
+import { generateAuthCookie, clearAuthCookie } from "../utils";
 import { loginSchema, registerSchema } from "../schemas";
 
 export const authRouter = createTRPCRouter({
@@ -134,4 +134,9 @@ export const authRouter = createTRPCRouter({
 
       return data;
     }),
+  logout: baseProcedure.mutation(async ({ ctx }) => {
+    await clearAuthCookie(ctx.db.config.cookiePrefix);
+    
+    return { success: true };
+  }),
 });

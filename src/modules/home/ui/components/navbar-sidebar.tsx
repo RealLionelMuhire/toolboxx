@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LogOut } from "lucide-react";
 
 import {
   Sheet,
@@ -7,6 +8,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 
 interface NavbarItem {
   href: string;
@@ -17,13 +19,24 @@ interface Props {
   items: NavbarItem[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  isLoggedIn: boolean;
+  onLogout: () => void;
+  isLoggingOut: boolean;
 }
 
 export const NavbarSidebar = ({
   items,
   open,
   onOpenChange,
+  isLoggedIn,
+  onLogout,
+  isLoggingOut,
 }: Props) => {
+  const handleLogout = () => {
+    onLogout();
+    onOpenChange(false);
+  };
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -47,14 +60,34 @@ export const NavbarSidebar = ({
             </Link>
           ))}
           <div className="border-t">
-            <Link 
-              onClick={() => onOpenChange(false)} href="/sign-in" className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium">
-              Log in
-            </Link>
-            <Link 
-              onClick={() => onOpenChange(false)} href="/sign-up" className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium">
-              Start Supplying
-            </Link>
+            {isLoggedIn ? (
+              <Button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="w-full text-left p-4 hover:bg-red-600 bg-transparent hover:text-white flex items-center text-base font-medium gap-2 rounded-none justify-start text-red-600"
+                variant="ghost"
+              >
+                <LogOut className="h-4 w-4" />
+                {isLoggingOut ? "Logging out..." : "Logout"}
+              </Button>
+            ) : (
+              <>
+                <Link 
+                  onClick={() => onOpenChange(false)} 
+                  href="/sign-in" 
+                  className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
+                >
+                  Log in
+                </Link>
+                <Link 
+                  onClick={() => onOpenChange(false)} 
+                  href="/sign-up" 
+                  className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
+                >
+                  Start Supplying
+                </Link>
+              </>
+            )}
           </div>
         </ScrollArea>
       </SheetContent>
