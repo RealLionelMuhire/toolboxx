@@ -5,7 +5,7 @@ import { useState } from "react";
 import { MenuIcon, LogOut } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
@@ -78,10 +78,14 @@ export const Navbar = () => {
 
   const trpc = useTRPC();
   const session = useQuery(trpc.auth.session.queryOptions());
+  const queryClient = useQueryClient();
   
   const logout = useMutation(trpc.auth.logout.mutationOptions({
     onSuccess: () => {
       toast.success("Logged out successfully");
+      // Invalidate the session query so client UI updates immediately
+      queryClient.invalidateQueries(trpc.auth.session.queryFilter());
+      // Navigate to home and refresh any server-side data
       router.push("/");
       router.refresh();
     },
