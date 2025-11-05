@@ -102,7 +102,11 @@ export const ProductCard = ({
       </div>
       
       <div className="p-4 border-y flex flex-col gap-3 flex-1">
-        <h2 className="text-lg font-medium line-clamp-4 hover:text-gray-700">{name}</h2>
+        {/* Product Name with Stock Badge */}
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="text-lg font-medium line-clamp-4 hover:text-gray-700 flex-1">{name}</h2>
+          <StockStatusBadge stockStatus={stockStatus} quantity={stockStatus === "low_stock" ? quantity : undefined} />
+        </div>
         
         <button 
           type="button"
@@ -123,6 +127,7 @@ export const ProductCard = ({
           <p className="text-sm underline font-medium">{tenantSlug}</p>
         </button>
         
+        {/* Reviews */}
         {reviewCount > 0 && (
           <div className="flex items-center gap-1">
             <StarIcon className="size-3.5 fill-black" />
@@ -131,11 +136,6 @@ export const ProductCard = ({
             </p>
           </div>
         )}
-        
-        {/* Stock Status Badge */}
-        <div className="flex items-center gap-2">
-          <StockStatusBadge stockStatus={stockStatus} quantity={stockStatus === "low_stock" ? quantity : undefined} />
-        </div>
       </div>
       
       <div className="p-4">
@@ -151,11 +151,6 @@ export const ProductCard = ({
             </p>
           )}
         </div>
-        {quantity > 0 && (
-          <p className="text-xs text-muted-foreground mt-1">
-            {quantity} {unit}{quantity !== 1 ? "s" : ""} available
-          </p>
-        )}
       </div>
     </div>
   )

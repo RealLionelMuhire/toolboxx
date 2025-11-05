@@ -242,11 +242,36 @@ export const ProductFormDialog = ({
       return;
     }
 
-    // Ensure category is a string ID (not an object)
-    const sanitizedData = {
-      ...data,
+    // Sanitize data: handle optional numeric fields and category
+    const sanitizedData: any = {
+      name: data.name,
+      description: data.description,
+      price: data.price,
+      quantity: data.quantity,
+      unit: data.unit,
+      minOrderQuantity: data.minOrderQuantity || 1,
+      lowStockThreshold: data.lowStockThreshold || 10,
+      allowBackorder: data.allowBackorder || false,
       category: typeof data.category === 'string' ? data.category : (data.category as any)?.id || data.category,
+      image: data.image,
+      refundPolicy: data.refundPolicy,
+      isPrivate: data.isPrivate || false,
     };
+
+    // Only add maxOrderQuantity if it has a valid value
+    if (data.maxOrderQuantity && !isNaN(Number(data.maxOrderQuantity)) && Number(data.maxOrderQuantity) > 0) {
+      sanitizedData.maxOrderQuantity = Number(data.maxOrderQuantity);
+    }
+
+    // Only add cover if present
+    if (data.cover) {
+      sanitizedData.cover = data.cover;
+    }
+
+    // Only add gallery if present
+    if (data.gallery && data.gallery.length > 0) {
+      sanitizedData.gallery = data.gallery;
+    }
 
     console.log('[ProductFormDialog] Sanitized data:', sanitizedData);
 
@@ -279,6 +304,51 @@ export const ProductFormDialog = ({
           </div>
         ) : (
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* 1. Category */}
+            <div>
+              <Label htmlFor="category">Category *</Label>
+              <Select
+                value={watch("category")}
+                onValueChange={(value) => setValue("category", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.flatMap((cat) => [
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>,
+                    ...(cat.subcategories || []).map((sub) => (
+                      <SelectItem key={sub.id} value={sub.id} className="pl-6">
+                        ↳ {sub.name}
+                      </SelectItem>
+                    ))
+                  ])}
+                </SelectContent>
+              </Select>
+              {errors.category && (
+                <p className="text-sm text-red-600 mt-1">{errors.category.message}</p>
+              )}
+            </div>
+
+            {/* 2. Product Photos & Videos */}
+            <div>
+              <Label>Product Photos & Videos *</Label>
+              <ImageUpload
+                value={watch("gallery") || []}
+                onChange={(value) => setValue("gallery", value)}
+                maxImages={24}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Upload up to 24 images. First image will be used as the main product image.
+              </p>
+              {errors.gallery && (
+                <p className="text-sm text-red-600 mt-1">{errors.gallery.message as string}</p>
+              )}
+            </div>
+
+            {/* 3. Product Name */}
             <div>
               <Label htmlFor="name">Product Name *</Label>
               <Input
@@ -291,6 +361,7 @@ export const ProductFormDialog = ({
               )}
             </div>
 
+            {/* 4. Description */}
             <div>
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -301,6 +372,7 @@ export const ProductFormDialog = ({
               />
             </div>
 
+            {/* 5. Price */}
             <div>
               <Label htmlFor="price">Price (RWF) *</Label>
               <Input
@@ -319,6 +391,7 @@ export const ProductFormDialog = ({
               )}
             </div>
 
+            {/* 6. Quantity & Unit */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="quantity">Quantity Available *</Label>
@@ -370,17 +443,16 @@ export const ProductFormDialog = ({
               </div>
             </div>
 
+            {/* 7. Min/Max Order Quantities */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="minOrderQuantity">Minimum Order Quantity</Label>
                 <Input
                   id="minOrderQuantity"
                   type="number"
-                  {...register("minOrderQuantity", { 
-                    valueAsNumber: true,
-                    min: { value: 1, message: "Must be at least 1" }
-                  })}
+                  {...register("minOrderQuantity")}
                   placeholder="1"
+                  defaultValue={1}
                 />
                 {errors.minOrderQuantity && (
                   <p className="text-sm text-red-600 mt-1">{errors.minOrderQuantity.message}</p>
@@ -388,33 +460,32 @@ export const ProductFormDialog = ({
               </div>
 
               <div>
-                <Label htmlFor="maxOrderQuantity">Maximum Order Quantity</Label>
+                <Label htmlFor="maxOrderQuantity">Maximum Order Quantity (Optional)</Label>
                 <Input
                   id="maxOrderQuantity"
                   type="number"
-                  {...register("maxOrderQuantity", { 
-                    valueAsNumber: true,
-                    min: { value: 1, message: "Must be at least 1" }
-                  })}
+                  {...register("maxOrderQuantity")}
                   placeholder="No limit"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Leave empty for no limit
+                </p>
                 {errors.maxOrderQuantity && (
                   <p className="text-sm text-red-600 mt-1">{errors.maxOrderQuantity.message}</p>
                 )}
               </div>
             </div>
 
+            {/* 8. Stock Settings */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="lowStockThreshold">Low Stock Alert Threshold</Label>
                 <Input
                   id="lowStockThreshold"
                   type="number"
-                  {...register("lowStockThreshold", { 
-                    valueAsNumber: true,
-                    min: { value: 0, message: "Cannot be negative" }
-                  })}
+                  {...register("lowStockThreshold")}
                   placeholder="10"
+                  defaultValue={10}
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Alert when stock falls below this number
@@ -436,45 +507,7 @@ export const ProductFormDialog = ({
               </div>
             </div>
 
-            <div>
-              <Label htmlFor="category">Category *</Label>
-              <Select
-                value={watch("category")}
-                onValueChange={(value) => setValue("category", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.flatMap((cat) => [
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </SelectItem>,
-                    ...(cat.subcategories || []).map((sub) => (
-                      <SelectItem key={sub.id} value={sub.id} className="pl-6">
-                        ↳ {sub.name}
-                      </SelectItem>
-                    ))
-                  ])}
-                </SelectContent>
-              </Select>
-              {errors.category && (
-                <p className="text-sm text-red-600 mt-1">{errors.category.message}</p>
-              )}
-            </div>
-
-            <div>
-              <Label>Product Photos & Videos</Label>
-              <ImageUpload
-                value={watch("gallery") || []}
-                onChange={(value) => setValue("gallery", value)}
-                maxImages={24}
-              />
-              {errors.gallery && (
-                <p className="text-sm text-red-600 mt-1">{errors.gallery.message as string}</p>
-              )}
-            </div>
-
+            {/* 9. Refund Policy */}
             <div>
               <Label htmlFor="refundPolicy">Refund Policy</Label>
               <Select
@@ -495,6 +528,7 @@ export const ProductFormDialog = ({
               </Select>
             </div>
 
+            {/* 10. Privacy Setting */}
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="isPrivate"

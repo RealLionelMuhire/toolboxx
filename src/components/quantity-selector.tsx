@@ -160,7 +160,7 @@ export function StockStatusBadge({ stockStatus, quantity, className }: StockStat
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
+        "inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border shrink-0",
         config.className,
         className
       )}
