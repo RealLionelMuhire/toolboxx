@@ -13,11 +13,17 @@ import {
   ShoppingBag, 
   User, 
   ArrowRight,
-  Loader2
+  Loader2,
+  Settings
 } from 'lucide-react'
 
 export function DashboardView() {
   const trpc = useTRPC()
+  
+  // Get session to check user role
+  const { data: session } = useQuery(
+    trpc.auth.session.queryOptions()
+  )
 
   // Fetch dashboard statistics
   const { data: statsData, isLoading: statsLoading } = useQuery(
@@ -145,11 +151,35 @@ export function DashboardView() {
               <CardDescription>Manage your profile</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full" variant="outline" asChild>
-                <Link href="/admin">
-                  Account Settings
-                </Link>
-              </Button>
+              {/* Only show admin link for tenants and super-admins, not for clients */}
+              {session?.user?.roles?.includes('tenant') || session?.user?.roles?.includes('super-admin') ? (
+                <Button className="w-full" variant="outline" asChild>
+                  <Link href="/admin">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Account Settings
+                  </Link>
+                </Button>
+              ) : (
+                <div className="space-y-3 p-4 bg-muted rounded-md">
+                  <div className="flex items-start gap-2">
+                    <User className="h-5 w-5 text-muted-foreground mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">Profile Information</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {session?.user?.email || 'Not available'}
+                      </p>
+                      {session?.user?.username && (
+                        <p className="text-xs text-muted-foreground">
+                          Username: {session.user.username}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Your account is set up as a buyer. Contact support to update your profile.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 

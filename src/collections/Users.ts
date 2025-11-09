@@ -34,7 +34,13 @@ export const Users: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
-    hidden: ({ user }) => !isSuperAdmin(user),
+    hidden: ({ user }) => {
+      // Only super-admin and tenant users can access PayloadCMS admin
+      // Client (buyer) users should not see or access the admin panel
+      if (isSuperAdmin(user)) return false;
+      if (user?.roles?.includes('tenant')) return false;
+      return true; // Hide from clients and non-authenticated users
+    },
   },
   auth: {
     cookies: {
@@ -66,11 +72,18 @@ export const Users: CollectionConfig = {
       }
     },
     // Tenant relationship field (replacing multi-tenant plugin)
+    // Only applicable to tenant and super-admin users
+    // Client (buyer) users don't have tenant associations
     {
       name: "tenants",
       type: "array",
       admin: {
         position: "sidebar",
+        condition: (data) => {
+          // Only show tenants field for super-admin and tenant users
+          // Hide for client users
+          return !data.roles || !data.roles.includes('client');
+        },
       },
       access: {
         read: () => true,
@@ -92,6 +105,7 @@ export const Users: CollectionConfig = {
       ],
     },
     // Verification section for account page
+    // Only shown for tenant users (not clients or super-admins)
     {
       name: "verificationSection",
       type: "ui",
@@ -100,8 +114,9 @@ export const Users: CollectionConfig = {
           Field: '@/components/admin/AccountVerificationSection',
         },
         condition: (data) => {
-          // Only show for non-super-admin users
-          return !data.roles?.includes('super-admin');
+          // Only show for tenant users who need verification
+          // Hide for clients and super-admins
+          return data.roles?.includes('tenant') && !data.roles?.includes('super-admin');
         },
       },
     },

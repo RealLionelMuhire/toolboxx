@@ -85,7 +85,7 @@ export const NavbarSidebar = ({
                   href="/sign-up" 
                   className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
                 >
-                  Start Supplying
+                  Sign Up
                 </OptimizedLink>
               </>
             )}
