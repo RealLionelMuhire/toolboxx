@@ -139,48 +139,50 @@ export const SignUpView = () => {
             </div>
 
             <div className="max-w-2xl mx-auto w-full">
-              <h1 className="text-4xl font-medium mb-4">
+              <h1 className="text-2xl md:text-4xl font-medium mb-2 md:mb-4">
                 Join Toolboxx
               </h1>
-              <p className="text-lg text-muted-foreground mb-12">
+              <p className="text-sm md:text-lg text-muted-foreground mb-6 md:mb-12">
                 Choose how you want to use our platform
               </p>
 
-              <div className="grid gap-6 md:grid-cols-2">
+              <div className="grid gap-4 md:gap-6 md:grid-cols-2">
                 {/* Client (Buyer) Card */}
                 <Card 
                   className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
                   onClick={() => setAccountType("client")}
                 >
-                  <CardHeader>
-                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
-                      <ShoppingBag className="h-8 w-8 text-blue-600" />
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-3 mb-1">
+                      <div className="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full bg-blue-100 shrink-0">
+                        <ShoppingBag className="h-6 w-6 md:h-8 md:w-8 text-blue-600" />
+                      </div>
+                      <CardTitle className="text-xl md:text-2xl">I want to buy</CardTitle>
                     </div>
-                    <CardTitle className="text-2xl">I want to buy</CardTitle>
-                    <CardDescription className="text-base">
+                    <CardDescription className="text-sm md:text-base hidden md:block">
                       Browse and purchase construction materials
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
+                  <CardContent className="pt-0">
+                    <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-muted-foreground">
                       <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">✓</span>
-                        <span>Quick registration - just email and password</span>
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Quick registration</span>
                       </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">✓</span>
+                      <li className="flex items-start gap-2 hidden md:flex">
+                        <span className="text-primary mt-0.5">✓</span>
                         <span>Browse thousands of products</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">✓</span>
+                        <span className="text-primary mt-0.5">✓</span>
                         <span>Track your orders</span>
                       </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">✓</span>
+                      <li className="flex items-start gap-2 hidden md:flex">
+                        <span className="text-primary mt-0.5">✓</span>
                         <span>No business verification needed</span>
                       </li>
                     </ul>
-                    <Button className="w-full mt-6" size="lg">
+                    <Button className="w-full mt-4 md:mt-6" size="lg">
                       Continue as Buyer
                     </Button>
                   </CardContent>
@@ -191,35 +193,37 @@ export const SignUpView = () => {
                   className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-2"
                   onClick={() => setAccountType("tenant")}
                 >
-                  <CardHeader>
-                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-pink-100 mb-4">
-                      <Store className="h-8 w-8 text-pink-600" />
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-3 mb-1">
+                      <div className="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full bg-pink-100 shrink-0">
+                        <Store className="h-6 w-6 md:h-8 md:w-8 text-pink-600" />
+                      </div>
+                      <CardTitle className="text-xl md:text-2xl">I want to sell</CardTitle>
                     </div>
-                    <CardTitle className="text-2xl">I want to sell</CardTitle>
-                    <CardDescription className="text-base">
+                    <CardDescription className="text-sm md:text-base hidden md:block">
                       Start supplying construction materials
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-2 text-sm text-muted-foreground">
+                  <CardContent className="pt-0">
+                    <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-muted-foreground">
                       <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">✓</span>
-                        <span>Get your own store subdomain</span>
+                        <span className="text-primary mt-0.5">✓</span>
+                        <span>Get your own store</span>
                       </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">✓</span>
+                      <li className="flex items-start gap-2 hidden md:flex">
+                        <span className="text-primary mt-0.5">✓</span>
                         <span>Manage products and inventory</span>
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">✓</span>
+                        <span className="text-primary mt-0.5">✓</span>
                         <span>Track sales and revenue</span>
                       </li>
-                      <li className="flex items-start gap-2">
-                        <span className="text-primary mt-1">✓</span>
+                      <li className="flex items-start gap-2 hidden md:flex">
+                        <span className="text-primary mt-0.5">✓</span>
                         <span>Requires business verification (TIN, RDB)</span>
                       </li>
                     </ul>
-                    <Button className="w-full mt-6" size="lg" variant="default">
+                    <Button className="w-full mt-4 md:mt-6" size="lg" variant="default">
                       Start Supplying
                     </Button>
                   </CardContent>
