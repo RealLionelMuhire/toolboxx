@@ -5,6 +5,7 @@ import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 
 import { generateAuthCookie, clearAuthCookie } from "../utils";
 import { loginSchema, registerSchema } from "../schemas";
+import { registerClientSchema } from "../schemas-client";
 
 export const authRouter = createTRPCRouter({
   session: baseProcedure.query(async ({ ctx }) => {
@@ -14,6 +15,11 @@ export const authRouter = createTRPCRouter({
 
     return session;
   }),
+  
+  /**
+   * Register a new tenant (seller) account
+   * Requires business information: TIN, payment method, etc.
+   */
   register: baseProcedure
     .input(registerSchema)
     .mutation(async ({ input, ctx }) => {
@@ -109,7 +115,79 @@ export const authRouter = createTRPCRouter({
         value: data.token,
       });
     }),
-    login: baseProcedure
+    
+  /**
+   * Register a new client (buyer) account
+   * No business information required - just basic account details
+   */
+  registerClient: baseProcedure
+    .input(registerClientSchema)
+    .mutation(async ({ input, ctx }) => {
+      const existingData = await ctx.db.find({
+        collection: "users",
+        limit: 1,
+        where: {
+          or: [
+            { username: { equals: input.username } },
+            { email: { equals: input.email } },
+          ],
+        },
+      });
+
+      const existingUser = existingData.docs[0];
+
+      if (existingUser) {
+        if (existingUser.username === input.username) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Username already taken",
+          });
+        }
+        if (existingUser.email === input.email) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Email already registered",
+          });
+        }
+      }
+
+      // Create client user (buyer) - no tenant association needed
+      await ctx.db.create({
+        collection: "users",
+        data: {
+          email: input.email,
+          username: input.username,
+          password: input.password,
+          roles: ["client"], // Explicitly set client role
+          // Client users don't have tenants
+          tenants: [],
+        },
+      });
+
+      const data = await ctx.db.login({
+        collection: "users",
+        data: {
+          email: input.email,
+          password: input.password,
+        },
+      });
+
+      if (!data.token) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "Failed to login",
+        });
+      }
+
+      await generateAuthCookie({
+        prefix: ctx.db.config.cookiePrefix,
+        value: data.token,
+      });
+      
+      return data;
+    }),
+    
+  login: baseProcedure
     .input(loginSchema)
     .mutation(async ({ input, ctx }) => {
       const data = await ctx.db.login({

@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
@@ -22,38 +23,60 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Store, ShoppingBag } from "lucide-react";
 
 import { registerSchema } from "../../schemas";
+import { registerClientSchema } from "../../schemas-client";
 
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["700"],
 });
 
+type AccountType = "client" | "tenant";
+
 export const SignUpView = () => {
   const router = useRouter();
+  const [accountType, setAccountType] = useState<AccountType | null>(null);
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const register = useMutation(trpc.auth.register.mutationOptions({
+  // Tenant (seller) registration
+  const registerTenant = useMutation(trpc.auth.register.mutationOptions({
     onError: (error) => {
       toast.error(error.message);
     },
     onSuccess: async () => {
-      // Register doesn't return user data, so just invalidate and refetch
       await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
-      
-      // Small delay to ensure session is fetched
       await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Ensure server-side content is refreshed after registering
       router.push("/");
       router.refresh();
     },
   }));
 
-  const form = useForm<z.infer<typeof registerSchema>>({
+  // Client (buyer) registration
+  const registerClient = useMutation(trpc.auth.registerClient.mutationOptions({
+    onError: (error) => {
+      toast.error(error.message);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
+      await new Promise(resolve => setTimeout(resolve, 100));
+      router.push("/");
+      router.refresh();
+    },
+  }));
+
+  // Tenant form
+  const tenantForm = useForm<z.infer<typeof registerSchema>>({
     mode: "all",
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -69,23 +92,34 @@ export const SignUpView = () => {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof registerSchema>) => {
-    register.mutate(values)
-  }
+  // Client form
+  const clientForm = useForm<z.infer<typeof registerClientSchema>>({
+    mode: "all",
+    resolver: zodResolver(registerClientSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      username: "",
+      firstName: "",
+      lastName: "",
+      phone: "",
+    },
+  });
 
-  const username = form.watch("username");
-  const usernameErrors = form.formState.errors.username;
+  const onTenantSubmit = (values: z.infer<typeof registerSchema>) => {
+    registerTenant.mutate(values);
+  };
 
-  const showPreview = username && !usernameErrors;
+  const onClientSubmit = (values: z.infer<typeof registerClientSchema>) => {
+    registerClient.mutate(values);
+  };
 
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-5">
-      <div className="bg-[#F4F4F0] h-screen w-full lg:col-span-3 overflow-y-auto">
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col gap-8 p-4 lg:p-16"
-          >
+  // Account type selection view
+  if (!accountType) {
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-5">
+        <div className="bg-[#F4F4F0] min-h-screen w-full lg:col-span-3 overflow-y-auto">
+          <div className="flex flex-col gap-8 p-4 lg:p-16">
             <div className="flex items-center justify-between mb-8">
               <Link href="/">
                 <span className={cn("text-2xl font-semibold", poppins.className)}>
@@ -103,9 +137,356 @@ export const SignUpView = () => {
                 </Link>
               </Button>
             </div>
-            <h1 className="text-4xl font-medium">
-              Join over 1,580 construction suppliers earning money on Toolboxx.
-            </h1>
+
+            <div className="max-w-2xl mx-auto w-full">
+              <h1 className="text-4xl font-medium mb-4">
+                Join Toolboxx
+              </h1>
+              <p className="text-lg text-muted-foreground mb-12">
+                Choose how you want to use our platform
+              </p>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Client (Buyer) Card */}
+                <Card 
+                  className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
+                  onClick={() => setAccountType("client")}
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
+                      <ShoppingBag className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <CardTitle className="text-2xl">I want to buy</CardTitle>
+                    <CardDescription className="text-base">
+                      Browse and purchase construction materials
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-1">✓</span>
+                        <span>Quick registration - just email and password</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-1">✓</span>
+                        <span>Browse thousands of products</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-1">✓</span>
+                        <span>Track your orders</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-1">✓</span>
+                        <span>No business verification needed</span>
+                      </li>
+                    </ul>
+                    <Button className="w-full mt-6" size="lg">
+                      Continue as Buyer
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Tenant (Seller) Card */}
+                <Card 
+                  className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-2"
+                  onClick={() => setAccountType("tenant")}
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-pink-100 mb-4">
+                      <Store className="h-8 w-8 text-pink-600" />
+                    </div>
+                    <CardTitle className="text-2xl">I want to sell</CardTitle>
+                    <CardDescription className="text-base">
+                      Start supplying construction materials
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-1">✓</span>
+                        <span>Get your own store subdomain</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-1">✓</span>
+                        <span>Manage products and inventory</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-1">✓</span>
+                        <span>Track sales and revenue</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="text-primary mt-1">✓</span>
+                        <span>Requires business verification (TIN, RDB)</span>
+                      </li>
+                    </ul>
+                    <Button className="w-full mt-6" size="lg" variant="default">
+                      Start Supplying
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <p className="text-center text-sm text-muted-foreground mt-8">
+                Already have an account?{" "}
+                <Link href="/sign-in" className="text-primary hover:underline font-medium">
+                  Sign in here
+                </Link>
+              </p>
+            </div>
+          </div>
+        </div>
+        <div
+          className="h-screen w-full lg:col-span-2 hidden lg:block"
+          style={{ 
+            backgroundImage: "url('/auth-bg.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Client (Buyer) Registration Form
+  if (accountType === "client") {
+    const username = clientForm.watch("username");
+    const usernameErrors = clientForm.formState.errors.username;
+    const showPreview = username && !usernameErrors;
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-5">
+        <div className="bg-[#F4F4F0] min-h-screen w-full lg:col-span-3 overflow-y-auto">
+          <Form {...clientForm}>
+            <form
+              onSubmit={clientForm.handleSubmit(onClientSubmit)}
+              className="flex flex-col gap-8 p-4 lg:p-16"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <Link href="/">
+                  <span className={cn("text-2xl font-semibold", poppins.className)}>
+                    Toolboxx
+                  </span>
+                </Link>
+                <div className="flex items-center gap-4">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setAccountType(null)}
+                    className="text-base"
+                  >
+                    ← Back
+                  </Button>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="text-base border-none underline"
+                  >
+                    <Link prefetch href="/sign-in">
+                      Sign in
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100">
+                  <ShoppingBag className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-medium">Create Buyer Account</h1>
+                  <p className="text-muted-foreground">Quick and easy - start shopping today</p>
+                </div>
+              </div>
+
+              <FormField
+                name="username"
+                control={clientForm.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base">Username</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="johndoe" />
+                    </FormControl>
+                    <FormDescription
+                      className={cn("hidden", showPreview && "block")}
+                    >
+                      Your username: <strong>{username}</strong>
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                name="email"
+                control={clientForm.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base">Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="email" placeholder="john@example.com" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                name="password"
+                control={clientForm.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base">Password</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="password" placeholder="••••••••" />
+                    </FormControl>
+                    <FormDescription>
+                      Must be at least 6 characters
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="border-t pt-6">
+                <h2 className="text-xl font-medium mb-4">Additional Information (Optional)</h2>
+
+                <div className="grid gap-6 md:grid-cols-2">
+                  <FormField
+                    name="firstName"
+                    control={clientForm.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base">First Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="John" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    name="lastName"
+                    control={clientForm.control}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base">Last Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Doe" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  name="phone"
+                  control={clientForm.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base">Phone Number</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="+250 XXX XXX XXX" />
+                      </FormControl>
+                      <FormDescription>
+                        Rwanda phone number format
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <Button
+                disabled={registerClient.isPending}
+                type="submit"
+                size="lg"
+                variant="elevated"
+                className="bg-blue-600 text-white hover:bg-blue-700"
+              >
+                {registerClient.isPending ? "Creating account..." : "Create Buyer Account"}
+              </Button>
+
+              <p className="text-sm text-muted-foreground text-center">
+                Want to sell instead?{" "}
+                <button
+                  type="button"
+                  onClick={() => setAccountType("tenant")}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Register as a seller
+                </button>
+              </p>
+            </form>
+          </Form>
+        </div>
+        <div
+          className="h-screen w-full lg:col-span-2 hidden lg:block"
+          style={{ 
+            backgroundImage: "url('/auth-bg.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+      </div>
+    );
+  }
+
+  // Tenant (Seller) Registration Form
+  const username = tenantForm.watch("username");
+  const usernameErrors = tenantForm.formState.errors.username;
+  const showPreview = username && !usernameErrors;
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-5">
+      <div className="bg-[#F4F4F0] min-h-screen w-full lg:col-span-3 overflow-y-auto">
+        <Form {...tenantForm}>
+          <form
+            onSubmit={tenantForm.handleSubmit(onTenantSubmit)}
+            className="flex flex-col gap-8 p-4 lg:p-16"
+          >
+            <div className="flex items-center justify-between mb-8">
+              <Link href="/">
+                <span className={cn("text-2xl font-semibold", poppins.className)}>
+                  Toolboxx
+                </span>
+              </Link>
+              <div className="flex items-center gap-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAccountType(null)}
+                  className="text-base"
+                >
+                  ← Back
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="text-base border-none underline"
+                >
+                  <Link prefetch href="/sign-in">
+                    Sign in
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-pink-100">
+                <Store className="h-6 w-6 text-pink-600" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-medium">Start Supplying on Toolboxx</h1>
+                <p className="text-muted-foreground">Join over 1,580 construction suppliers</p>
+              </div>
+            </div>
             <FormField
               name="username"
               render={({ field }) => (
@@ -204,7 +585,7 @@ export const SignUpView = () => {
                 )}
               />
 
-              {form.watch("paymentMethod") === "bank_transfer" && (
+              {tenantForm.watch("paymentMethod") === "bank_transfer" && (
                 <>
                   <FormField
                     name="bankName"
@@ -234,7 +615,7 @@ export const SignUpView = () => {
                 </>
               )}
 
-              {form.watch("paymentMethod") === "momo_pay" && (
+              {tenantForm.watch("paymentMethod") === "momo_pay" && (
                 <FormField
                   name="momoPayCode"
                   render={({ field }) => (
@@ -257,14 +638,25 @@ export const SignUpView = () => {
             </div>
 
             <Button
-              disabled={register.isPending}
+              disabled={registerTenant.isPending}
               type="submit"
               size="lg"
               variant="elevated"
               className="bg-black text-white hover:bg-pink-400 hover:text-primary"
             >
-              Create account
+              {registerTenant.isPending ? "Creating account..." : "Create Seller Account"}
             </Button>
+
+            <p className="text-sm text-muted-foreground text-center">
+              Just want to buy?{" "}
+              <button
+                type="button"
+                onClick={() => setAccountType("client")}
+                className="text-primary hover:underline font-medium"
+              >
+                Register as a buyer
+              </button>
+            </p>
           </form>
         </Form>
       </div>

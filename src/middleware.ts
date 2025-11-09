@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkPayloadAdminAccess } from "./middleware-payload-access";
 
 export const config = {
   matcher: [
@@ -26,6 +27,13 @@ export default async function middleware(req: NextRequest) {
     url.pathname.startsWith('/media/')
   ) {
     return NextResponse.next();
+  }
+  
+  // Check PayloadCMS admin access for client users
+  // This blocks client (buyer) users from accessing /admin routes
+  const adminAccessCheck = await checkPayloadAdminAccess(req);
+  if (adminAccessCheck) {
+    return adminAccessCheck;
   }
   
   // Check if subdomain routing is enabled
