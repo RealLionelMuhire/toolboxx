@@ -54,9 +54,23 @@ export const SignUpView = () => {
     onError: (error) => {
       toast.error(error.message);
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      toast.success("Account created successfully!");
+      
+      // Immediately update the session cache with the logged-in user
+      if (data?.user) {
+        queryClient.setQueryData(
+          trpc.auth.session.queryKey(),
+          { user: data.user, permissions: {} }
+        );
+      }
+      
+      // Also invalidate to ensure fresh data
       await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
-      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Small delay to ensure cache is updated
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
       router.push("/");
       router.refresh();
     },
@@ -67,9 +81,23 @@ export const SignUpView = () => {
     onError: (error) => {
       toast.error(error.message);
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      toast.success("Account created successfully!");
+      
+      // Immediately update the session cache with the logged-in user
+      if (data?.user) {
+        queryClient.setQueryData(
+          trpc.auth.session.queryKey(),
+          { user: data.user, permissions: {} }
+        );
+      }
+      
+      // Also invalidate to ensure fresh data
       await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
-      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Small delay to ensure cache is updated
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
       router.push("/");
       router.refresh();
     },

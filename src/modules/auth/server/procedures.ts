@@ -114,6 +114,8 @@ export const authRouter = createTRPCRouter({
         prefix: ctx.db.config.cookiePrefix,
         value: data.token,
       });
+      
+      return data;
     }),
     
   /**

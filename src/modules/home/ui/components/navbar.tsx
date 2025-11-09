@@ -79,32 +79,49 @@ export const Navbar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const trpc = useTRPC();
-  // Configure session query to avoid blocking UI when logged out
+  const queryClient = useQueryClient();
+  
+  // Configure session query for immediate UI updates
   const session = useQuery({
     ...trpc.auth.session.queryOptions(),
     staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     retry: false, // Don't retry session checks
-    refetchOnMount: false, // Don't refetch on every mount
+    refetchOnMount: true, // Always check session on mount
+    refetchOnWindowFocus: true, // Check session when window regains focus
   });
-  const queryClient = useQueryClient();
   
   const logout = useMutation(trpc.auth.logout.mutationOptions({
-    onSuccess: () => {
-      toast.success("Logged out successfully");
+    onMutate: async () => {
+      // Cancel any outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries(trpc.auth.session.queryFilter());
       
-      // Immediately update cache to logged-out state
+      // Snapshot the previous value
+      const previousSession = queryClient.getQueryData(trpc.auth.session.queryKey());
+      
+      // Optimistically update to logged-out state immediately
       queryClient.setQueryData(
         trpc.auth.session.queryKey(),
         { user: null, permissions: {} }
       );
       
-      // Invalidate the session query so client UI updates immediately
-      queryClient.invalidateQueries(trpc.auth.session.queryFilter());
+      return { previousSession };
+    },
+    onSuccess: () => {
+      toast.success("Logged out successfully");
+      
       // Navigate to home and refresh any server-side data
       router.push("/");
       router.refresh();
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Revert to previous state on error
+      if (context?.previousSession) {
+        queryClient.setQueryData(
+          trpc.auth.session.queryKey(),
+          context.previousSession
+        );
+      }
       toast.error(error.message || "Failed to logout");
     },
   }));
