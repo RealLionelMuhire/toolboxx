@@ -102,7 +102,8 @@ export const ProductFormDialog = ({
 
   // Populate form when editing - wait for BOTH product data AND categories to load
   useEffect(() => {
-    if (mode === "edit" && productData && !isLoadingCategories && categoriesData) {
+    // Prevent multiple resets
+    if (mode === "edit" && productData && !isLoadingCategories && categoriesData && !hasPopulatedRef.current) {
       const categoryId = typeof productData.category === "string" 
         ? productData.category 
         : productData.category?.id || "";
@@ -172,7 +173,14 @@ export const ProductFormDialog = ({
       initialGalleryRef.current = [];
       hasPopulatedRef.current = false;
     }
-  }, [productData, mode, isLoadingCategories, categoriesData, reset]);
+  }, [productData, mode, isLoadingCategories, categoriesData]);
+  
+  // Reset the hasPopulated flag when dialog opens/closes or mode changes
+  useEffect(() => {
+    if (!open || mode === "create") {
+      hasPopulatedRef.current = false;
+    }
+  }, [open, mode]);
 
   // Cleanup orphaned images when dialog closes
   useEffect(() => {
@@ -228,11 +236,10 @@ export const ProductFormDialog = ({
         });
         initialGalleryRef.current = [];
         hasPopulatedRef.current = false;
-      } else if (mode === "edit") {
-        hasPopulatedRef.current = false;
       }
+      // For edit mode, don't reset - let the population useEffect handle it
     }
-  }, [open, reset, mode]);
+  }, [open, mode]);
 
   // Create mutation
   const createMutation = useMutation(trpc.products.createProduct.mutationOptions({
@@ -262,8 +269,6 @@ export const ProductFormDialog = ({
   }));
 
   const onSubmit = (data: ProductFormData) => {
-    console.log('[ProductFormDialog] Form data before processing:', data);
-    
     // Automatically set the first gallery image as the main product image
     if (data.gallery && data.gallery.length > 0) {
       data.image = data.gallery[0]!;
@@ -344,8 +349,6 @@ export const ProductFormDialog = ({
       sanitizedData.gallery = data.gallery;
     }
 
-    console.log('[ProductFormDialog] Sanitized data:', sanitizedData);
-
     if (mode === "create") {
       createMutation.mutate(sanitizedData);
     } else if (mode === "edit" && productId) {
@@ -355,24 +358,33 @@ export const ProductFormDialog = ({
 
   const categories = categoriesData || [];
   
+  // Extract the current category ID once to avoid unnecessary re-renders
+  const currentCategoryData = useMemo(() => {
+    if (mode === "edit" && productData?.category) {
+      if (typeof productData.category === 'string') {
+        return { id: productData.category, name: 'Current Category' };
+      }
+      return {
+        id: productData.category.id,
+        name: productData.category.name,
+      };
+    }
+    return null;
+  }, [mode, productData?.category]);
+  
   // Build category options including current product's category
   const categoryOptions = useMemo(() => {
     const options: Array<{ id: string; name: string; isSubcategory: boolean }> = [];
     const seenIds = new Set<string>();
 
     // If editing, ensure current category is available
-    if (mode === "edit" && productData?.category) {
-      const currentCategoryId = typeof productData.category === 'string' 
-        ? productData.category 
-        : productData.category?.id;
-      const currentCategoryName = typeof productData.category === 'object' && productData.category?.name
-        ? productData.category.name
-        : 'Current Category';
-      
-      if (currentCategoryId) {
-        options.push({ id: currentCategoryId, name: currentCategoryName, isSubcategory: false });
-        seenIds.add(currentCategoryId);
-      }
+    if (currentCategoryData) {
+      options.push({ 
+        id: currentCategoryData.id, 
+        name: currentCategoryData.name, 
+        isSubcategory: false 
+      });
+      seenIds.add(currentCategoryData.id);
     }
 
     // Add all loaded categories and subcategories
@@ -390,7 +402,7 @@ export const ProductFormDialog = ({
     });
 
     return options;
-  }, [categories, mode, productData?.category]);
+  }, [categories, currentCategoryData]);
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
@@ -430,40 +442,65 @@ export const ProductFormDialog = ({
                 name="category"
                 control={control}
                 rules={{ required: "Category is required" }}
-                render={({ field }) => (
-                  <Select
-                    value={field.value || ""}
-                    onValueChange={field.onChange}
-                    disabled={isLoadingCategories || categoryOptions.length === 0}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={
-                        isLoadingCategories 
-                          ? "Loading categories..." 
-                          : categories.length === 0
-                          ? "No categories available - contact admin"
-                          : field.value ? `Selected: ${field.value}` : "Select a category"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categoryOptions.length === 0 ? (
-                        <div className="p-2 text-sm text-gray-500 text-center">
-                          No categories available. Please contact your administrator.
-                        </div>
-                      ) : (
-                        categoryOptions.map((option) => (
-                          <SelectItem 
-                            key={option.id} 
-                            value={option.id}
-                            className={option.isSubcategory ? "pl-6" : ""}
-                          >
-                            {option.isSubcategory ? `↳ ${option.name}` : option.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                )}
+                render={({ field }) => {
+                  // Find the selected category name for display
+                  const selectedCategory = categoryOptions.find(opt => opt.id === field.value);
+                  
+                  // Safeguard: If we have a value but it's not in options, it might have been lost
+                  // during a re-render. Try to restore it from productData.
+                  if (mode === "edit" && !field.value && productData?.category) {
+                    const categoryId = typeof productData.category === 'string'
+                      ? productData.category
+                      : productData.category?.id;
+                    if (categoryId) {
+                      field.onChange(categoryId);
+                    }
+                  }
+                  
+                  return (
+                    <Select
+                      key={`category-select-${field.value || 'empty'}`}
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                      disabled={isLoadingCategories || categoryOptions.length === 0}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={
+                          isLoadingCategories 
+                            ? "Loading categories..." 
+                            : categories.length === 0
+                            ? "No categories available - contact admin"
+                            : "Select a category"
+                        }>
+                          {selectedCategory ? (
+                            selectedCategory.isSubcategory 
+                              ? `↳ ${selectedCategory.name}` 
+                              : selectedCategory.name
+                          ) : (
+                            "Select a category"
+                          )}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryOptions.length === 0 ? (
+                          <div className="p-2 text-sm text-gray-500 text-center">
+                            No categories available. Please contact your administrator.
+                          </div>
+                        ) : (
+                          categoryOptions.map((option) => (
+                            <SelectItem 
+                              key={option.id} 
+                              value={option.id}
+                              className={option.isSubcategory ? "pl-6" : ""}
+                            >
+                              {option.isSubcategory ? `↳ ${option.name}` : option.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  );
+                }}
               />
               {errors.category && (
                 <p className="text-sm text-red-600 mt-1">{errors.category.message}</p>
