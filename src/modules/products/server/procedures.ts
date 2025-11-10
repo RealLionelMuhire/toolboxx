@@ -36,27 +36,51 @@ const createProductSchema = z.object({
   isPrivate: z.boolean().default(false),
 });
 
-const updateProductSchema = z.object({
-  id: z.string(),
-  name: z.string().min(1).optional(),
-  description: z.any().optional(),
-  price: z.number().min(0).optional(),
-  quantity: z.number().min(0).optional(),
-  unit: z.enum(["unit", "piece", "box", "pack", "bag", "kg", "gram", "meter", "cm", "liter", "sqm", "cbm", "set", "pair", "roll", "sheet", "carton", "pallet"]).optional(),
-  minOrderQuantity: z.number().min(1).optional(),
-  maxOrderQuantity: z.number().min(1).optional(),
-  lowStockThreshold: z.number().min(0).optional(),
-  allowBackorder: z.boolean().optional(),
-  category: z.string().optional(),
-  tags: z.array(z.string()).optional(),
-  image: z.string().optional(),
-  cover: z.string().optional(),
-  gallery: z.array(z.string()).optional(), // Array of media IDs
-  refundPolicy: z.enum(["30-day", "14-day", "7-day", "3-day", "1-day", "no-refunds"]).optional(),
-  content: z.any().optional(),
-  isPrivate: z.boolean().optional(),
-  isArchived: z.boolean().optional(),
-});
+const updateProductSchema = z.preprocess(
+  (data: any) => {
+    // Preprocess the data to convert string numbers to actual numbers
+    const processed = { ...data };
+    
+    // Convert numeric string fields to numbers
+    const numericFields = ['minOrderQuantity', 'maxOrderQuantity', 'lowStockThreshold', 'price', 'quantity'];
+    numericFields.forEach(field => {
+      if (processed[field] !== undefined) {
+        if (typeof processed[field] === 'string') {
+          const num = Number(processed[field]);
+          processed[field] = processed[field] === '' || isNaN(num) ? undefined : num;
+        }
+      }
+    });
+    
+    // Handle empty string for unit - convert to undefined
+    if (processed.unit === '') {
+      processed.unit = undefined;
+    }
+    
+    return processed;
+  },
+  z.object({
+    id: z.string(),
+    name: z.string().min(1).optional(),
+    description: z.any().optional(),
+    price: z.number().min(0).optional(),
+    quantity: z.number().min(0).optional(),
+    unit: z.enum(["unit", "piece", "box", "pack", "bag", "kg", "gram", "meter", "cm", "liter", "sqm", "cbm", "set", "pair", "roll", "sheet", "carton", "pallet"]).optional(),
+    minOrderQuantity: z.number().min(1).optional(),
+    maxOrderQuantity: z.number().min(1).optional(),
+    lowStockThreshold: z.number().min(0).optional(),
+    allowBackorder: z.boolean().optional(),
+    category: z.string().optional(),
+    tags: z.array(z.string()).optional(),
+    image: z.string().optional(),
+    cover: z.string().optional(),
+    gallery: z.array(z.string()).optional(), // Array of media IDs
+    refundPolicy: z.enum(["30-day", "14-day", "7-day", "3-day", "1-day", "no-refunds"]).optional(),
+    content: z.any().optional(),
+    isPrivate: z.boolean().optional(),
+    isArchived: z.boolean().optional(),
+  })
+);
 
 export const productsRouter = createTRPCRouter({
   getOne: baseProcedure
@@ -531,10 +555,17 @@ export const productsRouter = createTRPCRouter({
       }
 
       // Transform gallery array to Payload format if provided
-      const finalUpdateData: any = { ...updateData };
+      const finalUpdateData: any = {};
       
-      if (updateData.gallery && Array.isArray(updateData.gallery)) {
-        finalUpdateData.gallery = updateData.gallery.map((mediaId: string) => ({
+      // Only include fields that are actually being updated (not undefined)
+      Object.entries(updateData).forEach(([key, value]) => {
+        if (value !== undefined) {
+          finalUpdateData[key] = value;
+        }
+      });
+
+      if (finalUpdateData.gallery && Array.isArray(finalUpdateData.gallery)) {
+        finalUpdateData.gallery = finalUpdateData.gallery.map((mediaId: string) => ({
           media: mediaId,
         }));
       }

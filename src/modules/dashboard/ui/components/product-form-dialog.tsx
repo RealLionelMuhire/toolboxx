@@ -127,8 +127,30 @@ export const ProductFormDialog = ({
           }).filter(Boolean)
         : [];
       
+      // Extract plain text from Lexical description if it exists
+      let descriptionText = "";
+      if (productData.description && typeof productData.description === 'object') {
+        // Parse Lexical format to extract plain text
+        const lexicalData = productData.description as any;
+        if (lexicalData.root?.children) {
+          descriptionText = lexicalData.root.children
+            .map((child: any) => {
+              if (child.children) {
+                return child.children
+                  .map((textNode: any) => textNode.text || "")
+                  .join("");
+              }
+              return "";
+            })
+            .join("\n");
+        }
+      } else if (typeof productData.description === 'string') {
+        descriptionText = productData.description;
+      }
+      
       reset({
         name: productData.name || "",
+        description: descriptionText,
         price: productData.price || 0,
         quantity: productData.quantity || 0,
         unit: (productData.unit as ProductFormData["unit"]) || "unit",
@@ -254,10 +276,47 @@ export const ProductFormDialog = ({
       return;
     }
 
+    // Convert plain text description to Lexical format
+    let lexicalDescription = undefined;
+    if (data.description && typeof data.description === 'string') {
+      lexicalDescription = {
+        root: {
+          type: "root",
+          format: "",
+          indent: 0,
+          version: 1,
+          children: [
+            {
+              type: "paragraph",
+              format: "",
+              indent: 0,
+              version: 1,
+              children: [
+                {
+                  type: "text",
+                  format: 0,
+                  text: data.description,
+                  mode: "normal",
+                  style: "",
+                  detail: 0,
+                  version: 1,
+                },
+              ],
+              direction: "ltr",
+            },
+          ],
+          direction: "ltr",
+        },
+      };
+    } else if (data.description && typeof data.description === 'object') {
+      // If it's already in Lexical format, use it as is
+      lexicalDescription = data.description;
+    }
+
     // Sanitize data: handle optional numeric fields and category
     const sanitizedData: any = {
       name: data.name,
-      description: data.description,
+      description: lexicalDescription,
       price: data.price,
       quantity: data.quantity,
       unit: data.unit,
