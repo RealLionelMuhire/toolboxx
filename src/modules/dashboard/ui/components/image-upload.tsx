@@ -50,11 +50,25 @@ export const ImageUpload = ({
       return;
     }
 
+    // Validate that all values are strings (media IDs)
+    const validIds = value.filter(id => typeof id === 'string' && id.length > 0);
+    if (validIds.length === 0) {
+      console.warn('[ImageUpload] No valid media IDs to load');
+      setUploadedFiles([]);
+      return;
+    }
+
+    if (validIds.length !== value.length) {
+      console.warn('[ImageUpload] Some invalid media IDs filtered out:', 
+        value.filter(id => !validIds.includes(id))
+      );
+    }
+
     try {
       // Add cache busting and proper cache control headers
       // Use relative URL to work in both localhost and production
       const response = await fetch(
-        `/api/media?ids=${value.join(",")}&t=${Date.now()}`, // Cache buster
+        `/api/media?ids=${validIds.join(",")}&t=${Date.now()}`, // Cache buster
         {
           cache: 'no-store', // Disable browser cache
           headers: {
@@ -66,6 +80,8 @@ export const ImageUpload = ({
       
       if (!response.ok) {
         console.error('[ImageUpload] Failed to fetch media:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('[ImageUpload] Error response:', errorText);
         throw new Error(`Failed to fetch media: ${response.status}`);
       }
       
@@ -202,8 +218,15 @@ export const ImageUpload = ({
   // Upload a single file with progress tracking using XHR
   const uploadSingleFile = (file: File, fileName: string): Promise<string | null> => {
     return new Promise((resolve) => {
+      // Validate file before upload
+      if (!file || !file.name) {
+        toast.error(`Invalid file: ${fileName}`);
+        resolve(null);
+        return;
+      }
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", file, file.name); // Explicitly set filename
       formData.append("alt", fileName.replace(/\.[^/.]+$/, "")); // Remove extension
 
       const xhr = new XMLHttpRequest();
@@ -268,14 +291,23 @@ export const ImageUpload = ({
             resolve(null);
           }
         } else {
+          // Error response - try to parse error message
+          let errorMessage = `HTTP ${xhr.status}`;
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } catch {
+            // Ignore parse errors, use default message
+          }
+          
           setUploadProgress(prev => 
             prev.map(p => 
               p.fileName === fileName 
-                ? { ...p, status: 'error', error: `HTTP ${xhr.status}` }
+                ? { ...p, status: 'error', error: errorMessage }
                 : p
             )
           );
-          toast.error(`Failed to upload ${fileName}: ${xhr.status}`);
+          toast.error(`Failed to upload ${fileName}: ${errorMessage}`);
           resolve(null);
         }
       });
