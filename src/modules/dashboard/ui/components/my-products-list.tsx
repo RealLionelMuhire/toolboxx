@@ -54,7 +54,7 @@ export const MyProductsList = ({ searchQuery, viewMode = "grid", onEdit, onDelet
       <div className={
         viewMode === "grid" 
           ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-          : "flex flex-col gap-4"
+          : "flex flex-col gap-2 md:gap-4"
       }>
         {data?.pages.flatMap((page) => page.docs).map((product) => {
           // Build gallery array from product data

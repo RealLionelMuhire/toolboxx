@@ -41,6 +41,21 @@ export const MyProductsView = () => {
     }
   }, [session, sessionLoading, router]);
 
+  // Set default view mode based on screen size
+  useEffect(() => {
+    const checkScreenSize = () => {
+      if (window.innerWidth < 768) { // md breakpoint
+        setViewMode("list");
+      } else {
+        setViewMode("grid");
+      }
+    };
+
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
+
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
