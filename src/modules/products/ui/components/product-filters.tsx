@@ -22,7 +22,7 @@ const ProductFilter = ({ title, className, children }:ProductFilterProps) => {
 
   return (
     <div className={cn(
-      "p-4 border-b flex flex-col gap-2",
+      "p-3 md:p-4 border-b flex flex-col gap-2",
       className
     )}>
       <div
@@ -68,7 +68,7 @@ export const ProductFilters = () => {
 
   return (
     <div className="border rounded-md bg-white">
-      <div className="p-4 border-b flex items-center justify-between">
+      <div className="p-3 md:p-4 border-b flex items-center justify-between">
         <p className="font-medium">Filters</p>
         {hasAnyFilters && (
           <button className="underline cursor-pointer" onClick={() => onClear()} type="button">
