@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Copy, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import { Copy, CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export function PaymentInstructionsClient() {
   const searchParams = useSearchParams();
@@ -19,6 +20,7 @@ export function PaymentInstructionsClient() {
   
   const [mtnTransactionId, setMtnTransactionId] = useState("");
   const [copied, setCopied] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   const trpc = useTRPC();
 
@@ -126,18 +128,27 @@ export function PaymentInstructionsClient() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
-            {/* Seller Name Display */}
-            {momoAccountName && (
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border-2 border-blue-200">
-                <p className="text-sm text-muted-foreground mb-1">Paying to:</p>
-                <p className="text-xl font-bold text-blue-900">
-                  {momoAccountName}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  ⚠️ Please verify this name matches the one shown in your MTN Mobile Money confirmation
+            {/* Payment Info Box */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border-2 border-blue-200 space-y-3">
+              <div>
+                <p className="text-sm text-muted-foreground">Paying to:</p>
+                <p className="text-2xl font-bold text-blue-900">
+                  {momoAccountName || 'Store'}
                 </p>
               </div>
-            )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Momo Code:</p>
+                  <p className="text-xl font-bold text-blue-900">{momoCode}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Amount:</p>
+                  <p className="text-xl font-bold text-blue-900">
+                    {transaction.totalAmount.toLocaleString()} RWF
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {/* Dial Code */}
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-lg border-2 border-green-200">
@@ -163,35 +174,52 @@ export function PaymentInstructionsClient() {
               </div>
             </div>
 
-            {/* Amount & Reference */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <p className="text-sm text-muted-foreground mb-1">Amount to Pay</p>
-                <p className="text-3xl font-bold text-blue-700">
-                  {transaction.totalAmount.toLocaleString()} RWF
-                </p>
-              </div>
-              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                <p className="text-sm text-muted-foreground mb-1">Payment Reference</p>
-                <code className="text-lg font-mono font-semibold text-purple-700">
-                  {transaction.paymentReference}
-                </code>
-              </div>
-            </div>
+            {/* Collapsible Additional Details */}
+            <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between">
+                  <span className="text-sm font-medium">
+                    {showDetails ? 'Hide' : 'Show'} additional details
+                  </span>
+                  {showDetails ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-4 pt-4">
+                {/* Amount & Reference */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <p className="text-sm text-muted-foreground mb-1">Amount to Pay</p>
+                    <p className="text-3xl font-bold text-blue-700">
+                      {transaction.totalAmount.toLocaleString()} RWF
+                    </p>
+                  </div>
+                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                    <p className="text-sm text-muted-foreground mb-1">Payment Reference</p>
+                    <code className="text-lg font-mono font-semibold text-purple-700">
+                      {transaction.paymentReference}
+                    </code>
+                  </div>
+                </div>
 
-            {/* Alternative Instructions */}
-            <Alert>
-              <AlertDescription>
-                <p className="font-semibold mb-2">Alternative: Manual Dial Steps</p>
-                <ol className="list-decimal list-inside space-y-1 text-sm">
-                  <li>Dial *182*8*1# on your MTN phone</li>
-                  <li>Enter MoMo Code: <strong>{momoCode}</strong></li>
-                  <li>Enter Amount: <strong>{transaction.totalAmount}</strong></li>
-                  <li>Enter your PIN to confirm</li>
-                  <li>Save the Transaction ID from your SMS</li>
-                </ol>
-              </AlertDescription>
-            </Alert>
+                {/* Alternative Instructions */}
+                <Alert>
+                  <AlertDescription>
+                    <p className="font-semibold mb-2">Alternative: Manual Dial Steps</p>
+                    <ol className="list-decimal list-inside space-y-1 text-sm">
+                      <li>Dial *182*8*1# on your MTN phone</li>
+                      <li>Enter MoMo Code: <strong>{momoCode}</strong></li>
+                      <li>Enter Amount: <strong>{transaction.totalAmount}</strong></li>
+                      <li>Enter your PIN to confirm</li>
+                      <li>Save the Transaction ID from your SMS</li>
+                    </ol>
+                  </AlertDescription>
+                </Alert>
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* Expiry Warning */}
             {!isExpired && (

@@ -81,7 +81,6 @@ export const transactionsRouter = createTRPCRouter({
       const transaction = await ctx.db.findByID({
         collection: "transactions",
         id: input.transactionId,
-        depth: 2,
       });
 
       if (!transaction) {
@@ -89,6 +88,23 @@ export const transactionsRouter = createTRPCRouter({
           code: "NOT_FOUND",
           message: "Transaction not found" 
         });
+      }
+
+      // Manually populate tenant to get momoCode and momoAccountName
+      let populatedTenant = null;
+      if (transaction.tenant) {
+        const tenantId = typeof transaction.tenant === 'string' 
+          ? transaction.tenant 
+          : transaction.tenant.id;
+        
+        try {
+          populatedTenant = await ctx.db.findByID({
+            collection: "tenants",
+            id: tenantId,
+          });
+        } catch (error) {
+          console.error('Error fetching tenant:', error);
+        }
       }
 
       // Check access - Allow customer, tenant owner, or super-admin
@@ -131,7 +147,11 @@ export const transactionsRouter = createTRPCRouter({
         });
       }
 
-      return transaction;
+      // Return transaction with populated tenant
+      return {
+        ...transaction,
+        tenant: populatedTenant,
+      };
     }),
 
   // Get user's transactions
