@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { User, MessageCircle } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTRPC } from "@/trpc/client";
 import type { User as UserType } from "@/payload-types";
+import { cn } from "@/lib/utils";
 
 interface ChatListProps {
   currentUserId: string;
@@ -21,16 +22,29 @@ export function ChatList({
   selectedConversationId,
 }: ChatListProps) {
   const trpc = useTRPC();
+  const router = useRouter();
 
   const { data: conversationsData, isLoading } = useQuery({
     ...trpc.chat.getConversations.queryOptions(),
-    refetchInterval: 10000, // Poll every 10 seconds
+    refetchInterval: 15000,
+    staleTime: 10000,
   });
 
   const { data: unreadData } = useQuery({
     ...trpc.chat.getUnreadCount.queryOptions(),
-    refetchInterval: 10000,
+    refetchInterval: 15000,
+    staleTime: 10000,
   });
+
+  const handleConversationClick = (conversationId: string) => {
+    // Simple navigation like ProductCard does
+    router.push(`/chat/${conversationId}`);
+  };
+  
+  const handleMouseEnter = (conversationId: string) => {
+    // Prefetch on hover for instant navigation
+    router.prefetch(`/chat/${conversationId}`);
+  };
 
   if (isLoading) {
     return (
@@ -56,7 +70,7 @@ export function ChatList({
 
   return (
     <ScrollArea className="h-full">
-      <div className="divide-y">
+      <div className="p-2 space-y-2">
         {conversations.map((conversation) => {
           const participants = (conversation.participants || []) as UserType[];
           const otherUser = participants.find((p) => p.id !== currentUserId);
@@ -64,29 +78,34 @@ export function ChatList({
             (conversation.unreadCount as Record<string, number>)?.[
               currentUserId
             ] || 0;
+          
+          const isSelected = selectedConversationId === conversation.id;
 
           return (
-            <Link
+            <div
               key={conversation.id}
-              href={`/chat/${conversation.id}`}
-              className={`block p-4 hover:bg-muted/50 transition-colors ${
-                selectedConversationId === conversation.id ? "bg-muted" : ""
-              }`}
+              onClick={() => handleConversationClick(conversation.id)}
+              onMouseEnter={() => handleMouseEnter(conversation.id)}
+              className={cn(
+                "p-3 rounded-lg border transition-all cursor-pointer",
+                "bg-card hover:bg-accent/50 hover:shadow-sm",
+                isSelected && "bg-accent border-primary/20 shadow-sm"
+              )}
             >
-              <div className="flex gap-3">
+              <div className="flex gap-3 min-w-0">
                 <Avatar className="h-10 w-10 shrink-0">
                   <AvatarFallback>
                     <User className="h-5 w-5" />
                   </AvatarFallback>
                 </Avatar>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <div className="flex items-center justify-between mb-1 gap-2">
                     <h4 className="font-semibold text-sm truncate">
                       {otherUser?.username || "Unknown User"}
                     </h4>
                     {conversation.lastMessageAt && (
-                      <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                      <span className="text-xs text-muted-foreground shrink-0">
                         {format(
                           new Date(conversation.lastMessageAt),
                           "MMM d"
@@ -95,8 +114,8 @@ export function ChatList({
                     )}
                   </div>
 
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm text-muted-foreground truncate flex-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <p className="text-sm text-muted-foreground truncate flex-1 min-w-0">
                       {conversation.lastMessageContent ||
                         "No messages yet"}
                     </p>
@@ -111,13 +130,13 @@ export function ChatList({
                   </div>
 
                   {conversation.product && (
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-1 truncate">
                       Re: {typeof conversation.product === "object" ? conversation.product.name : "Product"}
                     </p>
                   )}
                 </div>
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>

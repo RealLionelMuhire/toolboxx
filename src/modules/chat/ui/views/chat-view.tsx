@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { useTRPC } from "@/trpc/client";
 import type { User as UserType } from "@/payload-types";
 
@@ -22,41 +21,42 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const { data: conversation, isLoading } = useQuery(
+  const { data: conversation, isLoading, error } = useQuery(
     trpc.chat.getConversation.queryOptions(
       { conversationId },
       {
-        refetchInterval: 10000,
+        retry: 1,
+        refetchInterval: 30000,
+        staleTime: 20000,
       }
     )
   );
 
   const handleMessageSent = () => {
-    // Refetch messages and conversations
-    queryClient.invalidateQueries({
-      queryKey: trpc.chat.getMessages.queryKey({ conversationId }),
-    });
+    // Only invalidate conversation list
     queryClient.invalidateQueries({
       queryKey: trpc.chat.getConversations.queryKey(),
-    });
-    queryClient.invalidateQueries({
-      queryKey: trpc.chat.getUnreadCount.queryKey(),
     });
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <p className="text-muted-foreground">Loading conversation...</p>
+        <div className="text-center">
+          <div className="animate-pulse mb-2">💬</div>
+          <p className="text-muted-foreground">Loading conversation...</p>
+        </div>
       </div>
     );
   }
 
-  if (!conversation) {
+  if (error || !conversation) {
     return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <p className="text-muted-foreground mb-4">Conversation not found</p>
-        <Button onClick={() => router.push("/chat")}>
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <p className="text-muted-foreground">
+          {error ? "Error loading conversation" : "Conversation not found"}
+        </p>
+        <Button onClick={() => router.push("/chat")} variant="outline">
           Back to conversations
         </Button>
       </div>
@@ -65,11 +65,22 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
 
   const participants = (conversation.participants || []) as UserType[];
   const otherUser = participants.find((p) => p.id !== currentUserId);
+  
+  // Build product URL if exists
+  let productUrl: string | undefined;
+  if (conversation.product && typeof conversation.product === "object") {
+    const product = conversation.product as any;
+    const tenant = product.tenant;
+    const tenantSlug = typeof tenant === "object" ? tenant.slug : tenant;
+    if (tenantSlug && product.id) {
+      productUrl = `/tenants/${tenantSlug}/products/${product.id}`;
+    }
+  }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b p-4">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header - Fixed at top */}
+      <div className="border-b p-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -107,21 +118,23 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
         </div>
       </div>
 
-      {/* Messages */}
+      {/* Messages - Scrollable flex-1 */}
       <ChatWindow
         conversationId={conversationId}
         currentUserId={currentUserId}
+        productUrl={productUrl}
         onMessagesLoaded={handleMessageSent}
       />
 
-      <Separator />
-
-      {/* Input */}
-      <MessageInput
-        conversationId={conversationId}
-        receiverId={otherUser?.id || ""}
-        onMessageSent={handleMessageSent}
-      />
+      {/* Input - Fixed at bottom */}
+      <div className="border-t flex-shrink-0">
+        <MessageInput
+          conversationId={conversationId}
+          receiverId={otherUser?.id || ""}
+          currentUserId={currentUserId}
+          onMessageSent={handleMessageSent}
+        />
+      </div>
     </div>
   );
 }

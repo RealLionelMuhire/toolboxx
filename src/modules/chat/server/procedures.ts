@@ -16,7 +16,7 @@ export const chatRouter = createTRPCRouter({
           contains: ctx.session.user.id,
         },
       },
-      depth: 2, // Include participant details and related product/order
+      depth: 1, // Reduced from 2 to 1 - only populate direct relationships
       sort: '-lastMessageAt',
       limit: 50,
     });
@@ -37,7 +37,7 @@ export const chatRouter = createTRPCRouter({
       const conversation = await ctx.db.findByID({
         collection: 'conversations',
         id: input.conversationId,
-        depth: 2,
+        depth: 1, // Reduced from 2
       });
 
       // Verify user is participant
@@ -90,7 +90,7 @@ export const chatRouter = createTRPCRouter({
             equals: input.conversationId,
           },
         },
-        depth: 2, // Include sender, receiver, and attachment details
+        depth: 1, // Reduced from 2 to 1 - only populate sender/receiver basics
         sort: '-createdAt',
         limit: input.limit,
         page: input.page,
@@ -151,16 +151,18 @@ export const chatRouter = createTRPCRouter({
             })),
           }),
         },
+        depth: 1, // Populate sender and receiver
       });
 
-      // Update conversation metadata
+      // Update conversation metadata asynchronously (don't wait for it)
       const currentUnreadCount = (conversation.unreadCount as any as Record<string, number>) || {};
       const updatedUnreadCount = {
         ...currentUnreadCount,
         [input.receiverId]: (currentUnreadCount[input.receiverId] || 0) + 1,
       };
 
-      await ctx.db.update({
+      // Fire and forget - don't await
+      ctx.db.update({
         collection: 'conversations',
         id: input.conversationId,
         data: {
@@ -168,6 +170,8 @@ export const chatRouter = createTRPCRouter({
           lastMessageAt: new Date().toISOString(),
           unreadCount: updatedUnreadCount,
         } as any,
+      }).catch(() => {
+        // Silent error - don't fail the message send
       });
 
       return message;
@@ -223,7 +227,13 @@ export const chatRouter = createTRPCRouter({
         collection: 'messages',
         where: whereClause,
         limit: 100,
+        depth: 0, // No need for relations when just updating
       });
+
+      if (unreadMessages.docs.length === 0) {
+        // No messages to mark as read
+        return { success: true, markedCount: 0 };
+      }
 
       // Update each message
       const updatePromises = unreadMessages.docs.map((message) =>
@@ -270,7 +280,7 @@ export const chatRouter = createTRPCRouter({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      // Check if conversation already exists between these users
+      // Check if conversation already exists between these users (with depth 0 for speed)
       const existingConversations = await ctx.db.find({
         collection: 'conversations',
         where: {
@@ -287,10 +297,11 @@ export const chatRouter = createTRPCRouter({
             },
           ],
         },
+        depth: 0,
         limit: 1,
       });
 
-      // If conversation exists, return it
+      // If conversation exists, send message and return
       if (existingConversations.docs.length > 0) {
         const existing = existingConversations.docs[0];
         
@@ -301,61 +312,63 @@ export const chatRouter = createTRPCRouter({
           });
         }
         
-        // If initial message provided, send it
+        // If initial message provided, send it (without awaiting conversation update for speed)
         if (input.initialMessage) {
-          await ctx.db.create({
-            collection: 'messages',
-            data: {
-              conversation: existing.id,
-              sender: ctx.session.user.id,
-              receiver: input.participantId,
-              content: input.initialMessage,
-              read: false,
-            },
-          });
-
-          // Update conversation metadata
           const currentUnreadCount = (existing.unreadCount as any as Record<string, number>) || {};
-          await ctx.db.update({
-            collection: 'conversations',
-            id: existing.id,
-            data: {
-              lastMessageContent: input.initialMessage.substring(0, 100),
-              lastMessageAt: new Date().toISOString(),
-              unreadCount: {
-                ...currentUnreadCount,
-                [input.participantId]: (currentUnreadCount[input.participantId] || 0) + 1,
+          
+          // Create message and update conversation in parallel
+          await Promise.all([
+            ctx.db.create({
+              collection: 'messages',
+              data: {
+                conversation: existing.id,
+                sender: ctx.session.user.id,
+                receiver: input.participantId,
+                content: input.initialMessage,
+                read: false,
               },
-            } as any,
-          });
+            }),
+            ctx.db.update({
+              collection: 'conversations',
+              id: existing.id,
+              data: {
+                lastMessageContent: input.initialMessage.substring(0, 100),
+                lastMessageAt: new Date().toISOString(),
+                unreadCount: {
+                  ...currentUnreadCount,
+                  [input.participantId]: (currentUnreadCount[input.participantId] || 0) + 1,
+                },
+              } as any,
+            }),
+          ]);
         }
 
         return existing;
       }
 
-      // Get participant details for title
-      const participant = await ctx.db.findByID({
-        collection: 'users',
-        id: input.participantId,
-        depth: 0,
-      });
+      // Create new conversation with initial metadata
+      const conversationData: any = {
+        participants: [ctx.session.user.id, input.participantId],
+        title: 'New Conversation',
+        status: 'active',
+        ...(input.productId && { product: input.productId }),
+        ...(input.orderId && { order: input.orderId }),
+        unreadCount: input.initialMessage ? { [input.participantId]: 1 } : {},
+        ...(input.initialMessage && {
+          lastMessageContent: input.initialMessage.substring(0, 100),
+          lastMessageAt: new Date().toISOString(),
+        }),
+      };
 
-      // Create new conversation
       const conversation = await ctx.db.create({
         collection: 'conversations',
-        data: {
-          participants: [ctx.session.user.id, input.participantId],
-          title: `Chat with ${participant.username}`,
-          status: 'active',
-          ...(input.productId && { product: input.productId }),
-          ...(input.orderId && { order: input.orderId }),
-          unreadCount: {},
-        } as any,
+        data: conversationData,
       });
 
-      // Send initial message if provided
+      // Send initial message if provided (in parallel with return - fire and forget)
       if (input.initialMessage) {
-        await ctx.db.create({
+        // Don't await - let it happen in background
+        ctx.db.create({
           collection: 'messages',
           data: {
             conversation: conversation.id,
@@ -364,20 +377,7 @@ export const chatRouter = createTRPCRouter({
             content: input.initialMessage,
             read: false,
           },
-        });
-
-        // Update conversation metadata
-        await ctx.db.update({
-          collection: 'conversations',
-          id: conversation.id,
-          data: {
-            lastMessageContent: input.initialMessage.substring(0, 100),
-            lastMessageAt: new Date().toISOString(),
-            unreadCount: {
-              [input.participantId]: 1,
-            },
-          } as any,
-        });
+        }).catch(() => {}); // Silent error - don't block
       }
 
       return conversation;

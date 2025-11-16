@@ -3,8 +3,10 @@ import { redirect } from "next/navigation";
 import { caller } from "@/trpc/server";
 import { ChatView } from "@/modules/chat/ui/views/chat-view";
 import { ChatList } from "@/modules/chat/ui/components/chat-list";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default async function ConversationPage({
   params,
@@ -34,11 +36,14 @@ export default async function ConversationPage({
         </div>
 
         {/* Chat View */}
-        <div className="flex-1">
-          <ChatView
-            conversationId={conversationId}
-            currentUserId={session.user.id}
-          />
+        <div className="flex-1 flex flex-col" data-conversation-id={conversationId}>
+          <ErrorBoundary>
+            <ChatView
+              key={conversationId}
+              conversationId={conversationId}
+              currentUserId={session.user.id}
+            />
+          </ErrorBoundary>
         </div>
       </div>
     </div>

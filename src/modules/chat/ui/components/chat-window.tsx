@@ -2,10 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import { format } from "date-fns";
-import { User, FileText } from "lucide-react";
+import { User, FileText, ExternalLink } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
+import Link from "next/link";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTRPC } from "@/trpc/client";
 import type { User as UserType } from "@/payload-types";
@@ -13,17 +14,35 @@ import type { User as UserType } from "@/payload-types";
 interface ChatWindowProps {
   conversationId: string;
   currentUserId: string;
+  productUrl?: string;
   onMessagesLoaded?: () => void;
+}
+
+// Helper to detect and extract product URLs
+function parseProductLink(content: string): { text: string; productUrl: string | null } {
+  const urlRegex = /(https?:\/\/[^\s]+\/tenants\/[^\/]+\/products\/[^\s]+)/;
+  const match = content.match(urlRegex);
+  
+  if (match) {
+    return {
+      text: content.replace(match[0], '').trim(),
+      productUrl: match[0],
+    };
+  }
+  
+  return { text: content, productUrl: null };
 }
 
 export function ChatWindow({
   conversationId,
   currentUserId,
+  productUrl,
   onMessagesLoaded,
 }: ChatWindowProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasMarkedAsRead = useRef(false);
 
   const { data: messagesData, isLoading } = useQuery(
     trpc.chat.getMessages.queryOptions(
@@ -33,18 +52,26 @@ export function ChatWindow({
         page: 1,
       },
       {
-        refetchInterval: 5000, // Poll for new messages every 5 seconds
+        refetchInterval: 10000, // Reduced from 5s to 10s
+        staleTime: 5000, // Consider data fresh for 5s
       }
     )
   );
 
   const markAsReadMutation = useMutation(
-    trpc.chat.markAsRead.mutationOptions()
+    trpc.chat.markAsRead.mutationOptions({
+      onSuccess: () => {
+        // Update unread count
+        queryClient.invalidateQueries({
+          queryKey: trpc.chat.getUnreadCount.queryKey(),
+        });
+      },
+    })
   );
 
   useEffect(() => {
-    if (messagesData?.docs && messagesData.docs.length > 0) {
-      // Mark unread messages as read
+    if (messagesData?.docs && messagesData.docs.length > 0 && !hasMarkedAsRead.current) {
+      // Mark unread messages as read only once
       const unreadMessageIds = messagesData.docs
         .filter(
           (msg) =>
@@ -55,6 +82,7 @@ export function ChatWindow({
         .map((msg) => msg.id);
 
       if (unreadMessageIds.length > 0) {
+        hasMarkedAsRead.current = true;
         markAsReadMutation.mutate({
           conversationId,
           messageIds: unreadMessageIds,
@@ -63,14 +91,23 @@ export function ChatWindow({
 
       onMessagesLoaded?.();
     }
-  }, [messagesData?.docs, conversationId, currentUserId, onMessagesLoaded]);
+  }, [messagesData?.docs?.length, conversationId, currentUserId, onMessagesLoaded]);
 
   useEffect(() => {
-    // Scroll to bottom when messages load
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    // Reset the flag when conversation changes
+    hasMarkedAsRead.current = false;
+  }, [conversationId]);
+
+  useEffect(() => {
+    // Scroll to bottom when messages load or change
+    if (scrollRef.current && messagesData?.docs) {
+      const scrollElement = scrollRef.current;
+      // Scroll to bottom immediately for new messages
+      requestAnimationFrame(() => {
+        scrollElement.scrollTop = scrollElement.scrollHeight;
+      });
     }
-  }, [messagesData?.docs]);
+  }, [messagesData?.docs?.length]);
 
   if (isLoading) {
     return (
@@ -83,8 +120,8 @@ export function ChatWindow({
   const messages = messagesData?.docs || [];
 
   return (
-    <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-      <div className="space-y-4">
+    <div className="flex-1 overflow-y-auto p-4" ref={scrollRef}>
+      <div className="space-y-4 min-h-full">
         {messages.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">
@@ -101,6 +138,12 @@ export function ChatWindow({
                   ? message.sender
                   : ({ id: message.sender } as UserType);
               const isSentByMe = sender.id === currentUserId;
+              
+              // Parse product link from message content
+              const { text, productUrl: messageProductUrl } = parseProductLink(message.content);
+              
+              // Only show "View Product" button if the message actually contains a product URL
+              const displayProductUrl = messageProductUrl;
 
               return (
                 <div
@@ -126,6 +169,27 @@ export function ChatWindow({
                       <p className="text-sm whitespace-pre-wrap break-words">
                         {message.content}
                       </p>
+                      
+                      {/* Product Link Preview - Only show if message contains a product URL */}
+                      {displayProductUrl && (
+                        <Link 
+                          href={displayProductUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`mt-2 block rounded-lg overflow-hidden transition-all hover:opacity-90 ${
+                            isSentByMe 
+                              ? "bg-white/10 hover:bg-white/20 border border-white/20" 
+                              : "bg-background border border-border hover:bg-muted"
+                          }`}
+                        >
+                          <div className={`p-3 flex items-center gap-2 text-sm ${
+                            isSentByMe ? "text-primary-foreground" : "text-foreground"
+                          }`}>
+                            <ExternalLink className="h-4 w-4 shrink-0" />
+                            <span className="font-medium">View Product</span>
+                          </div>
+                        </Link>
+                      )}
 
                       {message.attachments && message.attachments.length > 0 && (
                         <div className="mt-2 space-y-1">
@@ -158,6 +222,6 @@ export function ChatWindow({
             })
         )}
       </div>
-    </ScrollArea>
+    </div>
   );
 }
