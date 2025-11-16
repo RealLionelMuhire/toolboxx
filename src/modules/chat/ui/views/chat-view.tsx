@@ -69,6 +69,17 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   const otherUser = participants.find((p) => p.id !== currentUserId);
 
   console.log('🟢 ChatView: Other user:', otherUser?.username || 'Unknown');
+  
+  // Build product URL if exists
+  let productUrl: string | undefined;
+  if (conversation.product && typeof conversation.product === "object") {
+    const product = conversation.product as any;
+    const tenant = product.tenant;
+    const tenantSlug = typeof tenant === "object" ? tenant.slug : tenant;
+    if (tenantSlug && product.id) {
+      productUrl = `/tenants/${tenantSlug}/products/${product.id}`;
+    }
+  }
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -115,6 +126,7 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
       <ChatWindow
         conversationId={conversationId}
         currentUserId={currentUserId}
+        productUrl={productUrl}
         onMessagesLoaded={handleMessageSent}
       />
 

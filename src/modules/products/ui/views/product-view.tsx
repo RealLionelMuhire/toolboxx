@@ -85,10 +85,16 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
       return;
     }
     
+    // Build the product URL
+    const productUrl = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/tenants/${tenantSlug}/products/${productId}`;
+    
+    // Create rich initial message with product details
+    const initialMessage = `Hello, I am interested in the following item:\n${productUrl}\n\nPlease contact me.`;
+    
     startConversation.mutate({
       participantId: tenantOwnerId,
       productId: productId,
-      initialMessage: `Hi, I'm interested in "${data?.name}"`,
+      initialMessage: initialMessage,
     });
   };
   
@@ -191,38 +197,40 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
             {/* Action Buttons */}
             <div className="flex flex-col gap-4 p-6 border-b">
-              <div className="flex flex-col gap-2">
-                {/* Cart and Buy Now Buttons */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <CartButton
-                    isPurchased={data.isPurchased}
-                    productId={productId}
-                    tenantSlug={tenantSlug}
-                    quantity={data.quantity || 0}
-                    minOrderQuantity={data.minOrderQuantity || 1}
-                    maxOrderQuantity={data.maxOrderQuantity || undefined}
-                    unit={data.unit || "unit"}
-                    stockStatus={data.stockStatus || "in_stock"}
-                    allowBackorder={data.allowBackorder || false}
-                  />
-                  <BuyNowButton
-                    isPurchased={data.isPurchased}
-                    productId={productId}
-                    productName={data.name}
-                    productPrice={data.price}
-                    tenantSlug={tenantSlug}
-                    quantity={data.quantity || 0}
-                    minOrderQuantity={data.minOrderQuantity || 1}
-                    maxOrderQuantity={data.maxOrderQuantity || undefined}
-                    unit={data.unit || "unit"}
-                    stockStatus={data.stockStatus || "in_stock"}
-                    allowBackorder={data.allowBackorder || false}
-                  />
-                </div>
-                
+              {/* Cart and Buy Now Buttons in 2-column grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <CartButton
+                  isPurchased={data.isPurchased}
+                  productId={productId}
+                  tenantSlug={tenantSlug}
+                  quantity={data.quantity || 0}
+                  minOrderQuantity={data.minOrderQuantity || 1}
+                  maxOrderQuantity={data.maxOrderQuantity || undefined}
+                  unit={data.unit || "unit"}
+                  stockStatus={data.stockStatus || "in_stock"}
+                  allowBackorder={data.allowBackorder || false}
+                />
+                <BuyNowButton
+                  isPurchased={data.isPurchased}
+                  productId={productId}
+                  productName={data.name}
+                  productPrice={data.price}
+                  tenantSlug={tenantSlug}
+                  quantity={data.quantity || 0}
+                  minOrderQuantity={data.minOrderQuantity || 1}
+                  maxOrderQuantity={data.maxOrderQuantity || undefined}
+                  unit={data.unit || "unit"}
+                  stockStatus={data.stockStatus || "in_stock"}
+                  allowBackorder={data.allowBackorder || false}
+                />
+              </div>
+              
+              {/* Contact Seller and Share Buttons in 2-column grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {/* Contact Seller Button */}
                 <Button
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                  variant="elevated"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                   onClick={handleContactSeller}
                   disabled={startConversation.isPending || !data?.tenant}
                 >

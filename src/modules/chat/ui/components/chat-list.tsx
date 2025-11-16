@@ -70,7 +70,7 @@ export function ChatList({
 
   return (
     <ScrollArea className="h-full">
-      <div className="divide-y">
+      <div className="p-2 space-y-2">
         {conversations.map((conversation) => {
           const participants = (conversation.participants || []) as UserType[];
           const otherUser = participants.find((p) => p.id !== currentUserId);
@@ -82,14 +82,14 @@ export function ChatList({
           const isSelected = selectedConversationId === conversation.id;
 
           return (
-            <button
+            <div
               key={conversation.id}
               onClick={() => handleConversationClick(conversation.id)}
               onMouseEnter={() => handleMouseEnter(conversation.id)}
               className={cn(
-                "w-full text-left p-4 transition-colors cursor-pointer",
-                "hover:bg-muted/50",
-                isSelected && "bg-muted"
+                "p-3 rounded-lg border transition-all cursor-pointer",
+                "bg-card hover:bg-accent/50 hover:shadow-sm",
+                isSelected && "bg-accent border-primary/20 shadow-sm"
               )}
             >
               <div className="flex gap-3">
@@ -136,7 +136,7 @@ export function ChatList({
                   )}
                 </div>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

@@ -2,8 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { format } from "date-fns";
-import { User, FileText } from "lucide-react";
+import { User, FileText, ExternalLink } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
+import Link from "next/link";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useTRPC } from "@/trpc/client";
@@ -12,12 +14,29 @@ import type { User as UserType } from "@/payload-types";
 interface ChatWindowProps {
   conversationId: string;
   currentUserId: string;
+  productUrl?: string;
   onMessagesLoaded?: () => void;
+}
+
+// Helper to detect and extract product URLs
+function parseProductLink(content: string): { text: string; productUrl: string | null } {
+  const urlRegex = /(https?:\/\/[^\s]+\/tenants\/[^\/]+\/products\/[^\s]+)/;
+  const match = content.match(urlRegex);
+  
+  if (match) {
+    return {
+      text: content.replace(match[0], '').trim(),
+      productUrl: match[0],
+    };
+  }
+  
+  return { text: content, productUrl: null };
 }
 
 export function ChatWindow({
   conversationId,
   currentUserId,
+  productUrl,
   onMessagesLoaded,
 }: ChatWindowProps) {
   const trpc = useTRPC();
@@ -126,6 +145,12 @@ export function ChatWindow({
                   ? message.sender
                   : ({ id: message.sender } as UserType);
               const isSentByMe = sender.id === currentUserId;
+              
+              // Parse product link from message content
+              const { text, productUrl: messageProductUrl } = parseProductLink(message.content);
+              
+              // Only show "View Product" button if the message actually contains a product URL
+              const displayProductUrl = messageProductUrl;
 
               return (
                 <div
@@ -151,6 +176,27 @@ export function ChatWindow({
                       <p className="text-sm whitespace-pre-wrap break-words">
                         {message.content}
                       </p>
+                      
+                      {/* Product Link Preview - Only show if message contains a product URL */}
+                      {displayProductUrl && (
+                        <Link 
+                          href={displayProductUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`mt-2 block rounded-lg overflow-hidden transition-all hover:opacity-90 ${
+                            isSentByMe 
+                              ? "bg-white/10 hover:bg-white/20 border border-white/20" 
+                              : "bg-background border border-border hover:bg-muted"
+                          }`}
+                        >
+                          <div className={`p-3 flex items-center gap-2 text-sm ${
+                            isSentByMe ? "text-primary-foreground" : "text-foreground"
+                          }`}>
+                            <ExternalLink className="h-4 w-4 shrink-0" />
+                            <span className="font-medium">View Product</span>
+                          </div>
+                        </Link>
+                      )}
 
                       {message.attachments && message.attachments.length > 0 && (
                         <div className="mt-2 space-y-1">
