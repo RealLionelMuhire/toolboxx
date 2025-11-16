@@ -78,28 +78,28 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col h-full overflow-hidden w-full max-w-full">
       {/* Header - Fixed at top */}
-      <div className="border-b p-4 flex-shrink-0">
+      <div className="border-b p-2 sm:p-4 flex-shrink-0 overflow-hidden">
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="lg:hidden flex-shrink-0"
             onClick={() => router.push("/chat")}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
 
-          <div className="flex items-center gap-3 flex-1">
-            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+          <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
+            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
               <User className="h-5 w-5" />
             </div>
-            <div>
-              <h2 className="font-semibold">
+            <div className="min-w-0 flex-1">
+              <h2 className="font-semibold truncate">
                 {otherUser?.username || "Unknown User"}
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground truncate">
                 {otherUser?.email || ""}
               </p>
             </div>

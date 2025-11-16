@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { format } from "date-fns";
 import { User, FileText, ExternalLink } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -8,8 +8,10 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { useTRPC } from "@/trpc/client";
 import type { User as UserType } from "@/payload-types";
+import { ProductPreviewDialog } from "./product-preview-dialog";
 
 interface ChatWindowProps {
   conversationId: string;
@@ -43,6 +45,7 @@ export function ChatWindow({
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const hasMarkedAsRead = useRef(false);
+  const [previewProductUrl, setPreviewProductUrl] = useState<string | null>(null);
 
   const { data: messagesData, isLoading } = useQuery(
     trpc.chat.getMessages.queryOptions(
@@ -120,8 +123,8 @@ export function ChatWindow({
   const messages = messagesData?.docs || [];
 
   return (
-    <div className="flex-1 overflow-y-auto p-2 sm:p-4" ref={scrollRef}>
-      <div className="space-y-2 min-h-full">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden p-1.5 sm:p-3 md:p-4" ref={scrollRef}>
+      <div className="space-y-2 min-h-full w-full max-w-full">
         {messages.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">
@@ -148,47 +151,44 @@ export function ChatWindow({
               return (
                 <div
                   key={message.id}
-                  className={`flex gap-2 sm:gap-3 ${isSentByMe ? "flex-row-reverse" : "flex-row"}`}
+                  className={`flex gap-1.5 sm:gap-2 md:gap-3 w-full max-w-full ${isSentByMe ? "flex-row-reverse" : "flex-row"}`}
                 >
-                  <Avatar className="h-8 w-8 shrink-0">
+                  <Avatar className="h-7 w-7 sm:h-8 sm:w-8 shrink-0">
                     <AvatarFallback>
-                      <User className="h-4 w-4" />
+                      <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     </AvatarFallback>
                   </Avatar>
 
                   <div
-                    className={`flex flex-col gap-1 max-w-[85%] sm:max-w-[75%] md:max-w-[70%] ${isSentByMe ? "items-end" : "items-start"}`}
+                    className={`flex flex-col gap-1 max-w-[85%] sm:max-w-[80%] md:max-w-[75%] lg:max-w-[65%] ${isSentByMe ? "items-end" : "items-start"}`}
                   >
                     <div
-                      className={`rounded-lg px-3 py-2 sm:px-4 ${
+                      className={`rounded-lg px-2.5 py-2 sm:px-3 ${
                         isSentByMe
                           ? "bg-primary text-primary-foreground"
                           : "bg-muted"
                       }`}
+                      style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}
                     >
-                      <p className="text-sm whitespace-pre-wrap break-words">
+                      <p className="text-sm whitespace-pre-wrap" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
                         {message.content}
                       </p>
                       
                       {/* Product Link Preview - Only show if message contains a product URL */}
                       {displayProductUrl && (
-                        <Link 
-                          href={displayProductUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`mt-2 block rounded-lg overflow-hidden transition-all hover:opacity-90 ${
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setPreviewProductUrl(displayProductUrl)}
+                          className={`mt-2 w-full justify-start rounded-lg transition-all ${
                             isSentByMe 
-                              ? "bg-white/10 hover:bg-white/20 border border-white/20" 
-                              : "bg-background border border-border hover:bg-muted"
+                              ? "bg-white/10 hover:bg-white/20 border border-white/20 text-primary-foreground hover:text-primary-foreground" 
+                              : "bg-background border border-border hover:bg-muted text-foreground"
                           }`}
                         >
-                          <div className={`p-3 flex items-center gap-2 text-sm ${
-                            isSentByMe ? "text-primary-foreground" : "text-foreground"
-                          }`}>
-                            <ExternalLink className="h-4 w-4 shrink-0" />
-                            <span className="font-medium">View Product</span>
-                          </div>
-                        </Link>
+                          <ExternalLink className="h-4 w-4 shrink-0 mr-2" />
+                          <span className="font-medium">View Product</span>
+                        </Button>
                       )}
 
                       {message.attachments && message.attachments.length > 0 && (
@@ -222,6 +222,15 @@ export function ChatWindow({
             })
         )}
       </div>
+
+      {/* Product Preview Dialog */}
+      {previewProductUrl && (
+        <ProductPreviewDialog
+          productUrl={previewProductUrl}
+          open={!!previewProductUrl}
+          onClose={() => setPreviewProductUrl(null)}
+        />
+      )}
     </div>
   );
 }
