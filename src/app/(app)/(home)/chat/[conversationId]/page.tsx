@@ -1,20 +1,12 @@
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 
 import { caller } from "@/trpc/server";
 import { ChatView } from "@/modules/chat/ui/views/chat-view";
 import { ChatList } from "@/modules/chat/ui/components/chat-list";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-function ChatViewSkeleton() {
-  return (
-    <div className="flex items-center justify-center h-full">
-      <p className="text-muted-foreground">Loading chat...</p>
-    </div>
-  );
-}
 
 export default async function ConversationPage({
   params,
@@ -37,22 +29,21 @@ export default async function ConversationPage({
           <div className="p-4 border-b">
             <h1 className="text-xl font-bold">Messages</h1>
           </div>
-          <Suspense fallback={<div className="p-4 text-muted-foreground text-sm">Loading conversations...</div>}>
-            <ChatList
-              currentUserId={session.user.id}
-              selectedConversationId={conversationId}
-            />
-          </Suspense>
+          <ChatList
+            currentUserId={session.user.id}
+            selectedConversationId={conversationId}
+          />
         </div>
 
         {/* Chat View */}
-        <div className="flex-1">
-          <Suspense fallback={<ChatViewSkeleton />}>
+        <div className="flex-1 flex flex-col" data-conversation-id={conversationId}>
+          <ErrorBoundary>
             <ChatView
+              key={conversationId}
               conversationId={conversationId}
               currentUserId={session.user.id}
             />
-          </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
     </div>

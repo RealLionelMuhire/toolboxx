@@ -21,33 +21,18 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  console.log('🟢 ChatView: Mounting with conversationId:', conversationId);
-  console.log('🟢 ChatView: currentUserId:', currentUserId);
-
-  const { data: conversation, isLoading, error, fetchStatus, status } = useQuery(
+  const { data: conversation, isLoading, error } = useQuery(
     trpc.chat.getConversation.queryOptions(
       { conversationId },
       {
         retry: 1,
         refetchInterval: 30000,
         staleTime: 20000,
-        enabled: !!conversationId, // Only run if conversationId exists
       }
     )
   );
 
-  console.log('🟢 ChatView: Query state:', { 
-    isLoading,
-    status,
-    fetchStatus,
-    hasData: !!conversation, 
-    hasError: !!error,
-    conversationId: conversation?.id,
-    errorMessage: error?.message
-  });
-
   const handleMessageSent = () => {
-    console.log('🟢 ChatView: Message sent, invalidating conversation list');
     // Only invalidate conversation list
     queryClient.invalidateQueries({
       queryKey: trpc.chat.getConversations.queryKey(),
@@ -55,28 +40,22 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   };
 
   if (isLoading) {
-    console.log('🟡 ChatView: Loading conversation...');
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <div className="animate-pulse mb-2">💬</div>
           <p className="text-muted-foreground">Loading conversation...</p>
-          <p className="text-xs text-muted-foreground mt-2">
-            Status: {status} | Fetch: {fetchStatus}
-          </p>
         </div>
       </div>
     );
   }
 
   if (error || !conversation) {
-    console.log('🔴 ChatView: Error or no conversation:', { error, conversation });
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <p className="text-muted-foreground">
-          {error ? `Error: ${error.message}` : "Conversation not found"}
+          {error ? "Error loading conversation" : "Conversation not found"}
         </p>
-        <p className="text-xs text-muted-foreground">ConversationId: {conversationId}</p>
         <Button onClick={() => router.push("/chat")} variant="outline">
           Back to conversations
         </Button>

@@ -4,7 +4,6 @@ import { format } from "date-fns";
 import { User, MessageCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { useTransition } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +23,6 @@ export function ChatList({
 }: ChatListProps) {
   const trpc = useTRPC();
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
 
   const { data: conversationsData, isLoading } = useQuery({
     ...trpc.chat.getConversations.queryOptions(),
@@ -39,14 +37,13 @@ export function ChatList({
   });
 
   const handleConversationClick = (conversationId: string) => {
-    console.log('🔵 ChatList: Clicking conversation:', conversationId);
-    console.log('🔵 ChatList: Current selected:', selectedConversationId);
-    console.log('🔵 ChatList: isPending:', isPending);
-    
-    startTransition(() => {
-      console.log('🔵 ChatList: Starting navigation to:', `/chat/${conversationId}`);
-      router.push(`/chat/${conversationId}`);
-    });
+    // Simple navigation like ProductCard does
+    router.push(`/chat/${conversationId}`);
+  };
+  
+  const handleMouseEnter = (conversationId: string) => {
+    // Prefetch on hover for instant navigation
+    router.prefetch(`/chat/${conversationId}`);
   };
 
   if (isLoading) {
@@ -88,10 +85,10 @@ export function ChatList({
             <button
               key={conversation.id}
               onClick={() => handleConversationClick(conversation.id)}
-              disabled={isPending && !isSelected}
+              onMouseEnter={() => handleMouseEnter(conversation.id)}
               className={cn(
-                "w-full text-left p-4 transition-colors",
-                "hover:bg-muted/50 disabled:opacity-50",
+                "w-full text-left p-4 transition-colors cursor-pointer",
+                "hover:bg-muted/50",
                 isSelected && "bg-muted"
               )}
             >
