@@ -119,7 +119,7 @@ export function MessageInput({
   };
 
   return (
-    <div className="border-t p-4 bg-background">
+    <div className="border-t p-2 sm:p-4 bg-background w-full max-w-full overflow-hidden">
       {attachments.length > 0 && (
         <div className="mb-2 flex gap-2 flex-wrap">
           {attachments.map((attachmentId, index) => (

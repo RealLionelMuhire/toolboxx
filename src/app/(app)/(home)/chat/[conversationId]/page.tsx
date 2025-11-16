@@ -22,8 +22,8 @@ export default async function ConversationPage({
   const { conversationId } = await params;
 
   return (
-    <div className="container max-w-7xl mx-auto p-4 h-[calc(100vh-4rem)]">
-      <div className="border rounded-lg h-full flex overflow-hidden">
+    <div className="container max-w-7xl mx-auto p-1 sm:p-2 md:p-4 h-[calc(100vh-4rem)] overflow-hidden">
+      <div className="border rounded-lg h-full flex overflow-hidden w-full max-w-full">
         {/* Conversation List - Hidden on mobile */}
         <div className="hidden md:block w-80 border-r">
           <div className="p-4 border-b">
@@ -36,7 +36,7 @@ export default async function ConversationPage({
         </div>
 
         {/* Chat View */}
-        <div className="flex-1 flex flex-col" data-conversation-id={conversationId}>
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0" data-conversation-id={conversationId}>
           <ErrorBoundary>
             <ChatView
               key={conversationId}
