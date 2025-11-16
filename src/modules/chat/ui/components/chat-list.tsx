@@ -39,7 +39,12 @@ export function ChatList({
   });
 
   const handleConversationClick = (conversationId: string) => {
+    console.log('🔵 ChatList: Clicking conversation:', conversationId);
+    console.log('🔵 ChatList: Current selected:', selectedConversationId);
+    console.log('🔵 ChatList: isPending:', isPending);
+    
     startTransition(() => {
+      console.log('🔵 ChatList: Starting navigation to:', `/chat/${conversationId}`);
       router.push(`/chat/${conversationId}`);
     });
   };

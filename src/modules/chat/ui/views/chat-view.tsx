@@ -22,6 +22,9 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
+  console.log('🟢 ChatView: Mounting with conversationId:', conversationId);
+  console.log('🟢 ChatView: currentUserId:', currentUserId);
+
   const { data: conversation, isLoading, error } = useQuery(
     trpc.chat.getConversation.queryOptions(
       { conversationId },
@@ -33,7 +36,15 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
     )
   );
 
+  console.log('🟢 ChatView: Query state:', { 
+    isLoading, 
+    hasData: !!conversation, 
+    hasError: !!error,
+    conversationId: conversation?.id 
+  });
+
   const handleMessageSent = () => {
+    console.log('🟢 ChatView: Message sent, invalidating conversation list');
     // Only invalidate conversation list
     queryClient.invalidateQueries({
       queryKey: trpc.chat.getConversations.queryKey(),
@@ -41,6 +52,7 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   };
 
   if (isLoading) {
+    console.log('🟡 ChatView: Loading conversation...');
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
@@ -52,6 +64,7 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   }
 
   if (error || !conversation) {
+    console.log('🔴 ChatView: Error or no conversation:', { error, conversation });
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4">
         <p className="text-muted-foreground">
@@ -64,8 +77,12 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
     );
   }
 
+  console.log('🟢 ChatView: Rendering conversation:', conversation.id);
+  
   const participants = (conversation.participants || []) as UserType[];
   const otherUser = participants.find((p) => p.id !== currentUserId);
+
+  console.log('🟢 ChatView: Other user:', otherUser?.username || 'Unknown');
 
   return (
     <div className="flex flex-col h-full">
