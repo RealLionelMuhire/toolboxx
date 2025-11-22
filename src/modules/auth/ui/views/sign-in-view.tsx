@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Poppins } from "next/font/google";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -31,6 +31,8 @@ const poppins = Poppins({
 
 export const SignInView = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -55,8 +57,9 @@ export const SignInView = () => {
       // Small delay to ensure cache is updated before navigation
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      // Navigate and refresh
-      router.push("/");
+      // Navigate to the redirect URL if provided, otherwise go to homepage
+      const redirectUrl = redirect || "/";
+      router.push(redirectUrl);
       router.refresh();
     },
   }));

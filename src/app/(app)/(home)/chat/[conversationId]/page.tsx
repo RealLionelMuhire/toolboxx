@@ -14,12 +14,11 @@ export default async function ConversationPage({
   params: Promise<{ conversationId: string }>;
 }) {
   const session = await caller.auth.session();
+  const { conversationId } = await params;
 
   if (!session.user) {
-    redirect("/sign-in");
+    redirect(`/sign-in?redirect=${encodeURIComponent(`/chat/${conversationId}`)}`);
   }
-
-  const { conversationId } = await params;
 
   return (
     <div className="container max-w-7xl mx-auto p-1 sm:p-2 md:p-4 h-[calc(100vh-4rem)] overflow-hidden">

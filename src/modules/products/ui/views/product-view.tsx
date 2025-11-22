@@ -69,7 +69,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   const handleContactSeller = () => {
     if (!session?.user) {
       toast.error("Please log in to contact the seller");
-      router.push("/sign-in");
+      const currentPath = `/tenants/${tenantSlug}/products/${productId}`;
+      router.push(`/sign-in?redirect=${encodeURIComponent(currentPath)}`);
       return;
     }
     

@@ -26,7 +26,7 @@ export const MySalesView = () => {
 
   useEffect(() => {
     if (!sessionLoading && !session?.user) {
-      router.push("/sign-in");
+      router.push("/sign-in?redirect=/dashboard/my-sales");
     } else if (!sessionLoading && session?.user && !session.user.roles?.includes('tenant')) {
       router.push("/");
     }

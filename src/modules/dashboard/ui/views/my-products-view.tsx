@@ -35,7 +35,7 @@ export const MyProductsView = () => {
 
   useEffect(() => {
     if (!sessionLoading && !session?.user) {
-      router.push("/sign-in");
+      router.push("/sign-in?redirect=/dashboard/my-products");
     } else if (!sessionLoading && session?.user && !session.user.roles?.includes('tenant')) {
       router.push("/");
     }
