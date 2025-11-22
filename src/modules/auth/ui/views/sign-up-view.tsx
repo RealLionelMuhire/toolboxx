@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Poppins } from "next/font/google";
 import { useForm } from "react-hook-form";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -44,6 +44,8 @@ type AccountType = "client" | "tenant";
 
 export const SignUpView = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
   const [accountType, setAccountType] = useState<AccountType | null>(null);
 
   const trpc = useTRPC();
@@ -71,7 +73,9 @@ export const SignUpView = () => {
       // Small delay to ensure cache is updated
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      router.push("/");
+      // Navigate to the redirect URL if provided, otherwise go to homepage
+      const redirectUrl = redirect || "/";
+      router.push(redirectUrl);
       router.refresh();
     },
   }));
@@ -98,7 +102,9 @@ export const SignUpView = () => {
       // Small delay to ensure cache is updated
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      router.push("/");
+      // Navigate to the redirect URL if provided, otherwise go to homepage
+      const redirectUrl = redirect || "/";
+      router.push(redirectUrl);
       router.refresh();
     },
   }));
