@@ -133,11 +133,35 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   return (
     <div className="px-4 lg:px-12 py-10">
       <div className="border rounded-sm bg-white overflow-hidden">
-        {/* Two-column layout: Details on left (lg:order-1), Images on right (lg:order-2) */}
+        {/* Two-column layout: Image on left (lg:order-1), Details on right (lg:order-2) */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
           
-          {/* LEFT SIDE - Product Details (Desktop: left, Mobile: bottom) */}
-          <div className="order-2 lg:order-1 border-t lg:border-t-0 lg:border-r">
+          {/* LEFT SIDE - Product Image (Desktop: left, Mobile: top) */}
+          <div className="order-1 lg:order-1 lg:border-r">
+            <div className="relative aspect-square bg-gray-50">
+              {images.length > 1 ? (
+                <ImageCarousel
+                  images={images}
+                  className="aspect-square"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  loading="eager"
+                  quality={90}
+                />
+              ) : (
+                <Image
+                  src={images[0]?.url || "/placeholder.png"}
+                  alt={data.name}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                />
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT SIDE - Product Details (Desktop: right, Mobile: bottom) */}
+          <div className="order-2 lg:order-2 border-t lg:border-t-0">
             <div className="p-6">
               <h1 className="text-4xl font-medium">{data.name}</h1>
             </div>
@@ -302,30 +326,6 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
               </div>
             </div>
           </div>
-
-          {/* RIGHT SIDE - Product Images (Desktop: right, Mobile: top) */}
-          <div className="order-1 lg:order-2">
-            <div className="relative aspect-square bg-gray-50">
-              {images.length > 1 ? (
-                <ImageCarousel
-                  images={images}
-                  className="aspect-square"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  loading="eager"
-                  quality={90}
-                />
-              ) : (
-                <Image
-                  src={images[0]?.url || "/placeholder.png"}
-                  alt={data.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  priority
-                />
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -338,8 +338,21 @@ export const ProductViewSkeleton = () => {
       <div className="border rounded-sm bg-white overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
           
-          {/* LEFT SIDE - Product Details Skeleton */}
-          <div className="order-2 lg:order-1 border-t lg:border-t-0 lg:border-r">
+          {/* LEFT SIDE - Image Skeleton (Desktop: left, Mobile: top) */}
+          <div className="order-1 lg:order-1 lg:border-r">
+            <div className="relative aspect-square bg-gray-100">
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="animate-pulse text-gray-400">
+                  <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE - Product Details Skeleton (Desktop: right, Mobile: bottom) */}
+          <div className="order-2 lg:order-2 border-t lg:border-t-0">
             <div className="p-6 space-y-4">
               {/* Title skeleton */}
               <div className="h-10 bg-gray-200 rounded animate-pulse w-3/4"></div>
@@ -398,19 +411,6 @@ export const ProductViewSkeleton = () => {
                     <div className="h-4 w-8 bg-gray-200 rounded animate-pulse"></div>
                   </div>
                 ))}
-              </div>
-            </div>
-          </div>
-
-          {/* RIGHT SIDE - Image Skeleton */}
-          <div className="order-1 lg:order-2">
-            <div className="relative aspect-square bg-gray-100">
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="animate-pulse text-gray-400">
-                  <svg className="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                  </svg>
-                </div>
               </div>
             </div>
           </div>
