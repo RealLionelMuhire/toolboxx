@@ -61,7 +61,7 @@ pendingTx.docs.forEach(tx => {
 
 console.log('\n📝 INSTRUCTIONS:')
 console.log('1. Leo user should log in at: http://localhost:3000/admin')
-console.log('2. Navigate to: http://localhost:3000/admin/verify-payments')
+console.log('2. Navigate to: http://localhost:3000/dashboard/verify-payments')
 console.log('3. Verify the 2 pending transactions')
 console.log('4. Orders will be created automatically after verification')
 

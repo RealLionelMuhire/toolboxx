@@ -105,6 +105,6 @@ console.log('If Leo cannot see transactions in Payload CMS UI:')
 console.log('1. Check that Transactions collection admin.hidden is removed or allows verified tenants')
 console.log('2. Transactions collection should be visible in sidebar for verified tenants')
 console.log('3. Access via: http://localhost:3000/admin/collections/transactions')
-console.log('4. Or custom dashboard: http://localhost:3000/admin/verify-payments')
+console.log('4. Or custom dashboard: http://localhost:3000/dashboard/verify-payments')
 
 process.exit(0)

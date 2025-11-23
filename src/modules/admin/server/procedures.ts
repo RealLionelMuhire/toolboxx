@@ -4,7 +4,7 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { isSuperAdmin } from "@/lib/access";
 
 export const adminRouter = createTRPCRouter({
-  // Get pending transactions for tenant
+  // Get all transactions for tenant (including completed ones)
   getPendingTransactions: protectedProcedure
     .query(async ({ ctx }) => {
       // Check if user is tenant owner or super admin
@@ -45,16 +45,12 @@ export const adminRouter = createTRPCRouter({
       }
 
       // Build query - super admins see all, tenants see only their transactions
+      // Remove status filter to show all transactions (pending, verified, rejected, completed)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const whereClause: any = isSuperAdmin(ctx.session.user)
-        ? {
-            status: { equals: "awaiting_verification" },
-          }
+        ? {} // Show all transactions for super admins
         : {
-            and: [
-              { tenant: { equals: tenantId } },
-              { status: { equals: "awaiting_verification" } },
-            ],
+            tenant: { equals: tenantId }, // Show all transactions for this tenant
           };
 
       // Get transactions

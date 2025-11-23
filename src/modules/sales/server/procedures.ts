@@ -200,4 +200,143 @@ export const salesRouter = createTRPCRouter({
         statusCounts,
       };
     }),
+
+  // Update order status (mark as shipped/delivered)
+  updateOrderStatus: protectedProcedure
+    .input(
+      z.object({
+        orderId: z.string(),
+        status: z.enum(['shipped', 'delivered']),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+      });
+
+      if (!userData.tenants?.[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No tenant found for user",
+        });
+      }
+
+      const tenantId = typeof userData.tenants[0].tenant === 'string' 
+        ? userData.tenants[0].tenant 
+        : userData.tenants[0].tenant.id;
+
+      // Get the order to verify ownership
+      const order = await ctx.db.findByID({
+        collection: "orders",
+        id: input.orderId,
+        depth: 2,
+      });
+
+      if (!order) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Order not found",
+        });
+      }
+
+      // Verify this order belongs to the tenant
+      // Check through products
+      const products = Array.isArray(order.products) ? order.products : [];
+      let orderBelongsToTenant = false;
+
+      for (const item of products) {
+        const product = typeof item.product === 'object' ? item.product : null;
+        if (product) {
+          const productTenantId = typeof product.tenant === 'string' 
+            ? product.tenant 
+            : product.tenant?.id;
+          
+          if (productTenantId === tenantId) {
+            orderBelongsToTenant = true;
+            break;
+          }
+        }
+      }
+
+      if (!orderBelongsToTenant) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You can only update your own orders",
+        });
+      }
+
+      // Update the order status
+      const updateData: any = {
+        status: input.status,
+        updatedAt: new Date().toISOString(),
+      };
+
+      if (input.status === 'shipped') {
+        updateData.shippedAt = new Date().toISOString();
+      } else if (input.status === 'delivered') {
+        updateData.deliveredAt = new Date().toISOString();
+      }
+
+      await ctx.db.update({
+        collection: "orders",
+        id: input.orderId,
+        data: updateData,
+      });
+
+      return { success: true };
+    }),
+
+  // Get all orders for current tenant (including completed ones)
+  getPendingOrders: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+      });
+
+      if (!userData.tenants?.[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No tenant found for user",
+        });
+      }
+
+      const tenantId = typeof userData.tenants[0].tenant === 'string' 
+        ? userData.tenants[0].tenant 
+        : userData.tenants[0].tenant.id;
+
+      // Get all orders for this tenant (remove status filter to show all)
+      const sales = await ctx.db.find({
+        collection: "sales",
+        where: {
+          tenant: { equals: tenantId },
+        },
+        depth: 3, // Get product, order details
+        sort: "-createdAt",
+        limit: 100,
+      });
+
+      // Map to order details
+      const orders = sales.docs.map((sale: any) => ({
+        id: sale.order?.id || '',
+        orderId: typeof sale.order === 'string' ? sale.order : sale.order?.id,
+        orderNumber: sale.order?.orderNumber || '',
+        saleNumber: sale.saleNumber,
+        status: sale.status,
+        customerName: sale.customerName,
+        customerEmail: sale.customerEmail,
+        productName: sale.product?.name || 'Unknown Product',
+        productImage: sale.product?.image?.url || null,
+        quantity: sale.quantity,
+        totalAmount: sale.totalAmount,
+        createdAt: sale.createdAt,
+        shippedAt: sale.order?.shippedAt || null,
+        deliveredAt: sale.order?.deliveredAt || null,
+      }));
+
+      return orders;
+    }),
 });

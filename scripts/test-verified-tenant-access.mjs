@@ -52,7 +52,7 @@ for (const tenant of allTenants.docs) {
     
     if (awaiting > 0 && canAccessTransactions) {
       console.log(`\n  📌 ACTION REQUIRED: ${tenant.name} can verify ${awaiting} transaction(s)`)
-      console.log(`     URL: http://localhost:3000/admin/verify-payments`)
+      console.log(`     URL: http://localhost:3000/dashboard/verify-payments`)
     }
   }
 }
