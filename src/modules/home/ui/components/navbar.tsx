@@ -45,7 +45,7 @@ const NavbarItem = ({
       asChild
       variant="outline"
       className={cn(
-        "bg-transparent hover:bg-transparent rounded-full hover:border-primary border-transparent px-3.5 text-lg",
+        "bg-transparent hover:bg-transparent rounded-full hover:border-primary border-transparent px-2.5 text-sm whitespace-nowrap",
         isActive && "bg-black text-white hover:bg-black hover:text-white",
       )}
     >
@@ -171,10 +171,10 @@ export const Navbar = () => {
   const isLoggedIn = !!session.data?.user;
 
   return (
-    <nav className="h-20 flex border-b justify-between font-medium bg-white">
-      {/* Logo - Smaller on mobile, left-aligned */}
-      <Link href="/" className="pl-3 lg:pl-6 flex items-center">
-        <span className={cn("text-2xl lg:text-5xl font-semibold", poppins.className)}>
+    <nav className="h-16 flex border-b justify-between font-medium bg-white max-w-full overflow-hidden sticky top-0 z-50 lg:fixed lg:w-full">
+      {/* Logo - Smaller, more compact */}
+      <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
+        <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
           Toolboxx
         </span>
       </Link>
@@ -189,7 +189,7 @@ export const Navbar = () => {
       />
 
       {/* Desktop Navigation - Hidden on mobile */}
-      <div className="items-center gap-4 hidden lg:flex">
+      <div className="items-center gap-2 hidden lg:flex flex-1 justify-center overflow-x-auto px-2">
         {navbarItems.map((item) => (
           <NavbarItem
             key={item.href}
@@ -203,13 +203,13 @@ export const Navbar = () => {
 
       {/* Desktop Auth Buttons - Hidden on mobile */}
       {session.data?.user ? (
-        <div className="hidden lg:flex items-center">
+        <div className="hidden lg:flex items-center flex-shrink-0">
           {/* Chat Icon with Badge */}
           <OptimizedLink
             href="/chat"
             prefetch={true}
             className={cn(
-              "relative border-l border-t-0 border-b-0 border-r-0 px-6 h-full flex items-center justify-center hover:bg-muted transition-colors",
+              "relative border-l border-t-0 border-b-0 border-r-0 px-4 h-full flex items-center justify-center hover:bg-muted transition-colors",
               pathname.startsWith('/chat') && "bg-muted"
             )}
           >
@@ -217,7 +217,7 @@ export const Navbar = () => {
             {(unreadData?.totalUnread || 0) > 0 && (
               <Badge 
                 variant="destructive" 
-                className="absolute top-4 right-2 h-5 min-w-5 px-1.5 flex items-center justify-center text-xs rounded-full pointer-events-none"
+                className="absolute top-4 right-1 h-5 min-w-5 px-1.5 flex items-center justify-center text-xs rounded-full pointer-events-none"
               >
                 {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
               </Badge>
@@ -226,30 +226,30 @@ export const Navbar = () => {
 
           <Button
             asChild
-            className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-lg"
+            className="border-l border-t-0 border-b-0 border-r-0 px-6 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-sm whitespace-nowrap"
           >
             <Link 
               href={session.data.user.roles?.includes('super-admin') ? "/admin" : session.data.user.roles?.includes('tenant') ? "/dashboard" : "/my-account"}
               prefetch={true}
             >
-              {session.data.user.roles?.includes('super-admin') ? "Admin Panel" : session.data.user.roles?.includes('tenant') ? "Dashboard" : "My Account"}
+              {session.data.user.roles?.includes('super-admin') ? "Admin" : session.data.user.roles?.includes('tenant') ? "Dashboard" : "Account"}
             </Link>
           </Button>
           <Button
             onClick={handleLogout}
             disabled={logout.isPending}
-            className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-red-600 text-white hover:bg-red-700 transition-colors text-lg flex items-center gap-2"
+            className="border-l border-t-0 border-b-0 border-r-0 px-6 h-full rounded-none bg-red-600 text-white hover:bg-red-700 transition-colors text-sm flex items-center gap-2 whitespace-nowrap"
           >
             <LogOut className="h-4 w-4" />
             {logout.isPending ? "Logging out..." : "Logout"}
           </Button>
         </div>
       ) : (
-        <div className="hidden lg:flex">
+        <div className="hidden lg:flex flex-shrink-0">
           <Button
             asChild
             variant="secondary"
-            className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-white hover:bg-pink-400 transition-colors text-lg"
+            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-white hover:bg-pink-400 transition-colors text-sm"
           >
             <OptimizedLink prefetch={true} href="/sign-in">
               Log in
@@ -257,7 +257,7 @@ export const Navbar = () => {
           </Button>
           <Button
             asChild
-            className="border-l border-t-0 border-b-0 border-r-0 px-12 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-lg"
+            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-sm"
           >
             <OptimizedLink prefetch={true} href="/sign-up">
               Sign Up
