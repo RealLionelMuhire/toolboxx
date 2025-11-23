@@ -97,20 +97,20 @@ export function ChatList({
               onClick={() => handleConversationClick(conversation.id)}
               onMouseEnter={() => handleMouseEnter(conversation.id)}
               className={cn(
-                "p-3 rounded-md border transition-all cursor-pointer",
+                "p-3 rounded-md border transition-all cursor-pointer w-full max-w-md",
                 isSelected 
                   ? "bg-primary/10 border-primary shadow-md" 
                   : "bg-card border-border hover:bg-accent/80 hover:border-primary/50 hover:shadow-sm"
               )}
             >
-              <div className="flex gap-2.5 min-w-0">
+              <div className="flex gap-2.5 min-w-0 max-w-full">
                 <Avatar className="h-9 w-9 shrink-0">
                   <AvatarFallback>
                     <User className="h-4 w-4" />
                   </AvatarFallback>
                 </Avatar>
 
-                <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="flex-1 min-w-0 max-w-full overflow-hidden">
                   <div className="flex items-center justify-between mb-0.5 gap-2">
                     <h4 className="font-semibold text-sm truncate">
                       {otherUser?.username || "Unknown User"}

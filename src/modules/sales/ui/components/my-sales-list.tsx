@@ -1,8 +1,9 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, PackageIcon, TrendingUp, DollarSign, MessageCircle } from "lucide-react";
+import { Loader2, PackageIcon, TrendingUp, DollarSign, MessageCircle, Grid3x3, List } from "lucide-react";
 import { toast } from "sonner";
 
 import { useTRPC } from "@/trpc/client";
@@ -10,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 interface MySalesListProps {
   searchQuery?: string;
@@ -20,6 +22,15 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
   const trpc = useTRPC();
   const router = useRouter();
   const queryClient = useQueryClient();
+  
+  // Responsive view mode: list on mobile, grid on desktop by default
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  
+  useEffect(() => {
+    // Set initial view based on screen size
+    const isMobile = window.innerWidth < 768;
+    setViewMode(isMobile ? 'list' : 'grid');
+  }, []);
   
   const { data: session } = useQuery(trpc.auth.session.queryOptions());
   
@@ -98,18 +109,136 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
 
   return (
     <div className="space-y-4">
+      {/* View Toggle */}
+      <div className="flex justify-end gap-2">
+        <Button
+          variant={viewMode === 'grid' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setViewMode('grid')}
+          className="gap-2"
+        >
+          <Grid3x3 className="h-4 w-4" />
+          Grid
+        </Button>
+        <Button
+          variant={viewMode === 'list' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setViewMode('list')}
+          className="gap-2"
+        >
+          <List className="h-4 w-4" />
+          List
+        </Button>
+      </div>
+
       {/* Grid view */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className={cn(
+        viewMode === 'grid' 
+          ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          : "space-y-4"
+      )}>
         {sales.map((sale) => {
           const product = typeof sale.product === 'object' ? sale.product : null;
-          const productImage = product && typeof product.image === 'object' ? product.image : null;
+          const productImage = product?.image;
+          const imageUrl = typeof productImage === 'object' && productImage?.url 
+            ? productImage.url 
+            : null;
 
+          if (viewMode === 'list') {
+            return (
+              <Card key={sale.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="flex flex-col sm:flex-row">
+                  {/* Image */}
+                  <div className="sm:w-48 h-48 sm:h-auto relative bg-gray-100 flex-shrink-0">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={product?.name || 'Product'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <PackageIcon className="h-16 w-16 text-gray-300" />
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2">
+                      <StatusBadge status={sale.status} />
+                    </div>
+                  </div>
+                  
+                  {/* Content */}
+                  <CardContent className="flex-1 p-4">
+                    <div className="flex flex-col h-full justify-between">
+                      <div className="space-y-2">
+                        <div>
+                          <h3 className="font-semibold text-lg">
+                            {product?.name || 'Unknown Product'}
+                          </h3>
+                          <p className="text-sm text-gray-500">
+                            Sale #{sale.saleNumber}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-600">Customer:</span>
+                            <p className="font-medium">{sale.customerName}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Quantity:</span>
+                            <p className="font-medium">{sale.quantity} {product?.unit || 'unit'}(s)</p>
+                          </div>
+                        </div>
+
+                        <div className="text-xs text-gray-500">
+                          {new Date(sale.createdAt).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mt-4">
+                        <div className="pt-2 border-t">
+                          <div className="flex items-center justify-between font-semibold text-green-600">
+                            <span className="flex items-center gap-1">
+                              <DollarSign className="h-4 w-4" />
+                              Total Amount:
+                            </span>
+                            <span>{sale.totalAmount.toLocaleString()} RWF</span>
+                          </div>
+                          <p className="text-xs text-gray-600 mt-1">
+                            You receive the full amount (no platform fees)
+                          </p>
+                        </div>
+                        
+                        {sale.customerId && (
+                          <Button 
+                            onClick={() => handleMessageCustomer(sale)} 
+                            className="w-full bg-blue-600 hover:bg-blue-700"
+                            disabled={startConversation.isPending}
+                            size="sm"
+                          >
+                            <MessageCircle className="mr-2 h-4 w-4" />
+                            {startConversation.isPending ? "Starting chat..." : "Message Customer"}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </div>
+              </Card>
+            );
+          }
+
+          // Grid view
           return (
             <Card key={sale.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               <div className="aspect-square relative bg-gray-100">
-                {productImage?.url ? (
+                {imageUrl ? (
                   <img
-                    src={productImage.url}
+                    src={imageUrl}
                     alt={product?.name || 'Product'}
                     className="w-full h-full object-cover"
                   />
