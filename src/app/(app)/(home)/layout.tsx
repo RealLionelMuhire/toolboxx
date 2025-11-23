@@ -29,13 +29,15 @@ const Layout = async ({ children }: Props) => {
   return ( 
     <div className="flex flex-col min-h-screen">
      <Navbar />
-     <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense fallback={<SearchFiltersSkeleton />}>
-        <SearchFilters />
-      </Suspense>
-     </HydrationBoundary>
-     <div className="flex-1 bg-[#F4F4F0]">
-        {children}
+     <div className="pt-16">
+      <HydrationBoundary state={dehydrate(queryClient)}>
+       <Suspense fallback={<SearchFiltersSkeleton />}>
+         <SearchFilters />
+       </Suspense>
+      </HydrationBoundary>
+      <div className="flex-1 bg-[#F4F4F0]">
+         {children}
+       </div>
       </div>
       <Footer />
     </div>
