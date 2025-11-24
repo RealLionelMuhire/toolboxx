@@ -24,11 +24,16 @@ export function OrdersView() {
     setViewMode(isMobile ? 'list' : 'grid');
   }, []);
 
-  const { data, isLoading, refetch, isRefetching } = useQuery(trpc.orders.getMyOrders.queryOptions({
-    status: statusFilter === 'all' ? undefined : statusFilter,
-    limit: 20,
-    page: 1,
-  }))
+  const { data, isLoading, refetch, isRefetching } = useQuery(
+    trpc.orders.getMyOrders.queryOptions({
+      status: statusFilter === 'all' ? undefined : statusFilter,
+      limit: 20,
+      page: 1,
+    }),
+    {
+      refetchInterval: 5000, // Auto-refresh every 5 seconds
+    }
+  )
 
   const confirmReceiptMutation = useMutation(trpc.orders.confirmReceipt.mutationOptions({
     onSuccess: () => {
