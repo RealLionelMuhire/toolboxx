@@ -12,7 +12,7 @@ export default function VerifyPaymentsPage() {
   const [activeTab, setActiveTab] = useState<'payments' | 'orders'>('payments')
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 mt-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Payment & Order Verification</h1>
         <p className="text-gray-600">
@@ -67,9 +67,10 @@ import { Grid3x3, List } from "lucide-react";
 
 function PendingTransactionsList() {
   const trpc = useTRPC();
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const { data: transactions, isLoading, refetch } = useQuery({
     ...trpc.admin.getPendingTransactions.queryOptions(),
-    refetchInterval: 5000, // Auto-refresh every 5 seconds
+    refetchInterval: autoRefresh ? 5000 : false,
   });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -102,8 +103,8 @@ function PendingTransactionsList() {
         </p>
       </div>
 
-      {/* View Toggle */}
-      <div className="flex justify-end gap-2 pb-2">
+      {/* View & Auto-Refresh Toggle */}
+      <div className="flex flex-wrap justify-end gap-2 pb-2">
         <button
           className={`gap-2 px-3 py-1 rounded border ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
           onClick={() => setViewMode('grid')}
@@ -115,6 +116,12 @@ function PendingTransactionsList() {
           onClick={() => setViewMode('list')}
         >
           <List className="h-4 w-4" /> List
+        </button>
+        <button
+          className={`gap-2 px-3 py-1 rounded border ${autoRefresh ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
+          onClick={() => setAutoRefresh((v) => !v)}
+        >
+          {autoRefresh ? 'Auto-Refresh: On' : 'Auto-Refresh: Off'}
         </button>
       </div>
 
@@ -400,9 +407,10 @@ function EmptyState() {
 
 function PendingOrdersList() {
   const trpc = useTRPC();
+  const [autoRefresh, setAutoRefresh] = useState(false);
   const { data: orders, isLoading, refetch } = useQuery({
     ...trpc.sales.getPendingOrders.queryOptions(),
-    refetchInterval: 5000, // Auto-refresh every 5 seconds
+    refetchInterval: autoRefresh ? 5000 : false,
   });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const updateOrderStatus = useMutation(
@@ -452,8 +460,8 @@ function PendingOrdersList() {
         </p>
       </div>
 
-      {/* View Toggle */}
-      <div className="flex justify-end gap-2 pb-2">
+      {/* View & Auto-Refresh Toggle */}
+      <div className="flex flex-wrap justify-end gap-2 pb-2">
         <button
           className={`gap-2 px-3 py-1 rounded border ${viewMode === 'grid' ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
           onClick={() => setViewMode('grid')}
@@ -465,6 +473,12 @@ function PendingOrdersList() {
           onClick={() => setViewMode('list')}
         >
           <List className="h-4 w-4" /> List
+        </button>
+        <button
+          className={`gap-2 px-3 py-1 rounded border ${autoRefresh ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
+          onClick={() => setAutoRefresh((v) => !v)}
+        >
+          {autoRefresh ? 'Auto-Refresh: On' : 'Auto-Refresh: Off'}
         </button>
       </div>
 
