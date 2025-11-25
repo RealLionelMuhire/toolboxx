@@ -84,7 +84,7 @@ const tenantNavbarItems: NavbarItem[] = [
     children: "My Store",
     subItems: [
       { href: "/my-account", children: "My Account" },
-      { href: "/orders", children: "Purchases" },
+      { href: "/orders", children: "My Purchases" },
       { href: "/my-products", children: "My Products" },
       { href: "/my-sales", children: "Sales" },
     ]

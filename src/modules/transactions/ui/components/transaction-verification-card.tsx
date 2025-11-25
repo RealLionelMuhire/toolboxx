@@ -136,6 +136,34 @@ export function TransactionVerificationCard({ transaction, viewMode = 'grid' }: 
   const isExpired = new Date() > new Date(transaction.expiresAt);
   const isProcessing = verifyMutation.isPending || rejectMutation.isPending;
 
+  const firstProduct = transaction.products?.[0];
+  const productImageUrl = firstProduct?.product?.image?.url;
+  const productName = firstProduct?.product?.name || "Product";
+  const productQuantity = firstProduct?.quantity || 0;
+
+  const productPreview = (
+    <div className="flex items-center gap-3">
+      <div className="h-14 w-14 overflow-hidden rounded border bg-gray-100 flex items-center justify-center">
+        {productImageUrl ? (
+          <img
+            src={productImageUrl}
+            alt={productName}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <span className="text-[0.6rem] uppercase tracking-widest text-gray-500">
+            No image
+          </span>
+        )}
+      </div>
+      <div className="flex flex-col">
+        <p className="font-semibold text-sm truncate">{productName}</p>
+        <p className="text-xs text-gray-500">Qty: {productQuantity}</p>
+      </div>
+    </div>
+  );
+
   // List view with collapsible details
   if (viewMode === 'list') {
     return (
@@ -149,6 +177,9 @@ export function TransactionVerificationCard({ transaction, viewMode = 'grid' }: 
                   <Badge variant={isExpired ? "destructive" : "default"} className="text-xs shrink-0">
                     {isExpired ? "Expired" : "Pending"}
                   </Badge>
+                </div>
+                <div className="mt-3">
+                  {productPreview}
                 </div>
                 
                 {/* Essential Info - Always Visible */}
@@ -333,6 +364,7 @@ export function TransactionVerificationCard({ transaction, viewMode = 'grid' }: 
         </CardHeader>
 
         <CardContent className="space-y-4">
+          <div>{productPreview}</div>
           {/* MTN Transaction ID - Prominent Display */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
