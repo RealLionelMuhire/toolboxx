@@ -1,5 +1,8 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { LogOut, ChevronDown, ChevronRight, Store } from "lucide-react";
 
 import {
   Sheet,
@@ -10,11 +13,9 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { OptimizedLink } from "@/components/optimized-link";
+import { cn } from "@/lib/utils";
 
-interface NavbarItem {
-  href: string;
-  children: React.ReactNode;
-}
+import type { NavbarItem } from "./navbar";
 
 interface Props {
   items: NavbarItem[];
@@ -33,13 +34,33 @@ export const NavbarSidebar = ({
   onLogout,
   isLoggingOut,
 }: Props) => {
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
   const handleLogout = () => {
     onLogout();
     onOpenChange(false);
   };
 
+  const toggleExpand = (href: string) => {
+    setExpandedItems(prev => {
+      const next = new Set(prev);
+      if (next.has(href)) {
+        next.delete(href);
+      } else {
+        next.add(href);
+      }
+      return next;
+    });
+  };
+
+  const handleClose = () => {
+    onOpenChange(false);
+    // Reset expanded items when closing
+    setExpandedItems(new Set());
+  };
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleClose}>
       <SheetContent
         side="left"
         className="p-0 transition-none"
@@ -51,14 +72,53 @@ export const NavbarSidebar = ({
         </SheetHeader>
         <ScrollArea className="flex flex-col overflow-y-auto h-full pb-2">
           {items.map((item) => (
-            <OptimizedLink
-              key={item.href}
-              href={item.href}
-              className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
-              onClick={() => onOpenChange(false)}
-            >
-              {item.children}
-            </OptimizedLink>
+            item.subItems ? (
+              // Expandable item with sub-items
+              <div key={item.href}>
+                <button
+                  onClick={() => toggleExpand(item.href)}
+                  className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center justify-between text-base font-medium"
+                >
+                  <span className="flex items-center gap-2">
+                    <Store className="h-4 w-4" />
+                    {item.children}
+                  </span>
+                  {expandedItems.has(item.href) ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+                {/* Sub-items */}
+                <div 
+                  className={cn(
+                    "overflow-hidden transition-all duration-200 bg-gray-50",
+                    expandedItems.has(item.href) ? "max-h-96" : "max-h-0"
+                  )}
+                >
+                  {item.subItems.map((subItem) => (
+                    <OptimizedLink
+                      key={subItem.href}
+                      href={subItem.href}
+                      className="w-full text-left py-3 px-8 hover:bg-black hover:text-white flex items-center text-sm font-medium border-l-2 border-gray-200"
+                      onClick={handleClose}
+                    >
+                      {subItem.children}
+                    </OptimizedLink>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              // Regular item
+              <OptimizedLink
+                key={item.href}
+                href={item.href}
+                className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
+                onClick={handleClose}
+              >
+                {item.children}
+              </OptimizedLink>
+            )
           ))}
           <div className="border-t">
             {isLoggedIn ? (
@@ -74,14 +134,14 @@ export const NavbarSidebar = ({
             ) : (
               <>
                 <OptimizedLink 
-                  onClick={() => onOpenChange(false)} 
+                  onClick={handleClose} 
                   href="/sign-in" 
                   className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
                 >
                   Log in
                 </OptimizedLink>
                 <OptimizedLink 
-                  onClick={() => onOpenChange(false)} 
+                  onClick={handleClose} 
                   href="/sign-up" 
                   className="w-full text-left p-4 hover:bg-black hover:text-white flex items-center text-base font-medium"
                 >

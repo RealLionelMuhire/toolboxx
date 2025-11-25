@@ -6,50 +6,51 @@ import { useState } from 'react'
 import { formatDistance } from 'date-fns'
 import type { Transaction } from '@/payload-types'
 import Link from 'next/link'
-import { PackageIcon } from 'lucide-react';
+import { PackageIcon, Grid3x3, List, CreditCard, Truck } from 'lucide-react';
+
+type TabType = 'payments' | 'orders'
 
 export default function VerifyPaymentsPage() {
-  const [activeTab, setActiveTab] = useState<'payments' | 'orders'>('payments')
+  const [activeTab, setActiveTab] = useState<TabType>('payments')
 
   return (
     <div className="container mx-auto px-4 py-8 mt-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Payment & Order Verification</h1>
+        <h1 className="text-3xl font-bold mb-2">Transactions</h1>
         <p className="text-gray-600">
           Verify customer payments and manage order fulfillment
         </p>
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 mb-6 border-b border-gray-200">
+      <div className="flex flex-wrap gap-1 mb-6 border-b border-gray-200">
         <button
           onClick={() => setActiveTab('payments')}
-          className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+          className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 text-sm ${
             activeTab === 'payments'
               ? 'border-blue-600 text-blue-600'
               : 'border-transparent text-gray-600 hover:text-gray-900'
           }`}
         >
-          💳 Payment Verification
+          <CreditCard className="h-4 w-4" />
+          <span className="hidden sm:inline">Payment</span> Verification
         </button>
         <button
           onClick={() => setActiveTab('orders')}
-          className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+          className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 text-sm ${
             activeTab === 'orders'
-              ? 'border-blue-600 text-blue-600'
+              ? 'border-green-600 text-green-600'
               : 'border-transparent text-gray-600 hover:text-gray-900'
           }`}
         >
-          📦 Order Management
+          <Truck className="h-4 w-4" />
+          <span className="hidden sm:inline">Order</span> Fulfillment
         </button>
       </div>
 
       {/* Content */}
-      {activeTab === 'payments' ? (
-        <PendingTransactionsList />
-      ) : (
-        <PendingOrdersList />
-      )}
+      {activeTab === 'payments' && <PendingTransactionsList />}
+      {activeTab === 'orders' && <PendingOrdersList />}
     </div>
   )
 }
@@ -62,8 +63,6 @@ function LoadingState() {
     </div>
   )
 }
-
-import { Grid3x3, List } from "lucide-react";
 
 function PendingTransactionsList() {
   const trpc = useTRPC();
@@ -106,19 +105,19 @@ function PendingTransactionsList() {
       {/* View & Auto-Refresh Toggle */}
       <div className="flex flex-wrap justify-end gap-2 pb-2">
         <button
-          className={`gap-2 px-3 py-1 rounded border ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
+          className={`gap-2 px-3 py-1 rounded border flex items-center ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
           onClick={() => setViewMode('grid')}
         >
           <Grid3x3 className="h-4 w-4" /> Grid
         </button>
         <button
-          className={`gap-2 px-3 py-1 rounded border ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
+          className={`gap-2 px-3 py-1 rounded border flex items-center ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'}`}
           onClick={() => setViewMode('list')}
         >
           <List className="h-4 w-4" /> List
         </button>
         <button
-          className={`gap-2 px-3 py-1 rounded border ${autoRefresh ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
+          className={`gap-2 px-3 py-1 rounded border flex items-center ${autoRefresh ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
           onClick={() => setAutoRefresh((v) => !v)}
         >
           {autoRefresh ? 'Auto-Refresh: On' : 'Auto-Refresh: Off'}
@@ -130,14 +129,15 @@ function PendingTransactionsList() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order Ref</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Customer</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">MTN TX ID</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Amount</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
-                </tr>
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Product</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Order Ref</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Customer</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">MTN TX ID</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Amount</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+              </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {transactions.map((transaction: Transaction) => (
@@ -251,6 +251,17 @@ function TransactionRow({ transaction, onVerified }: TransactionRowProps) {
     }
   }
 
+  const firstProduct = transaction.products?.[0]
+  const product = typeof firstProduct?.product === "string"
+    ? undefined
+    : firstProduct?.product
+  const productImageUrl =
+    typeof product?.image === "string"
+      ? product.image
+      : product?.image?.url
+  const productName = product?.name || "Product"
+  const productQuantity = firstProduct?.quantity || 0
+
   const handleReject = () => {
     const reason = prompt('Why are you rejecting this payment?')
     if (reason) {
@@ -265,8 +276,30 @@ function TransactionRow({ transaction, onVerified }: TransactionRowProps) {
 
   return (
     <>
-      <tr className="hover:bg-gray-50">
-        <td className="px-4 py-3 text-sm">
+    <tr className="hover:bg-gray-50">
+      <td className="px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 overflow-hidden rounded border bg-gray-100 flex items-center justify-center">
+            {productImageUrl ? (
+              <img
+                src={productImageUrl}
+                alt={productName}
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <span className="text-[0.6rem] uppercase tracking-widest text-gray-500">
+                No image
+              </span>
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-medium truncate">{productName}</p>
+            <p className="text-xs text-gray-500">Qty: {productQuantity}</p>
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3 text-sm">
           <div className="font-medium text-gray-900">
             #{transaction.paymentReference}
           </div>
@@ -390,21 +423,6 @@ function TransactionRow({ transaction, onVerified }: TransactionRowProps) {
   )
 }
 
-function EmptyState() {
-  return (
-    <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-      <div className="text-4xl mb-4">✅</div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-        No Pending Verifications
-      </h3>
-      <p className="text-gray-600">
-        All payments have been verified. New transactions will appear here.
-      </p>
-    </div>
-  )
-}
-
-
 function PendingOrdersList() {
   const trpc = useTRPC();
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -434,14 +452,14 @@ function PendingOrdersList() {
       <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
         <div className="text-4xl mb-4">📭</div>
         <h3 className="text-lg font-semibold text-gray-900 mb-2">
-          No Orders Found
+          No Orders to Fulfill
         </h3>
         <p className="text-gray-600 mb-4">
-          Order history will appear here once payments are verified
+          Orders will appear here once payments are verified
         </p>
         <Link 
-          href="/dashboard/my-sales"
-          className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+          href="/my-sales"
+          className="inline-block bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
         >
           View All Sales
         </Link>
@@ -453,29 +471,29 @@ function PendingOrdersList() {
     <div className="space-y-4">
       <div className="bg-green-50 border border-green-200 rounded-lg p-4">
         <h2 className="text-lg font-semibold text-green-900 mb-1">
-          All Orders ({orders.length})
+          Orders to Fulfill ({orders.length})
         </h2>
         <p className="text-sm text-green-700">
-          View and manage order fulfillment and delivery status
+          Ship and deliver orders to your customers
         </p>
       </div>
 
       {/* View & Auto-Refresh Toggle */}
       <div className="flex flex-wrap justify-end gap-2 pb-2">
         <button
-          className={`gap-2 px-3 py-1 rounded border ${viewMode === 'grid' ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
+          className={`gap-2 px-3 py-1 rounded border flex items-center ${viewMode === 'grid' ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
           onClick={() => setViewMode('grid')}
         >
           <Grid3x3 className="h-4 w-4" /> Grid
         </button>
         <button
-          className={`gap-2 px-3 py-1 rounded border ${viewMode === 'list' ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
+          className={`gap-2 px-3 py-1 rounded border flex items-center ${viewMode === 'list' ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
           onClick={() => setViewMode('list')}
         >
           <List className="h-4 w-4" /> List
         </button>
         <button
-          className={`gap-2 px-3 py-1 rounded border ${autoRefresh ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
+          className={`gap-2 px-3 py-1 rounded border flex items-center ${autoRefresh ? 'bg-green-600 text-white' : 'bg-white text-green-600 border-green-600'}`}
           onClick={() => setAutoRefresh((v) => !v)}
         >
           {autoRefresh ? 'Auto-Refresh: On' : 'Auto-Refresh: Off'}
@@ -653,7 +671,7 @@ function PendingOrdersList() {
 
 function TransactionStatusBadge({ status }: { status: string }) {
   const config: Record<string, { label: string; className: string }> = {
-    awaiting_verification: { label: 'Awaiting Verification', className: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
+    awaiting_verification: { label: 'Awaiting', className: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
     verified: { label: 'Verified', className: 'bg-green-100 text-green-800 border-green-300' },
     rejected: { label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-300' },
     pending: { label: 'Pending', className: 'bg-blue-100 text-blue-800 border-blue-300' },
@@ -663,7 +681,7 @@ function TransactionStatusBadge({ status }: { status: string }) {
   const statusConfig = config[status] || { label: status, className: 'bg-gray-100 text-gray-800' }
 
   return (
-    <span className={`px-2 py-1 text-xs font-medium rounded-full border ${statusConfig.className}`}>
+    <span className={`px-2 py-0.5 text-[10px] font-medium rounded-full border ${statusConfig.className}`}>
       {statusConfig.label}
     </span>
   )
@@ -685,4 +703,3 @@ function OrderStatusBadge({ status }: { status: string }) {
     </span>
   )
 }
-

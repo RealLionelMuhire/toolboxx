@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut, ShoppingCart, User, LogIn, MessageCircle } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, User, LogIn, MessageCircle, Store, ChevronDown } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -29,13 +29,19 @@ const poppins = Poppins({
   weight: ["700"],
 });
 
+export interface NavbarItem {
+  href: string;
+  children: React.ReactNode;
+  subItems?: NavbarItem[];
+};
+
 interface NavbarItemProps {
   href: string;
   children: React.ReactNode;
   isActive?: boolean;
 };
 
-const NavbarItem = ({
+const NavbarItemButton = ({
   href,
   children,
   isActive,
@@ -56,7 +62,7 @@ const NavbarItem = ({
   );
 };
 
-const publicNavbarItems = [
+const publicNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
   { href: "/about", children: "About" },
   { href: "/features", children: "Features" },
@@ -64,28 +70,71 @@ const publicNavbarItems = [
   { href: "/contact", children: "Contact" },
 ];
 
-const customerNavbarItems = [
+const customerNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
-  { href: "/my-account", children: "My Account" },
-  { href: "/orders", children: "My Orders" },
-  { href: "/users", children: "Find Users" },
-  { href: "/about", children: "About" },
-  { href: "/contact", children: "Contact" },
+  { href: "/orders", children: "My Purchases" },
   { href: "/cart", children: "My Cart" },
 ];
 
-const tenantNavbarItems = [
+const tenantNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
-  { href: "/my-products", children: "My Products" },
-  { href: "/verify-payments", children: "Verify Payments & Orders" },
-  { href: "/my-sales", children: "My Sales" },
-  { href: "/my-account", children: "My Account" },
-  { href: "/orders", children: "My Orders" },
-  { href: "/users", children: "Find Users" },
-  { href: "/about", children: "About" },
-  { href: "/contact", children: "Contact" },
+  { href: "/verify-payments", children: "Transactions" },
+  { 
+    href: "#", 
+    children: "My Store",
+    subItems: [
+      { href: "/my-account", children: "My Account" },
+      { href: "/orders", children: "My Purchases" },
+      { href: "/my-products", children: "My Products" },
+      { href: "/my-sales", children: "Sales" },
+    ]
+  },
   { href: "/cart", children: "My Cart" },
 ];
+
+// Desktop dropdown for items with subItems
+const NavbarDropdownItem = ({ 
+  item, 
+  pathname 
+}: { 
+  item: NavbarItem; 
+  pathname: string;
+}) => {
+  const isAnySubItemActive = item.subItems?.some(sub => pathname === sub.href || pathname.startsWith(sub.href + '/'));
+  
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            "bg-transparent hover:bg-transparent rounded-full hover:border-primary border-transparent px-2.5 text-sm whitespace-nowrap gap-1",
+            isAnySubItemActive && "bg-black text-white hover:bg-black hover:text-white",
+          )}
+        >
+          <Store className="h-4 w-4" />
+          {item.children}
+          <ChevronDown className="h-3 w-3" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="center" className="w-48">
+        {item.subItems?.map((subItem) => (
+          <DropdownMenuItem key={subItem.href} asChild>
+            <Link 
+              href={subItem.href}
+              className={cn(
+                "cursor-pointer",
+                pathname === subItem.href && "bg-accent"
+              )}
+            >
+              {subItem.children}
+            </Link>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
 
 export const Navbar = () => {
   const pathname = usePathname();
@@ -162,8 +211,9 @@ export const Navbar = () => {
   
   // Show tenant items if user is a tenant, customer items if logged in, otherwise show public items
   // While loading, use the cached data to prevent flash
+  const isTenant = session.data?.user?.roles?.includes('tenant');
   const navbarItems = session.data?.user 
-    ? session.data.user.roles?.includes('tenant') 
+    ? isTenant 
       ? tenantNavbarItems 
       : customerNavbarItems 
     : publicNavbarItems;
@@ -191,13 +241,17 @@ export const Navbar = () => {
       {/* Desktop Navigation - Hidden on mobile */}
       <div className="items-center gap-2 hidden lg:flex flex-1 justify-center overflow-x-auto px-2">
         {navbarItems.map((item) => (
-          <NavbarItem
-            key={item.href}
-            href={item.href}
-            isActive={pathname === item.href}
-          >
-            {item.children}
-          </NavbarItem>
+          item.subItems ? (
+            <NavbarDropdownItem key={item.href} item={item} pathname={pathname} />
+          ) : (
+            <NavbarItemButton
+              key={item.href}
+              href={item.href}
+              isActive={pathname === item.href}
+            >
+              {item.children}
+            </NavbarItemButton>
+          )
         ))}
       </div>
 
@@ -307,12 +361,12 @@ export const Navbar = () => {
                   className="cursor-pointer"
                 >
                   <User className="mr-2 h-4 w-4" />
-                  My Account
+                  {session.data?.user?.roles?.includes('tenant') ? "Dashboard" : "My Account"}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/orders" className="cursor-pointer">
-                  Orders
+                  {isTenant ? "Purchases" : "My Orders"}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
