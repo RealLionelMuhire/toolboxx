@@ -92,6 +92,8 @@ const tenantNavbarItems: NavbarItem[] = [
   { href: "/cart", children: "My Cart" },
 ];
 
+const mobileMyStoreItems = tenantNavbarItems.find((item) => item.children === "My Store")?.subItems ?? [];
+
 // Desktop dropdown for items with subItems
 const NavbarDropdownItem = ({ 
   item, 
@@ -390,7 +392,29 @@ export const Navbar = () => {
           </Link>
         )}
 
-        {/* Cart Icon with Badge - Always visible */}
+            {mobileMyStoreItems.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
+                  >
+                    <Store className="h-5 w-5" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  {mobileMyStoreItems.map((item) => (
+                    <DropdownMenuItem key={item.href} asChild>
+                      <Link href={item.href} className="cursor-pointer">
+                        {item.children}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Cart Icon with Badge - Always visible */}
         <Link 
           href="/cart" 
           className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors outline-none focus:outline-none active:bg-gray-200"
