@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
 import { useTRPC } from '@/trpc/client'
 import { OrderCard } from '@/components/orders/OrderCard'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { cn } from '@/lib/utils'
 
 export function OrdersView() {
   const trpc = useTRPC()
+  const router = useRouter()
   const queryClient = useQueryClient()
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'shipped' | 'delivered' | 'completed' | 'cancelled'>('all')
   // Responsive view mode: list on mobile, grid on desktop by default
@@ -19,11 +21,27 @@ export function OrdersView() {
   // Auto-refresh toggle
   const [autoRefresh, setAutoRefresh] = useState(false)
 
+  // Check session first - refetch on mount and window focus to catch logouts from other tabs
+  const sessionQuery = useQuery({
+    ...trpc.auth.session.queryOptions(),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
+    staleTime: 0, // Always check fresh
+  });
+  const isAuthenticated = !!sessionQuery.data?.user;
+
   useEffect(() => {
     // Set initial view based on screen size
     const isMobile = window.innerWidth < 768;
     setViewMode(isMobile ? 'list' : 'grid');
   }, []);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (sessionQuery.isFetched && !sessionQuery.data?.user) {
+      router.push('/sign-in?redirect=/orders');
+    }
+  }, [sessionQuery.isFetched, sessionQuery.data?.user, router]);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     ...trpc.orders.getMyOrders.queryOptions({
@@ -31,7 +49,8 @@ export function OrdersView() {
       limit: 20,
       page: 1,
     }),
-    refetchInterval: autoRefresh ? 5000 : false
+    refetchInterval: autoRefresh ? 5000 : false,
+    enabled: isAuthenticated, // Only fetch if authenticated
   });
 
   const confirmReceiptMutation = useMutation(trpc.orders.confirmReceipt.mutationOptions({
@@ -48,7 +67,17 @@ export function OrdersView() {
     await confirmReceiptMutation.mutateAsync({ orderId })
   }
 
-  if (isLoading) {
+  // Show loading while checking session or fetching orders
+  if (sessionQuery.isLoading || !sessionQuery.isFetched || isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  // If not authenticated, show loading while redirect happens
+  if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -112,7 +141,6 @@ export function OrdersView() {
                     key={order.id}
                     order={order}
                     onConfirmReceiptAction={handleConfirmReceipt}
-                    viewMode="list"
                   />
                 ))}
               </tbody>
@@ -126,7 +154,6 @@ export function OrdersView() {
               key={order.id}
               order={order}
               onConfirmReceiptAction={handleConfirmReceipt}
-              viewMode="grid"
             />
           ))}
         </div>

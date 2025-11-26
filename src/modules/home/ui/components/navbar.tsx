@@ -163,11 +163,11 @@ export const Navbar = () => {
   // Configure session query for immediate UI updates
   const session = useQuery({
     ...trpc.auth.session.queryOptions(),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always refetch to catch logouts from other tabs
     gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
     retry: false, // Don't retry session checks
-    refetchOnMount: true, // Always check session on mount
-    refetchOnWindowFocus: true, // Check session when window regains focus
+    refetchOnMount: 'always', // Always check session on mount
+    refetchOnWindowFocus: 'always', // Always check session when window regains focus
   });
 
   const isLoggedIn = !!session.data?.user;
@@ -250,28 +250,20 @@ export const Navbar = () => {
           onLogout={handleLogout}
           isLoggingOut={logout.isPending}
         />
-        <div className="items-center gap-2 lg:hidden flex-1 justify-end">
-          <Link
-            href="/sign-in"
-            className="text-sm font-medium text-gray-900 hover:text-gray-600"
-          >
-            Sign In
-          </Link>
-          <Link
-            href="/cart"
-            className="relative h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <ShoppingCart className="h-5 w-5" />
-          </Link>
-          <button
-            type="button"
-            className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
-            onClick={() => setIsSidebarOpen(true)}
-          >
-            <MenuIcon className="h-5 w-5" />
-          </button>
+        {/* Desktop Navigation for public */}
+        <div className="items-center gap-2 hidden lg:flex flex-1 justify-center overflow-x-auto px-2">
+          {publicNavbarItems.map((item) => (
+            <NavbarItemButton
+              key={item.href}
+              href={item.href}
+              isActive={pathname === item.href}
+            >
+              {item.children}
+            </NavbarItemButton>
+          ))}
         </div>
-        <div className="hidden lg:flex flex-shrink-0 gap-2">
+        {/* Desktop Auth Buttons */}
+        <div className="hidden lg:flex flex-shrink-0">
           <Button
             asChild
             variant="secondary"
@@ -289,6 +281,36 @@ export const Navbar = () => {
               Sign Up
             </OptimizedLink>
           </Button>
+        </div>
+        {/* Mobile Icons - Right Side: Sign In, Cart, Menu */}
+        <div className="flex lg:hidden items-center gap-1 pr-2">
+          <Link
+            href="/sign-in"
+            className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <LogIn className="h-5 w-5" />
+          </Link>
+          <Link
+            href="/cart"
+            className="relative h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {cartItemCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none"
+              >
+                {cartItemCount > 99 ? "99+" : cartItemCount}
+              </Badge>
+            )}
+          </Link>
+          <button
+            type="button"
+            className="h-12 w-12 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <MenuIcon className="h-5 w-5" />
+          </button>
         </div>
       </nav>
     );
