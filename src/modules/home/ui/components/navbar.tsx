@@ -250,16 +250,26 @@ export const Navbar = () => {
           onLogout={handleLogout}
           isLoggingOut={logout.isPending}
         />
-        <div className="items-center gap-2 hidden lg:flex flex-1 justify-center overflow-x-auto px-2">
-          {publicNavbarItems.map((item) => (
-            <NavbarItemButton
-              key={item.href}
-              href={item.href}
-              isActive={pathname === item.href}
-            >
-              {item.children}
-            </NavbarItemButton>
-          ))}
+        <div className="items-center gap-2 lg:hidden flex-1 justify-end">
+          <Link
+            href="/sign-in"
+            className="text-sm font-medium text-gray-900 hover:text-gray-600"
+          >
+            Sign In
+          </Link>
+          <Link
+            href="/cart"
+            className="relative h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <ShoppingCart className="h-5 w-5" />
+          </Link>
+          <button
+            type="button"
+            className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+            onClick={() => setIsSidebarOpen(true)}
+          >
+            <MenuIcon className="h-5 w-5" />
+          </button>
         </div>
         <div className="hidden lg:flex flex-shrink-0 gap-2">
           <Button
