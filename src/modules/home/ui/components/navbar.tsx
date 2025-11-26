@@ -170,6 +170,8 @@ export const Navbar = () => {
     refetchOnWindowFocus: true, // Check session when window regains focus
   });
 
+  const isLoggedIn = !!session.data?.user;
+
   // Get unread message count for logged-in users
   const { data: unreadData } = useQuery({
     ...trpc.chat.getUnreadCount.queryOptions(),
@@ -220,18 +222,67 @@ export const Navbar = () => {
   // Show tenant items if user is a tenant, customer items if logged in, otherwise show public items
   // While loading, use the cached data to prevent flash
   const isTenant = session.data?.user?.roles?.includes('tenant');
-  const navbarItems = session.data?.user 
-    ? isTenant 
-      ? tenantNavbarItems 
-      : customerNavbarItems 
+  const navbarItems = session.data?.user
+    ? isTenant
+      ? tenantNavbarItems
+      : customerNavbarItems
     : publicNavbarItems;
   const accountHref = isTenant ? "/dashboard" : "/my-account";
   const mobileStoreItems = myStoreBaseItems.map((item) => ({
     ...item,
     href: item.children === "My Account" ? accountHref : item.href,
   }));
+  const sidebarItems = isLoggedIn ? navbarItems : publicNavbarItems;
 
-  const isLoggedIn = !!session.data?.user;
+  if (!isLoggedIn) {
+    return (
+      <nav className="h-16 flex border-b justify-between font-medium bg-white max-w-full overflow-hidden sticky top-0 z-50 lg:fixed lg:w-full">
+        <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
+          <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
+            Toolboxx
+          </span>
+        </Link>
+        <NavbarSidebar
+          items={sidebarItems}
+          open={isSidebarOpen}
+          onOpenChange={setIsSidebarOpen}
+          isLoggedIn={isLoggedIn}
+          onLogout={handleLogout}
+          isLoggingOut={logout.isPending}
+        />
+        <div className="items-center gap-2 hidden lg:flex flex-1 justify-center overflow-x-auto px-2">
+          {publicNavbarItems.map((item) => (
+            <NavbarItemButton
+              key={item.href}
+              href={item.href}
+              isActive={pathname === item.href}
+            >
+              {item.children}
+            </NavbarItemButton>
+          ))}
+        </div>
+        <div className="hidden lg:flex flex-shrink-0 gap-2">
+          <Button
+            asChild
+            variant="secondary"
+            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-white hover:bg-pink-400 transition-colors text-sm"
+          >
+            <OptimizedLink prefetch={true} href="/sign-in">
+              Log in
+            </OptimizedLink>
+          </Button>
+          <Button
+            asChild
+            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-sm"
+          >
+            <OptimizedLink prefetch={true} href="/sign-up">
+              Sign Up
+            </OptimizedLink>
+          </Button>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav className="h-16 flex border-b justify-between font-medium bg-white max-w-full overflow-hidden sticky top-0 z-50 lg:fixed lg:w-full">
