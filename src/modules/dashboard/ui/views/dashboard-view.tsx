@@ -38,7 +38,7 @@ export function DashboardView() {
   // Redirect if not authenticated
   useEffect(() => {
     if (sessionFetched && !session?.user) {
-      router.push('/sign-in?redirect=/my-account');
+      router.push('/');
     }
   }, [sessionFetched, session?.user, router]);
 

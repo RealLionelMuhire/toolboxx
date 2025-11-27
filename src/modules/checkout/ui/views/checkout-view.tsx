@@ -37,9 +37,8 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
     },
     onError: (error) => {
       if (error.data?.code === "UNAUTHORIZED") {
-        // Redirect to sign in with return URL
-        const currentPath = `/tenants/${tenantSlug}/checkout`;
-        router.push(`/sign-in?redirect=${encodeURIComponent(currentPath)}`);
+        // Redirect to homepage
+        router.push("/");
       }
 
       toast.error(error.message);

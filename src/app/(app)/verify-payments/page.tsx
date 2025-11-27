@@ -29,9 +29,9 @@ export default function VerifyPaymentsPage() {
     // Wait until session is fetched before redirecting
     if (!session.isFetched) return;
     
-    // Not logged in -> redirect to sign-in
+    // Not logged in -> redirect to homepage
     if (!session.data?.user) {
-      router.push('/sign-in?redirect=/verify-payments');
+      router.push('/');
       return;
     }
     

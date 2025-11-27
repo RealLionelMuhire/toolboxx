@@ -11,7 +11,7 @@ const TenantDashboardPage = async () => {
   const session = await caller.auth.session();
 
   if (!session.user) {
-    redirect("/sign-in?redirect=/dashboard");
+    redirect("/");
   }
 
   // Check if user is super admin - redirect them to admin dashboard

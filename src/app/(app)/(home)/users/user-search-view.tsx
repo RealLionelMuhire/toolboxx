@@ -57,7 +57,7 @@ export function UserSearchView() {
   const handleMessageUser = (userId: string, username: string) => {
     if (!session?.user) {
       toast.error("Please log in to message users");
-      router.push("/sign-in?redirect=/users");
+      router.push("/");
       return;
     }
 

@@ -17,7 +17,7 @@ export default async function ConversationPage({
   const { conversationId } = await params;
 
   if (!session.user) {
-    redirect(`/sign-in?redirect=${encodeURIComponent(`/chat/${conversationId}`)}`);
+    redirect("/");
   }
 
   return (
