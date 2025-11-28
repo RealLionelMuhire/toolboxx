@@ -50,7 +50,7 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
   const handleMessageCustomer = (sale: any) => {
     if (!session?.user) {
       toast.error("Please log in to message the customer");
-      router.push("/sign-in?redirect=/dashboard/my-sales");
+      router.push("/");
       return;
     }
     

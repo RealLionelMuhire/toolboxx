@@ -56,7 +56,7 @@ export function OrderCard({ order, onConfirmReceiptAction }: OrderCardProps) {
   const handleMessageSeller = () => {
     if (!session?.user) {
       toast.error('Please log in to message the seller')
-      router.push('/sign-in?redirect=/orders')
+      router.push('/')
       return
     }
     

@@ -59,10 +59,10 @@ export const BuyNowButton = ({
       },
       onError: (error) => {
         if (error.data?.code === "UNAUTHORIZED") {
-          // Redirect to sign in
+          // Redirect to homepage
           setDialogOpen(false);
           toast.error("Please sign in to continue");
-          router.push(`/sign-in?redirect=/tenants/${tenantSlug}/products/${productId}`);
+          router.push("/");
         } else {
           toast.error(error.message);
         }

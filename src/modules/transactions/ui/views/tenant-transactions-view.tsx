@@ -34,7 +34,7 @@ export function TenantTransactionsView() {
 
   useEffect(() => {
     if (sessionQuery.isFetched && !sessionQuery.data?.user) {
-      router.push("/sign-in?redirect=/transactions");
+      router.push("/");
     } else if (
       sessionQuery.isFetched &&
       sessionQuery.data?.user &&

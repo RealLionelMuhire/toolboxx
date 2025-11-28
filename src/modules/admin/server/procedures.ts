@@ -62,7 +62,40 @@ export const adminRouter = createTRPCRouter({
         limit: 100,
       });
 
-      return transactions.docs;
+      // For each transaction, fetch related orders
+      const transactionsWithOrders = await Promise.all(
+        transactions.docs.map(async (transaction: any) => {
+          // Find orders related to this transaction
+          const ordersResult = await ctx.db.find({
+            collection: "orders",
+            where: {
+              transaction: {
+                equals: transaction.id,
+              },
+            },
+            depth: 2, // Get product details
+            sort: '-createdAt',
+          });
+
+          return {
+            ...transaction,
+            orders: ordersResult.docs.map((order: any) => ({
+              id: order.id,
+              orderNumber: order.orderNumber,
+              status: order.status,
+              totalAmount: order.totalAmount,
+              shippedAt: order.shippedAt,
+              deliveredAt: order.deliveredAt,
+              confirmedAt: order.confirmedAt,
+              received: order.received,
+              products: order.products || [],
+              product: order.product,
+            })),
+          };
+        })
+      );
+
+      return transactionsWithOrders;
     }),
 
   // Verify payment

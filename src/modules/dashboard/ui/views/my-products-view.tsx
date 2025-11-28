@@ -38,7 +38,7 @@ export const MyProductsView = () => {
 
   useEffect(() => {
     if (!sessionLoading && !session?.user) {
-      router.push("/sign-in?redirect=/my-products");
+      router.push("/");
     } else if (!sessionLoading && session?.user && !session.user.roles?.includes('tenant')) {
       router.push("/");
     }

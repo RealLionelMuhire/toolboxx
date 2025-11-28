@@ -342,6 +342,16 @@ export const Transactions: CollectionConfig = {
         description: 'Internal notes about this transaction',
       },
     },
+    {
+      name: 'relatedOrders',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/components/admin/TransactionOrdersField#TransactionOrdersField',
+        },
+        condition: (data) => data.status === 'verified', // Only show for verified transactions
+      },
+    },
   ],
   hooks: {
     beforeChange: [
