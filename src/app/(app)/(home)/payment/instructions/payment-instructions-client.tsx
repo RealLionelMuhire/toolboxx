@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Copy, CheckCircle2, AlertCircle, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useCartStore } from "@/modules/checkout/store/use-cart-store";
 
 export function PaymentInstructionsClient() {
   const searchParams = useSearchParams();
@@ -23,6 +24,7 @@ export function PaymentInstructionsClient() {
   const [showDetails, setShowDetails] = useState(false);
 
   const trpc = useTRPC();
+  const clearCart = useCartStore((state) => state.clearCart);
 
   // Get transaction details
   const { data: transaction, isLoading } = useQuery(
@@ -32,12 +34,23 @@ export function PaymentInstructionsClient() {
     )
   );
 
+  // Extract tenant slug from transaction (available after transaction loads)
+  const tenantSlug = transaction?.tenant && typeof transaction.tenant === 'object' && 'slug' in transaction.tenant
+    ? transaction.tenant.slug
+    : null;
+
   // Submit transaction ID mutation
   const submitMutation = useMutation(
     trpc.transactions.submitTransactionId.mutationOptions({
       onSuccess: () => {
-        toast.success("Transaction ID submitted successfully!");
-        router.push(`/payment/status?transactionId=${transactionId}`);
+        // Clear the cart for the tenant
+        if (tenantSlug) {
+          clearCart(tenantSlug);
+        }
+        
+        toast.success("Transaction ID submitted successfully! Your cart has been cleared.");
+        // Redirect to orders page
+        router.push("/orders");
       },
       onError: (error) => {
         toast.error(error.message);
