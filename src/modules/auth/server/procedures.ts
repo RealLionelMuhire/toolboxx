@@ -67,6 +67,7 @@ export const authRouter = createTRPCRouter({
           slug: input.username,
           tinNumber: input.tinNumber,
           storeManagerId: input.storeManagerId,
+          category: input.category,
           paymentMethod: input.paymentMethod,
           ...(input.paymentMethod === "bank_transfer" && {
             bankName: input.bankName,
@@ -78,7 +79,7 @@ export const authRouter = createTRPCRouter({
           isVerified: false,
           verificationStatus: "pending",
           canAddMerchants: false,
-        }
+        } as any
       })
 
       await ctx.db.create({

@@ -15,6 +15,13 @@ import { useTRPC } from "@/trpc/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Form,
   FormControl,
   FormDescription,
@@ -119,6 +126,7 @@ export const SignUpView = () => {
       username: "",
       tinNumber: "",
       storeManagerId: "",
+      category: "retailer" as const,
       paymentMethod: "bank_transfer" as const,
       bankName: "",
       bankAccountNumber: "",
@@ -572,6 +580,31 @@ export const SignUpView = () => {
             {/* Rwanda-specific fields */}
             <div className="border-t pt-6">
               <h2 className="text-xl font-medium mb-4">Business Information</h2>
+              
+              <FormField
+                name="category"
+                control={tenantForm.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base">Business Category *</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your business category" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="retailer">Retailer</SelectItem>
+                        <SelectItem value="wholesale">Wholesale</SelectItem>
+                        <SelectItem value="industry">Industry</SelectItem>
+                        <SelectItem value="renter">Renter</SelectItem>
+                        <SelectItem value="logistics">Logistics</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <FormField
                 name="tinNumber"

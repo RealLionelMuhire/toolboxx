@@ -139,19 +139,64 @@ export function ChatWindow({
   }
 
   const messages = messagesData?.docs || [];
+  
+  // Reverse messages to show oldest first (server returns newest first with sort: '-createdAt')
+  // This ensures chronological order: oldest at top, newest at bottom
+  const sortedMessages = [...messages].reverse();
+
+  // Helper to check if two dates are on the same day
+  const isSameDay = (date1: Date, date2: Date) => {
+    return date1.getFullYear() === date2.getFullYear() &&
+           date1.getMonth() === date2.getMonth() &&
+           date1.getDate() === date2.getDate();
+  };
+
+  // Helper to format date and time
+  const formatMessageDateTime = (messageDate: Date, previousMessageDate: Date | null) => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const messageDay = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+    
+    // Show date if it's different from previous message or if it's not today
+    const shouldShowDate = !previousMessageDate || !isSameDay(messageDate, previousMessageDate);
+    
+    if (shouldShowDate) {
+      if (isSameDay(messageDate, today)) {
+        // Today - show "Today, HH:mm"
+        return `Today, ${format(messageDate, "HH:mm")}`;
+      } else if (isSameDay(messageDate, new Date(today.getTime() - 86400000))) {
+        // Yesterday - show "Yesterday, HH:mm"
+        return `Yesterday, ${format(messageDate, "HH:mm")}`;
+      } else {
+        // Other days - show "MMM d, HH:mm" or "MMM d, yyyy, HH:mm" if not current year
+        const currentYear = now.getFullYear();
+        if (messageDate.getFullYear() === currentYear) {
+          return format(messageDate, "MMM d, HH:mm");
+        } else {
+          return format(messageDate, "MMM d, yyyy, HH:mm");
+        }
+      }
+    } else {
+      // Same day as previous message - just show time
+      return format(messageDate, "HH:mm");
+    }
+  };
 
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden p-1.5 sm:p-3 md:p-4" ref={scrollRef}>
       <div className="space-y-2 min-h-full w-full max-w-full flex flex-col justify-end">
-        {messages.length === 0 ? (
+        {sortedMessages.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">
               No messages yet. Start the conversation!
             </p>
           </div>
         ) : (
-          messages
-            .map((message) => {
+          sortedMessages
+            .map((message, index) => {
+              const previousMessage = index > 0 ? sortedMessages[index - 1] : null;
+              const previousMessageDate = previousMessage ? new Date(previousMessage.createdAt) : null;
+              const messageDate = new Date(message.createdAt);
               const sender =
                 typeof message.sender === "object"
                   ? message.sender
@@ -225,7 +270,7 @@ export function ChatWindow({
 
                     <div className="flex items-center gap-2 px-1">
                       <span className="text-xs text-muted-foreground">
-                        {format(new Date(message.createdAt), "HH:mm")}
+                        {formatMessageDateTime(messageDate, previousMessageDate)}
                       </span>
                       {isSentByMe && message.read && (
                         <span className="text-xs text-muted-foreground">
