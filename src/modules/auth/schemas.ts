@@ -24,6 +24,7 @@ export const registerSchema = z.object({
   // Rwanda-specific fields
   tinNumber: z.string().min(9, "TIN Number must be at least 9 characters"),
   storeManagerId: z.string().min(5, "Store Manager ID/Passport must be at least 5 characters"),
+  category: z.enum(["retailer", "wholesale", "industry", "renter", "logistics"]),
   paymentMethod: z.enum(["bank_transfer", "momo_pay"]),
   // Conditional fields based on payment method
   bankName: z.string().optional(),

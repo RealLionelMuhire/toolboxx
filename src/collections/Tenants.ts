@@ -124,6 +124,22 @@ export const Tenants: CollectionConfig = {
       },
     },
     {
+      name: "category",
+      type: "select",
+      required: true,
+      options: [
+        { label: "Retailer", value: "retailer" },
+        { label: "Wholesale", value: "wholesale" },
+        { label: "Industry", value: "industry" },
+        { label: "Renter", value: "renter" },
+        { label: "Logistics", value: "logistics" },
+      ],
+      index: true,
+      admin: {
+        description: "Business category - selected during registration",
+      },
+    },
+    {
       name: "rdbCertificate",
       type: "upload",
       relationTo: "media",

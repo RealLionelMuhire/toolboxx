@@ -302,26 +302,26 @@ export const Navbar = () => {
           </Button>
         </div>
         {/* Mobile Icons - Right Side: Sign In, Cart, Menu */}
-        <div className="flex lg:hidden items-center gap-0.5 pr-2 flex-shrink-0">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              router.push("/sign-in");
-            }}
-            className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 touch-manipulation outline-none focus:outline-none"
+        <div className="flex lg:hidden items-center gap-1 pr-2 flex-shrink-0">
+          <Link
+            href="/sign-in"
+            prefetch={true}
+            className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           >
             <LogIn className="h-5 w-5" />
-          </button>
+          </Link>
           <Link
             href="/cart"
-            className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 touch-manipulation"
+            prefetch={true}
+            className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           >
             <ShoppingCart className="h-5 w-5" />
             {cartItemCount > 0 && (
               <Badge
                 variant="destructive"
-                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none"
+                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
               >
                 {cartItemCount > 99 ? "99+" : cartItemCount}
               </Badge>
@@ -329,8 +329,17 @@ export const Navbar = () => {
           </Link>
           <button
             type="button"
-            className="h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 touch-manipulation"
-            onClick={() => setIsSidebarOpen(true)}
+            className="h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsSidebarOpen(true);
+            }}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+            }}
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+            aria-label="Open menu"
           >
             <MenuIcon className="h-5 w-5" />
           </button>
@@ -440,12 +449,13 @@ export const Navbar = () => {
       )}
 
       {/* Mobile Icons - Right Side */}
-        <div className="flex lg:hidden items-center gap-0.5 pr-2 flex-shrink-0">
+        <div className="flex lg:hidden items-center gap-1 pr-2 flex-shrink-0">
         {isTenant && (
           <Link
             href="/my-store"
             prefetch={true}
-            className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
+            className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation transition-colors"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           >
             <Store className="h-5 w-5" />
           </Link>
@@ -453,20 +463,22 @@ export const Navbar = () => {
         <Link
           href="/verify-payments"
           prefetch={true}
-          className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
+          className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation transition-colors"
+          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         >
           <Wallet className="h-5 w-5" />
         </Link>
         <Link
           href="/chat"
           prefetch={true}
-          className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
+          className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation transition-colors"
+          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         >
           <MessageCircle className="h-5 w-5" />
           {(unreadData?.totalUnread || 0) > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
             >
               {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
             </Badge>
@@ -474,13 +486,15 @@ export const Navbar = () => {
         </Link>
         <Link
           href="/cart"
-          className="relative h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
+          prefetch={true}
+          className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation transition-colors"
+          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
         >
           <ShoppingCart className="h-5 w-5" />
           {cartItemCount > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none"
+              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
             >
               {cartItemCount > 99 ? "99+" : cartItemCount}
             </Badge>
@@ -488,8 +502,17 @@ export const Navbar = () => {
         </Link>
         <button
           type="button"
-          className="h-12 w-12 flex items-center justify-center rounded-full active:bg-gray-200 outline-none focus:outline-none touch-manipulation"
-          onClick={() => setIsSidebarOpen(true)}
+          className="h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation transition-colors"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setIsSidebarOpen(true);
+          }}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+          }}
+          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+          aria-label="Open menu"
         >
           <MenuIcon className="h-5 w-5" />
         </button>
