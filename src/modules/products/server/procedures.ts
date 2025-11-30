@@ -354,6 +354,36 @@ export const productsRouter = createTRPCRouter({
         };
       }
 
+      // Filter out out-of-stock products from public lists (unless allowBackorder/pre-order is enabled)
+      // This ensures tenants can still see their out-of-stock products in their management area
+      // but customers won't see them in public product lists unless pre-order is enabled
+      if (!input.tenantSlug) {
+        // For public product lists, exclude products where:
+        // - quantity is 0 AND allowBackorder is false
+        // Show products that have quantity > 0 OR (quantity = 0 AND allowBackorder = true)
+        where.or = [
+          {
+            quantity: {
+              greater_than: 0,
+            },
+          },
+          {
+            and: [
+              {
+                quantity: {
+                  equals: 0,
+                },
+              },
+              {
+                allowBackorder: {
+                  equals: true,
+                },
+              },
+            ],
+          },
+        ];
+      }
+
       const data = await ctx.db.find({
         collection: "products",
         depth: 1, // Reduced from 2 to 1 - loads category, image, tenant (without nested relationships)

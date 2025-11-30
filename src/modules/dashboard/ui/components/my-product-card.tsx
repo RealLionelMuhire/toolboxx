@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { StarIcon, EyeOffIcon, ArchiveIcon, Edit2Icon, Trash2Icon } from "lucide-react";
+import { StarIcon, EyeOffIcon, ArchiveIcon, Edit2Icon, Trash2Icon, PackageXIcon } from "lucide-react";
 
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ interface MyProductCardProps {
   price: number;
   isPrivate?: boolean;
   isArchived?: boolean;
+  stockStatus?: string;
+  quantity?: number;
   viewMode?: "grid" | "list";
   onEdit?: (id: string) => void;
   onDelete?: (id: string, name: string) => void;
@@ -36,10 +38,13 @@ export const MyProductCard = ({
   price,
   isPrivate,
   isArchived,
+  stockStatus,
+  quantity,
   viewMode = "grid",
   onEdit,
   onDelete,
 }: MyProductCardProps) => {
+  const isOutOfStock = stockStatus === "out_of_stock";
   // Generate URLs consistently for server/client
   const productUrl = `/tenants/${tenantSlug}/products/${id}`;
 
@@ -77,6 +82,12 @@ export const MyProductCard = ({
           )}
           {/* Status badges */}
           <div className="absolute top-1 right-1 sm:top-2 sm:right-2 flex flex-col gap-0.5 sm:gap-1 z-10">
+            {isOutOfStock && (
+              <div className="flex items-center gap-0.5 sm:gap-1 bg-red-500 text-white px-1 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs font-medium">
+                <PackageXIcon className="size-2 sm:size-3" />
+                <span className="hidden sm:inline">Out of Stock</span>
+              </div>
+            )}
             {isPrivate && (
               <div className="flex items-center gap-0.5 sm:gap-1 bg-yellow-500 text-white px-1 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-xs font-medium">
                 <EyeOffIcon className="size-2 sm:size-3" />
@@ -122,10 +133,19 @@ export const MyProductCard = ({
             </div>
           )}
           
-          <div className="relative px-1 xs:px-1.5 sm:px-2 py-0.5 border bg-pink-400 w-fit">
-            <p className="text-xs xs:text-sm font-medium">
-              {formatCurrency(price)}
-            </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="relative px-1 xs:px-1.5 sm:px-2 py-0.5 border bg-pink-400 w-fit">
+              <p className="text-xs xs:text-sm font-medium">
+                {formatCurrency(price)}
+              </p>
+            </div>
+            {quantity !== undefined && (
+              <div className={`text-xs xs:text-sm font-medium ${
+                quantity === 0 ? 'text-red-600' : 'text-gray-600'
+              }`}>
+                {quantity === 0 ? '0 remaining' : `${quantity} available`}
+              </div>
+            )}
           </div>
         </div>
         
@@ -189,6 +209,12 @@ export const MyProductCard = ({
         )}
         {/* Status badges */}
         <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
+          {isOutOfStock && (
+            <div className="flex items-center gap-1 bg-red-500 text-white px-2 py-1 rounded text-xs font-medium">
+              <PackageXIcon className="size-3" />
+              Out of Stock
+            </div>
+          )}
           {isPrivate && (
             <div className="flex items-center gap-1 bg-yellow-500 text-white px-2 py-1 rounded text-xs font-medium">
               <EyeOffIcon className="size-3" />
@@ -235,12 +261,19 @@ export const MyProductCard = ({
       </div>
       
       <div className="p-4">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
           <div className="relative px-2 py-1 border bg-pink-400 w-fit">
             <p className="text-sm font-medium">
               {formatCurrency(price)}
             </p>
           </div>
+          {quantity !== undefined && (
+            <div className={`text-sm font-medium ${
+              quantity === 0 ? 'text-red-600' : 'text-gray-600'
+            }`}>
+              {quantity === 0 ? '0 remaining' : `${quantity} available`}
+            </div>
+          )}
         </div>
         
         <div className="flex gap-2">
