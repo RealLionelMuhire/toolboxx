@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Badge } from '@/components/ui/badge';
 import { SearchIcon, PlusIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -103,6 +104,7 @@ export default function MyStorePage() {
         >
           <Package className="h-4 w-4" />
           <span className="hidden sm:inline">My</span> Products
+          <OutOfStockBadge />
         </button>
         <button
           onClick={() => setActiveTab('sales')}
@@ -123,6 +125,29 @@ export default function MyStorePage() {
       {activeTab === 'products' && <ProductsSection />}
       {activeTab === 'sales' && <SalesSection />}
     </div>
+  );
+}
+
+// Component to show out-of-stock count badge
+function OutOfStockBadge() {
+  const trpc = useTRPC();
+  const { data } = useQuery({
+    ...trpc.products.getMyProducts.queryOptions({
+      limit: 1000, // Get all products to count out-of-stock
+      includeArchived: false,
+    }),
+    select: (data) => {
+      // Count products with quantity 0
+      return data.docs.filter((product) => (product.quantity ?? 0) === 0).length;
+    },
+  });
+
+  if (!data || data === 0) return null;
+
+  return (
+    <Badge variant="destructive" className="ml-1 h-5 min-w-5 flex items-center justify-center px-1.5 text-xs">
+      {data}
+    </Badge>
   );
 }
 
