@@ -7,7 +7,7 @@ export const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Brand */}
           <div className="space-y-3">
-            <h3 className="text-xl font-bold">Toolboxx</h3>
+            <h3 className="text-xl font-bold">Toolbay</h3>
             <p className="text-sm text-muted-foreground">
               Marketplace for construction materials, tools, and engineering supplies.
             </p>
@@ -55,7 +55,7 @@ export const Footer = () => {
 
         {/* Bottom bar */}
         <div className="mt-8 pt-6 border-t flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Toolboxx, Inc. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Toolbay, Inc. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <Link href="/about" className="hover:text-foreground transition-colors">
               About

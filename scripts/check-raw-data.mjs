@@ -9,7 +9,7 @@ async function checkRawData() {
     console.log('='.repeat(80))
 
     // Get MongoDB connection URL from environment
-    const mongoURL = process.env.DATABASE_URI || 'mongodb://127.0.0.1:27017/toolboxx'
+    const mongoURL = process.env.DATABASE_URI || 'mongodb://127.0.0.1:27017/toolbay'
     const client = new MongoClient(mongoURL)
     
     await client.connect()

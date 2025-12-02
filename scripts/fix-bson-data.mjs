@@ -1,7 +1,7 @@
 import { MongoClient, ObjectId } from 'mongodb'
 
 async function fixBSONData() {
-  const mongoURL = process.env.DATABASE_URI || 'mongodb://127.0.0.1:27017/toolboxx'
+  const mongoURL = process.env.DATABASE_URI || 'mongodb://127.0.0.1:27017/toolbay'
   const client = new MongoClient(mongoURL)
   
   try {

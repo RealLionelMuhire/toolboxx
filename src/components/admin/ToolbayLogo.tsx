@@ -2,7 +2,7 @@
 
 import React from 'react'
 
-const ToolboxxLogo = () => {
+const ToolbayLogo = () => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
       {/* Payload's actual SVG logo */}
@@ -17,17 +17,18 @@ const ToolboxxLogo = () => {
         />
       </svg>
       
-      {/* Toolboxx text */}
+      {/* Toolbay text */}
       <span style={{ 
         fontSize: '1.125rem',
         fontWeight: 700,
         letterSpacing: '-0.025em',
         fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
       }}>
-        Toolboxx
+        Toolbay
       </span>
     </div>
   )
 }
 
-export default ToolboxxLogo
+export default ToolbayLogo
+
