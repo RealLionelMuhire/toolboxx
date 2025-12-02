@@ -16,7 +16,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Toolboxx - Construction Materials Marketplace",
+  title: "Toolbay - Construction Materials Marketplace",
   description: "Rwanda's premier online marketplace for construction materials, tools, and engineering supplies",
 };
 

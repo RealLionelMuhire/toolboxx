@@ -166,7 +166,7 @@ export const SignUpView = () => {
             <div className="flex items-center justify-between mb-8">
               <Link href="/">
                 <span className={cn("text-2xl font-semibold", poppins.className)}>
-                  Toolboxx
+                  Toolbay
                 </span>
               </Link>
               <Button
@@ -183,7 +183,7 @@ export const SignUpView = () => {
 
             <div className="max-w-2xl mx-auto w-full">
               <h1 className="text-2xl md:text-4xl font-medium mb-2 md:mb-4">
-                Join Toolboxx
+                Join Toolbay
               </h1>
               <p className="text-sm md:text-lg text-muted-foreground mb-6 md:mb-12">
                 Choose how you want to use our platform
@@ -263,7 +263,7 @@ export const SignUpView = () => {
                       </li>
                       <li className="flex items-start gap-2 hidden md:flex">
                         <span className="text-primary mt-0.5">✓</span>
-                        <span>Requires business verification (TIN, RDB)</span>
+                        <span>Requires business verification</span>
                       </li>
                     </ul>
                     <Button className="w-full mt-4 md:mt-6" size="lg" variant="default">
@@ -311,7 +311,7 @@ export const SignUpView = () => {
               <div className="flex items-center justify-between mb-8">
                 <Link href="/">
                   <span className={cn("text-2xl font-semibold", poppins.className)}>
-                    Toolboxx
+                    Toolbay
                   </span>
                 </Link>
                 <div className="flex items-center gap-4">
@@ -499,7 +499,7 @@ export const SignUpView = () => {
             <div className="flex items-center justify-between mb-8">
               <Link href="/">
                 <span className={cn("text-2xl font-semibold", poppins.className)}>
-                  Toolboxx
+                  Toolbay
                 </span>
               </Link>
               <div className="flex items-center gap-4">
@@ -530,7 +530,7 @@ export const SignUpView = () => {
                 <Store className="h-6 w-6 text-pink-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-medium">Start Supplying on Toolboxx</h1>
+                <h1 className="text-3xl font-medium">Start Supplying on Toolbay</h1>
                 <p className="text-muted-foreground">Join over 1,580 construction suppliers</p>
               </div>
             </div>
@@ -681,7 +681,7 @@ export const SignUpView = () => {
                       <FormItem>
                         <FormLabel className="text-base">Bank Name *</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="e.g., Bank of Kigali" />
+                          <Input {...field} placeholder="e.g., Bank Name" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -719,11 +719,11 @@ export const SignUpView = () => {
               )}
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mt-6">
+            {/* <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mt-6">
               <p className="text-sm text-yellow-800">
-                <strong>Next Steps:</strong> After creating your account, you&apos;ll need to upload your RDB Registration Certificate and other documents for verification. Only verified stores can start supplying construction materials.
+                <strong>Next Steps:</strong> After creating your account, you may  need to upload your RDB Registration Certificate and other documents for verification. Only verified stores can start supplying construction materials.
               </p>
-            </div>
+            </div> */}
 
             <Button
               disabled={registerTenant.isPending}

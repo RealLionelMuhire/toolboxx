@@ -120,8 +120,8 @@ async function seed() {
   const adminTenant = await payload.create({
     collection: "tenants",
     data: {
-      name: "toolboxx-admin",
-      slug: "toolboxx-admin",
+      name: "toolbay-admin",
+      slug: "toolbay-admin",
       tinNumber: "999000001", // Sample admin TIN
       storeManagerId: "ADMIN001",
       paymentMethod: "bank_transfer" as const,
@@ -138,7 +138,7 @@ async function seed() {
   const adminUser = await payload.create({
     collection: "users",
     data: {
-      email: "admin@toolboxx.rw",
+      email: "admin@toolbay.rw",
       password: "demo",
       roles: ["super-admin"],
       username: "admin",

@@ -270,7 +270,7 @@ export const Navbar = () => {
       <nav className="h-16 flex border-b justify-between font-medium bg-white w-full overflow-x-auto overflow-y-visible sticky top-0 z-50 lg:fixed">
         <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
           <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
-            Toolboxx
+            Toolbay
           </span>
         </Link>
         <NavbarSidebar
@@ -365,7 +365,7 @@ export const Navbar = () => {
       {/* Logo - Smaller, more compact */}
       <Link href="/" className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
         <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
-          Toolboxx
+          Toolbay
         </span>
       </Link>
 

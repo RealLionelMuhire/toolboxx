@@ -44,7 +44,7 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
   
-  // Extract the hostname (e.g., "antonio.toolboxx.com" or "john.localhost:3000")
+  // Extract the hostname (e.g., "antonio.toolbay.com" or "john.localhost:3000")
   const hostname = req.headers.get("host") || "";
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
 

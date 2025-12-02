@@ -190,7 +190,7 @@ export const useCartStore = create<CartState>()(
         }),
     }),
     {
-      name: "toolboxx-cart",
+      name: "toolbay-cart",
       storage: createJSONStorage(() => localStorage),
     },
   ),
