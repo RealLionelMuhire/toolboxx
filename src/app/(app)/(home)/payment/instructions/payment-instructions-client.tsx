@@ -55,9 +55,9 @@ export function PaymentInstructionsClient() {
         
         toast.success("Transaction ID submitted! Redirecting to your orders...");
         
-        // Immediate redirect to orders page
+        // Immediate redirect to orders page with from=payment parameter
         setTimeout(() => {
-          router.push("/orders");
+          router.push("/orders?from=payment");
         }, 500); // Brief delay to show success message
       },
       onError: (error) => {
