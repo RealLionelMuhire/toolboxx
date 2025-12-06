@@ -6,7 +6,7 @@ import { Fragment, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CheckIcon, LinkIcon, StarIcon, MessageCircle } from "lucide-react";
+import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
@@ -60,6 +60,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   );
 
   const [isCopied, setIsCopied] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [showAllRatings, setShowAllRatings] = useState(false);
   
   // Get current user session to check if logged in
   const { data: session } = useQuery(trpc.auth.session.queryOptions());
@@ -140,198 +142,253 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   }
 
   return (
-    <div className="px-4 lg:px-12 py-10">
-      <div className="border rounded-sm bg-white overflow-hidden">
-        {/* Two-column layout: Image on left (lg:order-1), Details on right (lg:order-2) */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-          
-          {/* LEFT SIDE - Product Image (Desktop: left, Mobile: top) */}
-          <div className="order-1 lg:order-1 lg:border-r">
-            <div className="relative aspect-square bg-gray-50">
-              {images.length > 1 ? (
-                <ImageCarousel
-                  images={images}
-                  className="aspect-square"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  loading="eager"
-                  quality={90}
-                />
-              ) : (
-                <Image
-                  src={images[0]?.url || "/placeholder.png"}
-                  alt={data.name}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 100vw, 50vw"
-                  priority
-                />
-              )}
-            </div>
-          </div>
-
-          {/* RIGHT SIDE - Product Details (Desktop: right, Mobile: bottom) */}
-          <div className="order-2 lg:order-2 border-t lg:border-t-0">
-            <div className="p-6">
-              <h1 className="text-4xl font-medium">{data.name}</h1>
-            </div>
+    <div className="px-4 lg:px-12 py-10 bg-gradient-to-b from-gray-50 to-white min-h-screen">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
+          {/* Two-column layout: Image on left (lg:order-1), Details on right (lg:order-2) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
             
-            <div className="border-y flex flex-wrap">
-              <div className="px-6 py-4 flex items-center justify-center border-r">
-                <div className="flex flex-col gap-2">
-                  <div className="px-2 py-1 border bg-pink-400 w-fit">
-                    <p className="text-base font-medium">{formatCurrency(data.price)}</p>
-                  </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    per {data.unit || "unit"}
-                  </p>
-                </div>
-              </div>
-
-              <div className="px-6 py-4 flex items-center justify-center border-r">
-                <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2">
-                  {data.tenant.image?.url && (
-                    <Image
-                      src={data.tenant.image.url}
-                      alt={data.tenant.name}
-                      width={20}
-                      height={20}
-                      className="rounded-full border shrink-0 size-[20px]"
-                    />
-                  )}
-                  <p className="text-base underline font-medium">
-                    {data.tenant.name}
-                  </p>
-                </Link>
-              </div>
-
-              <div className="px-6 py-4 flex items-center justify-center border-r">
-                <div className="flex items-center gap-2">
-                  <StarRating
-                    rating={data.reviewRating}
-                    iconClassName="size-4"
+            {/* LEFT SIDE - Product Image (Desktop: left, Mobile: top) */}
+            <div className="order-1 lg:order-1">
+              <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100">
+                {images.length > 1 ? (
+                  <ImageCarousel
+                    images={images}
+                    className="aspect-square"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    loading="eager"
+                    quality={90}
                   />
-                  <p className="text-base font-medium">
-                    {data.reviewCount} ratings
+                ) : (
+                  <Image
+                    src={images[0]?.url || "/placeholder.png"}
+                    alt={data.name}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    priority
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* RIGHT SIDE - Product Details (Desktop: right, Mobile: bottom) */}
+            <div className="order-2 lg:order-2">
+              {/* Product Title */}
+              <div className="p-4 lg:p-6">
+                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">{data.name}</h1>
+                
+                {/* Price and Rating Row */}
+                <div className="flex flex-wrap items-center gap-4 mb-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
+                      {formatCurrency(data.price)}
+                    </span>
+                    <span className="text-sm text-gray-500">/ {data.unit || "unit"}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 bg-yellow-50 px-3 py-1.5 rounded-full">
+                    <StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-semibold text-gray-900">{data.reviewRating.toFixed(1)}</span>
+                    <span className="text-sm text-gray-600">({data.reviewCount})</span>
+                  </div>
+                </div>
+                
+                {/* Stock Status */}
+                <div className="mb-4">
+                  <StockStatusBadge 
+                    stockStatus={data.stockStatus || "in_stock"} 
+                    quantity={data.stockStatus === "low_stock" ? data.quantity : undefined}
+                  />
+                </div>
+              </div>
+
+              {/* Seller Info Card */}
+              <div className="px-4 lg:px-6 pb-4">
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 rounded-2xl p-3 border border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <Link href={generateTenantURL(tenantSlug)} className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+                      {data.tenant.image?.url && (
+                        <Image
+                          src={data.tenant.image.url}
+                          alt={data.tenant.name}
+                          width={40}
+                          height={40}
+                          className="rounded-full ring-3 ring-white shadow-md"
+                        />
+                      )}
+                      <div>
+                        <p className="text-xs text-gray-500 mb-0.5">Sold by</p>
+                        <p className="text-base font-semibold text-gray-900">{data.tenant.name}</p>
+                      </div>
+                    </Link>
+                    
+                    {/* Contact Seller Button */}
+                    <Button
+                      variant="elevated"
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={handleContactSeller}
+                      disabled={startConversation.isPending || !data?.tenant}
+                    >
+                      <MessageCircle className="mr-1.5 h-4 w-4" />
+                      {startConversation.isPending ? "..." : "Chat"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Description - Expandable */}
+              {data.description && (
+                <div className="px-4 lg:px-6 pb-4">
+                  <div className="border-t border-gray-200 pt-4">
+                    <h3 className="text-base font-semibold text-gray-900 mb-2">Description</h3>
+                    <div className={`prose prose-sm max-w-none ${!isDescriptionExpanded ? 'line-clamp-3' : ''}`}>
+                      <RichText data={data.description} />
+                    </div>
+                    {!isDescriptionExpanded && (
+                      <button
+                        onClick={() => setIsDescriptionExpanded(true)}
+                        className="mt-1.5 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                      >
+                        View more <ChevronDown className="size-4" />
+                      </button>
+                    )}
+                    {isDescriptionExpanded && (
+                      <button
+                        onClick={() => setIsDescriptionExpanded(false)}
+                        className="mt-1.5 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                      >
+                        View less <ChevronUp className="size-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Ratings Summary - Compact */}
+              <div className="px-4 lg:px-6 pb-4">
+                <div className="border-t border-gray-200 pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-base font-semibold text-gray-900">Reviews</h3>
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
+                      <span className="font-semibold">{data.reviewRating.toFixed(1)}</span>
+                      <span className="text-gray-500">• {data.reviewCount}</span>
+                    </div>
+                  </div>
+                  
+                  {!showAllRatings ? (
+                    <div className="space-y-1.5">
+                      {/* Show only top 2 ratings */}
+                      {[5, 4].map((stars) => (
+                        <div key={stars} className="grid grid-cols-[auto_1fr_auto] gap-2.5 items-center">
+                          <span className="text-sm font-medium text-gray-700 w-14">{stars} star{stars !== 1 ? 's' : ''}</span>
+                          <Progress
+                            value={data.ratingDistribution[stars]}
+                            className="h-2"
+                          />
+                          <span className="text-sm font-medium text-gray-600 w-10 text-right">
+                            {data.ratingDistribution[stars]}%
+                          </span>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => setShowAllRatings(true)}
+                        className="mt-2 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                      >
+                        View all ratings <ChevronDown className="size-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {[5, 4, 3, 2, 1].map((stars) => (
+                        <div key={stars} className="grid grid-cols-[auto_1fr_auto] gap-2.5 items-center">
+                          <span className="text-sm font-medium text-gray-700 w-14">{stars} star{stars !== 1 ? 's' : ''}</span>
+                          <Progress
+                            value={data.ratingDistribution[stars]}
+                            className="h-2"
+                          />
+                          <span className="text-sm font-medium text-gray-600 w-10 text-right">
+                            {data.ratingDistribution[stars]}%
+                          </span>
+                        </div>
+                      ))}
+                      <button
+                        onClick={() => setShowAllRatings(false)}
+                        className="mt-2 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                      >
+                        Show less <ChevronUp className="size-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="px-4 lg:px-6 pb-4 lg:pb-6">
+                <div className="border-t border-gray-200 pt-4 space-y-2.5">
+                  {/* Cart and Buy Now Buttons */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    <CartButton
+                      isPurchased={data.isPurchased}
+                      productId={productId}
+                      tenantSlug={tenantSlug}
+                      quantity={data.quantity || 0}
+                      minOrderQuantity={data.minOrderQuantity || 1}
+                      maxOrderQuantity={data.maxOrderQuantity || undefined}
+                      unit={data.unit || "unit"}
+                      stockStatus={data.stockStatus || "in_stock"}
+                      allowBackorder={data.allowBackorder || false}
+                    />
+                    <BuyNowButton
+                      isPurchased={data.isPurchased}
+                      productId={productId}
+                      productName={data.name}
+                      productPrice={data.price}
+                      tenantSlug={tenantSlug}
+                      quantity={data.quantity || 0}
+                      minOrderQuantity={data.minOrderQuantity || 1}
+                      maxOrderQuantity={data.maxOrderQuantity || undefined}
+                      unit={data.unit || "unit"}
+                      stockStatus={data.stockStatus || "in_stock"}
+                      allowBackorder={data.allowBackorder || false}
+                    />
+                  </div>
+                  
+                  {/* Share Button */}
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => {
+                      setIsCopied(true);
+                      navigator.clipboard.writeText(window.location.href);
+                      toast.success("URL copied to clipboard")
+
+                      setTimeout(() => {
+                        setIsCopied(false);
+                      }, 1000);
+                    }}
+                    disabled={isCopied}
+                  >
+                    {isCopied ? (
+                      <>
+                        <CheckIcon className="mr-2 h-4 w-4" /> Copied
+                      </>
+                    ) : (
+                      <>
+                        <LinkIcon className="mr-2 h-4 w-4" /> Share Product
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="text-center text-sm font-medium text-gray-600 mt-2">
+                    {data.refundPolicy === "no-refunds"
+                      ? "⚠️ No refunds available"
+                      : `✓ ${data.refundPolicy} money back guarantee`
+                    }
                   </p>
                 </div>
-              </div>
-              
-              <div className="px-6 py-4 flex items-center justify-center">
-                <StockStatusBadge 
-                  stockStatus={data.stockStatus || "in_stock"} 
-                  quantity={data.stockStatus === "low_stock" ? data.quantity : undefined}
-                />
-              </div>
-            </div>
-
-            {/* Description Row - Only show if description exists */}
-            {data.description && (
-              <div className="p-6 border-b">
-                <RichText data={data.description} />
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-4 p-6 border-b">
-              {/* Cart and Buy Now Buttons in 2-column grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <CartButton
-                  isPurchased={data.isPurchased}
-                  productId={productId}
-                  tenantSlug={tenantSlug}
-                  quantity={data.quantity || 0}
-                  minOrderQuantity={data.minOrderQuantity || 1}
-                  maxOrderQuantity={data.maxOrderQuantity || undefined}
-                  unit={data.unit || "unit"}
-                  stockStatus={data.stockStatus || "in_stock"}
-                  allowBackorder={data.allowBackorder || false}
-                />
-                <BuyNowButton
-                  isPurchased={data.isPurchased}
-                  productId={productId}
-                  productName={data.name}
-                  productPrice={data.price}
-                  tenantSlug={tenantSlug}
-                  quantity={data.quantity || 0}
-                  minOrderQuantity={data.minOrderQuantity || 1}
-                  maxOrderQuantity={data.maxOrderQuantity || undefined}
-                  unit={data.unit || "unit"}
-                  stockStatus={data.stockStatus || "in_stock"}
-                  allowBackorder={data.allowBackorder || false}
-                />
-              </div>
-              
-              {/* Contact Seller and Share Buttons in 2-column grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* Contact Seller Button */}
-                <Button
-                  variant="elevated"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-all hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-                  onClick={handleContactSeller}
-                  disabled={startConversation.isPending || !data?.tenant}
-                >
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  {startConversation.isPending ? "Starting chat..." : "Contact Seller"}
-                </Button>
-                
-                {/* Share Button */}
-                <Button
-                  className="w-full"
-                  variant="elevated"
-                  onClick={() => {
-                    setIsCopied(true);
-                    navigator.clipboard.writeText(window.location.href);
-                    toast.success("URL copied to clipboard")
-
-                    setTimeout(() => {
-                      setIsCopied(false);
-                    }, 1000);
-                  }}
-                  disabled={isCopied}
-                >
-                  {isCopied ? (
-                    <>
-                      <CheckIcon className="mr-2 h-4 w-4" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <LinkIcon className="mr-2 h-4 w-4" /> Share Product
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              <p className="text-center font-medium">
-                {data.refundPolicy === "no-refunds"
-                  ? "No refunds"
-                  : `${data.refundPolicy} money back guarantee`
-                }
-              </p>
-            </div>
-
-            {/* Ratings Section */}
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-medium">Ratings</h3>
-                <div className="flex items-center gap-x-1 font-medium">
-                  <StarIcon className="size-4 fill-black" />
-                  <p>({data.reviewRating})</p>
-                  <p className="text-base">{data.reviewCount} ratings</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-[auto_1fr_auto] gap-3">
-                {[5, 4, 3, 2, 1].map((stars) => (
-                  <Fragment key={stars}>
-                    <div className="font-medium">{stars} {stars === 1 ? "star" : "stars"}</div>
-                    <Progress
-                      value={data.ratingDistribution[stars]}
-                      className="h-[1lh]"
-                    />
-                    <div className="font-medium">
-                      {data.ratingDistribution[stars]}%
-                    </div>
-                  </Fragment>
-                ))}
               </div>
             </div>
           </div>
@@ -340,8 +397,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
       {/* Suggested Products Section */}
       {suggestedProducts && suggestedProducts.docs.length > 0 && (
-        <div className="mt-10">
-          <h2 className="text-2xl font-semibold mb-6">Suggested Products</h2>
+        <div className="mt-12 max-w-7xl mx-auto">
+          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6">You May Also Like</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-4">
             {suggestedProducts.docs.map((product, index) => {
               // Build gallery array from product data
@@ -379,8 +436,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
       {/* Loading state for suggested products */}
       {isLoadingSuggested && (
-        <div className="mt-10">
-          <h2 className="text-2xl font-semibold mb-6">Suggested Products</h2>
+        <div className="mt-12 max-w-7xl mx-auto">
+          <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-6">You May Also Like</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, index) => (
               <SuggestedProductCardSkeleton key={index} />

@@ -94,15 +94,15 @@ export const ProductCard = ({
       <div 
         onClick={handleCardClick}
         onMouseEnter={handleMouseEnter}
-        className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-2 border-black rounded-lg bg-white overflow-hidden flex flex-row cursor-pointer max-w-full"
+        className="group hover:shadow-xl transition-all duration-300 border border-gray-200 rounded-2xl bg-white overflow-hidden flex flex-row cursor-pointer max-w-full hover:-translate-y-1"
       >
-        {/* Image on the left */}
-        <div className="relative w-42 h-42 xs:w-54 xs:h-54 sm:w-40 sm:h-40 md:w-48 md:h-48 shrink-0 border-r-2 border-black">
+        {/* Image on the left - takes full height of card */}
+        <div className="relative w-40 xs:w-48 sm:w-56 md:w-64 lg:w-72 shrink-0 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
           {images.length > 1 ? (
             <ImageCarousel
               images={images}
               className="w-full h-full"
-              sizes="(max-width: 475px) 168px, (max-width: 640px) 216px, (max-width: 768px) 160px, 192px"
+              sizes="(max-width: 475px) 160px, (max-width: 640px) 192px, (max-width: 768px) 224px, (max-width: 1024px) 256px, 288px"
               {...(priority ? { priority: true } : { loading: "lazy" })}
               quality={75}
             />
@@ -111,98 +111,110 @@ export const ProductCard = ({
               alt={name}
               fill
               src={images[0]?.url || "/placeholder.png"}
-              className="object-cover"
-              sizes="(max-width: 475px) 168px, (max-width: 640px) 216px, (max-width: 768px) 160px, 192px"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 475px) 160px, (max-width: 640px) 192px, (max-width: 768px) 224px, (max-width: 1024px) 256px, 288px"
               {...(priority ? { priority: true } : { loading: "lazy" })}
               quality={75}
             />
           )}
-        </div>
-        
-        {/* Product details */}
-        <div className="flex-1 p-2 xs:p-3 sm:p-4 flex flex-col justify-between gap-1.5 xs:gap-2 min-w-0">
-          {/* Product Name with Stock Badge */}
-          <div className="flex items-start justify-between gap-1 sm:gap-2">
-            <h2 className="text-sm xs:text-base sm:text-lg font-semibold line-clamp-2 hover:text-gray-700 flex-1">
-              {name}
-            </h2>
+          
+          {/* Stock Status Badge - Floating */}
+          <div className="absolute top-2 right-2 z-10">
             <StockStatusBadge 
               stockStatus={stockStatus} 
               quantity={stockStatus === "low_stock" ? quantity : undefined} 
             />
           </div>
+        </div>
+        
+        {/* Product details */}
+        <div className="flex-1 p-2 xs:p-3 sm:p-4 flex flex-col justify-between gap-1 xs:gap-1.5 min-w-0">
+          {/* Product Name */}
+          <h2 className="text-sm xs:text-base sm:text-lg font-semibold line-clamp-2 group-hover:text-pink-600 transition-colors">
+            {name}
+          </h2>
           
           {/* Price with unit */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <div className="relative px-2 sm:px-3 py-1 sm:py-1.5 border-2 border-black bg-pink-400 w-fit rounded">
-              <p className="text-sm xs:text-base sm:text-lg font-bold">
-                {formatCurrency(price)}
-              </p>
-            </div>
-            <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground">
-              per {unit || "unit"}
-            </p>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-xl xs:text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
+              {formatCurrency(price)}
+            </span>
+            <span className="text-xs sm:text-sm text-gray-500">
+              / {unit || "unit"}
+            </span>
           </div>
           
-          {/* Total Sold */}
-          {totalSold > 0 && (
+          {/* Stats Row */}
+          <div className="flex items-center gap-2 xs:gap-2.5 text-xs sm:text-sm text-gray-600">
+            {/* Rating */}
             <div className="flex items-center gap-1">
-              <TrendingUp className="size-3 sm:size-3.5 text-orange-600" />
-              <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground font-medium">
-                {totalSold} sold
-              </p>
+              <StarIcon className="size-3.5 sm:size-4 fill-yellow-400 text-yellow-400" />
+              <span className="font-medium">{reviewRating.toFixed(1)}</span>
+              <span className="text-gray-400">({reviewCount})</span>
             </div>
-          )}
+            
+            {/* Total Sold */}
+            {totalSold > 0 && (
+              <>
+                <span className="text-gray-300">•</span>
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="size-3 sm:size-3.5 text-orange-500" />
+                  <span className="font-medium">{totalSold} sold</span>
+                </div>
+              </>
+            )}
+          </div>
+          
+          {/* Divider */}
+          <div className="border-t border-gray-100 my-0.5"></div>
           
           {/* Seller Info */}
           <div className="flex flex-col gap-1">
             <button 
               type="button"
-              className="flex items-center gap-1 sm:gap-1.5 hover:opacity-80 w-fit cursor-pointer z-10"
+              className="flex items-center gap-1.5 sm:gap-2 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
               onClick={handleTenantClick}
             >
               {tenantImageUrl && (
                 <Image
                   alt={tenantSlug}
                   src={tenantImageUrl}
-                  width={16}
-                  height={16}
-                  className="rounded-full border-2 border-black shrink-0 size-[14px] xs:size-[16px] sm:size-[18px]"
+                  width={20}
+                  height={20}
+                  className="rounded-full ring-2 ring-gray-100 shrink-0 size-[18px] sm:size-[20px]"
                   loading="lazy"
                   quality={75}
                 />
               )}
-              <p className="text-xs sm:text-sm font-semibold truncate">
+              <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">
                 {tenantName || tenantSlug}
-              </p>
+              </span>
             </button>
             
-            {/* Verification Badge & Successful Orders */}
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* Badges Row */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              {/* Verification Badge */}
               {tenantIsVerified && (
-                <div className="flex items-center gap-0.5 sm:gap-1">
-                  <ShieldCheck className="size-3 sm:size-3.5 text-green-600 fill-green-100" />
-                  <p className="text-[10px] xs:text-xs sm:text-sm font-medium text-green-700">Verified</p>
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-green-50 rounded-full">
+                  <ShieldCheck className="size-2.5 sm:size-3 text-green-600" />
+                  <span className="text-[10px] xs:text-xs font-medium text-green-700">Verified</span>
                 </div>
               )}
               
+              {/* Successful Orders */}
               {tenantSuccessfulOrders > 0 && (
-                <div className="flex items-center gap-0.5 sm:gap-1">
-                  <Package className="size-3 sm:size-3.5 text-blue-600" />
-                  <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground">
-                    {tenantSuccessfulOrders} order{tenantSuccessfulOrders !== 1 ? 's' : ''}
-                  </p>
+                <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 rounded-full">
+                  <Package className="size-2.5 sm:size-3 text-blue-600" />
+                  <span className="text-[10px] xs:text-xs text-blue-700">{tenantSuccessfulOrders} orders</span>
                 </div>
               )}
             </div>
             
             {/* Tenant Location */}
             {tenantLocation && (
-              <div className="flex items-center gap-0.5 sm:gap-1">
-                <MapPin className="size-3 sm:size-3.5 text-gray-600" />
-                <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground truncate">
-                  {tenantLocation}
-                </p>
+              <div className="flex items-center gap-1 text-gray-500">
+                <MapPin className="size-3 sm:size-3.5" />
+                <span className="text-[10px] xs:text-xs truncate">{tenantLocation}</span>
               </div>
             )}
           </div>
@@ -216,10 +228,10 @@ export const ProductCard = ({
     <div 
       onClick={handleCardClick}
       onMouseEnter={handleMouseEnter}
-      className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-2 border-black rounded-lg bg-white overflow-hidden h-full flex flex-col cursor-pointer"
+      className="group hover:shadow-xl transition-all duration-300 border border-gray-200 rounded-2xl bg-white overflow-hidden h-full flex flex-col cursor-pointer hover:-translate-y-1"
     >
       {/* Product Image */}
-      <div className="relative aspect-square border-b-2 border-black">
+      <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
         {images.length > 1 ? (
           <ImageCarousel
             images={images}
@@ -233,97 +245,110 @@ export const ProductCard = ({
             alt={name}
             fill
             src={images[0]?.url || "/placeholder.png"}
-            className="object-cover"
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             {...(priority ? { priority: true } : { loading: "lazy" })}
             quality={75}
           />
         )}
-      </div>
-      
-      {/* Product Details */}
-      <div className="p-3 sm:p-4 flex flex-col gap-2 sm:gap-3 flex-1">
-        {/* Product Name with Stock Status */}
-        <div className="flex items-start justify-between gap-2">
-          <h2 className="text-sm sm:text-base font-semibold line-clamp-2 hover:text-gray-700 flex-1">
-            {name}
-          </h2>
+        
+        {/* Stock Status Badge - Floating */}
+        <div className="absolute top-3 right-3 z-10">
           <StockStatusBadge 
             stockStatus={stockStatus} 
             quantity={stockStatus === "low_stock" ? quantity : undefined} 
           />
         </div>
+      </div>
+      
+      {/* Product Details */}
+      <div className="p-3 sm:p-4 flex flex-col gap-2 flex-1">
+        {/* Product Name */}
+        <h2 className="text-sm sm:text-base font-semibold line-clamp-2 group-hover:text-pink-600 transition-colors min-h-[2.5rem]">
+          {name}
+        </h2>
         
         {/* Price with unit */}
-        <div className="flex items-center gap-2">
-          <div className="relative px-2 sm:px-3 py-1.5 sm:py-2 border-2 border-black bg-pink-400 w-fit rounded">
-            <p className="text-base sm:text-lg font-bold">
-              {formatCurrency(price)}
-            </p>
-          </div>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            per {unit || "unit"}
-          </p>
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
+            {formatCurrency(price)}
+          </span>
+          <span className="text-xs sm:text-sm text-gray-500">
+            / {unit || "unit"}
+          </span>
         </div>
         
-        {/* Total Sold */}
-        {totalSold > 0 && (
+        {/* Stats Row */}
+        <div className="flex items-center gap-2.5 text-xs sm:text-sm text-gray-600">
+          {/* Rating */}
           <div className="flex items-center gap-1">
-            <TrendingUp className="size-3.5 sm:size-4 text-orange-600" />
-            <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-              {totalSold} sold
-            </p>
+            <StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
+            <span className="font-medium">{reviewRating.toFixed(1)}</span>
+            <span className="text-gray-400">({reviewCount})</span>
           </div>
-        )}
+          
+          {/* Total Sold */}
+          {totalSold > 0 && (
+            <>
+              <span className="text-gray-300">•</span>
+              <div className="flex items-center gap-1">
+                <TrendingUp className="size-3.5 text-orange-500" />
+                <span className="font-medium">{totalSold} sold</span>
+              </div>
+            </>
+          )}
+        </div>
+        
+        {/* Divider */}
+        <div className="border-t border-gray-100 my-0.5"></div>
         
         {/* Seller Info */}
-        <div className="flex flex-col gap-1.5 sm:gap-2 mt-auto">
+        <div className="flex flex-col gap-1.5 mt-auto">
           <button 
             type="button"
-            className="flex items-center gap-1.5 sm:gap-2 hover:opacity-80 w-fit cursor-pointer z-10"
+            className="flex items-center gap-1.5 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
             onClick={handleTenantClick}
           >
             {tenantImageUrl && (
               <Image
                 alt={tenantSlug}
                 src={tenantImageUrl}
-                width={20}
-                height={20}
-                className="rounded-full border-2 border-black shrink-0 size-[18px] sm:size-[20px]"
+                width={24}
+                height={24}
+                className="rounded-full ring-2 ring-gray-100 shrink-0"
                 loading="lazy"
                 quality={75}
               />
             )}
-            <p className="text-xs sm:text-sm font-semibold truncate">
+            <span className="text-xs sm:text-sm font-medium text-gray-700">
               {tenantName || tenantSlug}
-            </p>
+            </span>
           </button>
           
-          {/* Verification Badge */}
-          {tenantIsVerified && (
-            <div className="flex items-center gap-1">
-              <ShieldCheck className="size-3.5 sm:size-4 text-green-600 fill-green-100" />
-              <p className="text-xs sm:text-sm font-medium text-green-700">Verified</p>
-            </div>
-          )}
-          
-          {/* Successful Orders */}
-          {tenantSuccessfulOrders > 0 && (
-            <div className="flex items-center gap-1">
-              <Package className="size-3.5 sm:size-4 text-blue-600" />
-              <p className="text-xs sm:text-sm text-muted-foreground">
-                {tenantSuccessfulOrders} successful order{tenantSuccessfulOrders !== 1 ? 's' : ''}
-              </p>
-            </div>
-          )}
+          {/* Badges Row */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {/* Verification Badge */}
+            {tenantIsVerified && (
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-green-50 rounded-full">
+                <ShieldCheck className="size-3 text-green-600" />
+                <span className="text-xs font-medium text-green-700">Verified</span>
+              </div>
+            )}
+            
+            {/* Successful Orders */}
+            {tenantSuccessfulOrders > 0 && (
+              <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 rounded-full">
+                <Package className="size-3 text-blue-600" />
+                <span className="text-xs text-blue-700">{tenantSuccessfulOrders} orders</span>
+              </div>
+            )}
+          </div>
           
           {/* Tenant Location */}
           {tenantLocation && (
-            <div className="flex items-center gap-1">
-              <MapPin className="size-3.5 sm:size-4 text-gray-600" />
-              <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                {tenantLocation}
-              </p>
+            <div className="flex items-center gap-1 text-gray-500">
+              <MapPin className="size-3.5" />
+              <span className="text-xs truncate">{tenantLocation}</span>
             </div>
           )}
         </div>
