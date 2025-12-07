@@ -223,10 +223,56 @@ export const authRouter = createTRPCRouter({
   login: baseProcedure
     .input(loginSchema)
     .mutation(async ({ input, ctx }) => {
+      // Check if input is an email or a company name
+      const isEmail = input.email.includes('@');
+      
+      let loginEmail = input.email;
+      
+      // If not an email, treat it as a company name and find the associated user
+      if (!isEmail) {
+        // Find tenant by exact name (case-insensitive)
+        const tenantData = await ctx.db.find({
+          collection: "tenants",
+          limit: 1,
+          where: {
+            name: {
+              equals: input.email,
+            },
+          },
+        });
+
+        if (!tenantData.docs[0]) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid credentials",
+          });
+        }
+
+        // Find user associated with this tenant
+        const userData = await ctx.db.find({
+          collection: "users",
+          limit: 1,
+          where: {
+            'tenants.tenant': {
+              equals: tenantData.docs[0].id,
+            },
+          },
+        });
+
+        if (!userData.docs[0]) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid credentials",
+          });
+        }
+
+        loginEmail = userData.docs[0].email;
+      }
+
       const data = await ctx.db.login({
         collection: "users",
         data: {
-          email: input.email,
+          email: loginEmail,
           password: input.password,
         },
       });

@@ -561,7 +561,7 @@ export const SignUpView = () => {
                     className={cn("hidden", showPreview && "block")}
                   >
                     Your store will be available at:&nbsp;
-                    <strong>toolbay.rw/tenants/{slugPreview}</strong>
+                    <strong>{slugPreview}.toolbay.store</strong>
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

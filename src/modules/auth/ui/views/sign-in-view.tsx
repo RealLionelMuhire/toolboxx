@@ -114,9 +114,9 @@ export const SignInView = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base">Email</FormLabel>
+                  <FormLabel className="text-base">Email or Company Name</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input {...field} placeholder="email@example.com or My Company Ltd" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
