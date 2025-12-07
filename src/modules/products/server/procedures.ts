@@ -590,18 +590,8 @@ export const productsRouter = createTRPCRouter({
         ? userData.tenants[0].tenant 
         : userData.tenants[0].tenant.id;
 
-      // Check if tenant is verified
-      const tenant = await ctx.db.findByID({
-        collection: "tenants",
-        id: tenantId,
-      });
-
-      if (!tenant.isVerified) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Your account must be verified before creating products",
-        });
-      }
+      // All tenants can create products (verified or not)
+      // Products from unverified tenants will be listed without verification badge
 
       // Transform gallery array to Payload format
       const productData: any = {
