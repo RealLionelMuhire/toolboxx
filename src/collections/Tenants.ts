@@ -109,13 +109,12 @@ export const Tenants: CollectionConfig = {
       name: "tinNumber",
       type: "text",
       required: false, // Now optional - added by super admin during verification
-      unique: true,
       index: true, // Add index for faster lookups
       access: {
         update: ({ req }) => isSuperAdmin(req.user),
       },
       admin: {
-        description: "Tax Identification Number (TIN) - Added by Super Admin during verification",
+        description: "Tax Identification Number (TIN) - Added by Super Admin during verification. Should be unique when provided.",
       },
     },
     {

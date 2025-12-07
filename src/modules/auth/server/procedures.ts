@@ -91,6 +91,8 @@ export const authRouter = createTRPCRouter({
           name: input.storeName,
           slug: slug,
           // TIN and storeManagerId removed - will be added by super admin during verification
+          tinNumber: undefined, // Explicitly set to undefined to avoid validation issues
+          storeManagerId: undefined, // Explicitly set to undefined to avoid validation issues
           category: input.category,
           location: input.location,
           currency: input.currency,
