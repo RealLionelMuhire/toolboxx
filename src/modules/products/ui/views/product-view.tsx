@@ -327,34 +327,31 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
 
               {/* Action Buttons */}
               <div className="px-4 lg:px-6 pb-4 lg:pb-6">
-                <div className="border-t border-gray-200 pt-4 space-y-2.5">
-                  {/* Cart and Buy Now Buttons */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                    <CartButton
-                      isPurchased={data.isPurchased}
-                      productId={productId}
-                      tenantSlug={tenantSlug}
-                      quantity={data.quantity || 0}
-                      minOrderQuantity={data.minOrderQuantity || 1}
-                      maxOrderQuantity={data.maxOrderQuantity || undefined}
-                      unit={data.unit || "unit"}
-                      stockStatus={data.stockStatus || "in_stock"}
-                      allowBackorder={data.allowBackorder || false}
-                    />
-                    <BuyNowButton
-                      isPurchased={data.isPurchased}
-                      productId={productId}
-                      productName={data.name}
-                      productPrice={data.price}
-                      tenantSlug={tenantSlug}
-                      quantity={data.quantity || 0}
-                      minOrderQuantity={data.minOrderQuantity || 1}
-                      maxOrderQuantity={data.maxOrderQuantity || undefined}
-                      unit={data.unit || "unit"}
-                      stockStatus={data.stockStatus || "in_stock"}
-                      allowBackorder={data.allowBackorder || false}
-                    />
-                  </div>
+                <div className="border-t border-gray-200 pt-4 space-y-3">
+                  <CartButton
+                    isPurchased={data.isPurchased}
+                    productId={productId}
+                    tenantSlug={tenantSlug}
+                    quantity={data.quantity || 0}
+                    minOrderQuantity={data.minOrderQuantity || 1}
+                    maxOrderQuantity={data.maxOrderQuantity || undefined}
+                    unit={data.unit || "unit"}
+                    stockStatus={data.stockStatus || "in_stock"}
+                    allowBackorder={data.allowBackorder || false}
+                  />
+                  <BuyNowButton
+                    isPurchased={data.isPurchased}
+                    productId={productId}
+                    productName={data.name}
+                    productPrice={data.price}
+                    tenantSlug={tenantSlug}
+                    quantity={data.quantity || 0}
+                    minOrderQuantity={data.minOrderQuantity || 1}
+                    maxOrderQuantity={data.maxOrderQuantity || undefined}
+                    unit={data.unit || "unit"}
+                    stockStatus={data.stockStatus || "in_stock"}
+                    allowBackorder={data.allowBackorder || false}
+                  />
                   
                   {/* Share Button */}
                   <Button

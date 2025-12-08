@@ -114,12 +114,8 @@ export const checkoutRouter = createTRPCRouter({
         throw new TRPCError({ code: "NOT_FOUND", message: "Tenant not found" });
       }
 
-      if (!tenant.isVerified || (tenant.verificationStatus !== "document_verified" && tenant.verificationStatus !== "physically_verified")) {
-        throw new TRPCError({ 
-          code: "BAD_REQUEST", 
-          message: "Tenant not verified to sell products" 
-        });
-      }
+      // All tenants can sell products (verified or not)
+      // Verification status only affects the display of the verified badge
 
       // Check if tenant has MoMo configured
       if (tenant.paymentMethod === 'momo_pay' && !tenant.momoCode) {
@@ -209,13 +205,8 @@ export const checkoutRouter = createTRPCRouter({
         });
       }
 
-      // Check if tenant is verified for Rwanda business requirements
-      if (!tenant.isVerified || (tenant.verificationStatus !== "document_verified" && tenant.verificationStatus !== "physically_verified")) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Tenant verification required. Please complete Rwanda business verification.",
-        });
-      }
+      // All tenants can sell products (verified or not)
+      // Verification status only affects the display of the verified badge
 
       const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL!}/dashboard`;
 
@@ -280,12 +271,8 @@ export const checkoutRouter = createTRPCRouter({
         })
       }
 
-      if (!tenant.isVerified || (tenant.verificationStatus !== "document_verified" && tenant.verificationStatus !== "physically_verified")) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Tenant not verified to sell products",
-        })
-      }
+      // All tenants can sell products (verified or not)
+      // Verification status only affects the display of the verified badge
 
       // const totalAmount = products.docs.reduce((acc, item) => acc + item.price, 0);
       // const platformFeeAmount = Math.round(totalAmount * (PLATFORM_FEE_PERCENTAGE / 100));

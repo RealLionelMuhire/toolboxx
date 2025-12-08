@@ -149,23 +149,8 @@ export const adminRouter = createTRPCRouter({
         });
       }
 
-      // Check if tenant is verified (for non-admins)
-      if (!isAdmin && tenantId) {
-        const tenant = await ctx.db.findByID({
-          collection: "tenants",
-          id: tenantId,
-          depth: 0,
-        });
-
-        if (!tenant?.isVerified || 
-            (tenant.verificationStatus !== "document_verified" && 
-             tenant.verificationStatus !== "physically_verified")) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Tenant must be verified to verify payments"
-          });
-        }
-      }
+      // All tenants can verify payments (verified or not)
+      // Verification status only affects the display of the verified badge
 
       // Check status
       if (transaction.status !== "awaiting_verification") {
@@ -353,14 +338,8 @@ export const adminRouter = createTRPCRouter({
           depth: 0,
         });
 
-        if (!tenant?.isVerified || 
-            (tenant.verificationStatus !== "document_verified" && 
-             tenant.verificationStatus !== "physically_verified")) {
-          throw new TRPCError({
-            code: "FORBIDDEN",
-            message: "Tenant must be verified to reject payments"
-          });
-        }
+        // All tenants can reject payments (verified or not)
+        // Verification status only affects the display of the verified badge
       }
 
       // Check status
