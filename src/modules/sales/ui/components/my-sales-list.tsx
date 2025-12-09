@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, PackageIcon, TrendingUp, DollarSign, MessageCircle, Grid3x3, List } from "lucide-react";
@@ -22,6 +22,7 @@ interface MySalesListProps {
 export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => {
   const trpc = useTRPC();
   const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
   
   // Responsive view mode: list on mobile, grid on desktop by default
@@ -43,14 +44,23 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
       toast.success("Chat started with customer");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to start chat");
+      if (error.data?.code === "UNAUTHORIZED") {
+        // Redirect to login page with return URL immediately (no toast to avoid flash)
+        const loginUrl = `/sign-in?redirect=${encodeURIComponent(pathname)}`;
+        router.prefetch(loginUrl);
+        router.push(loginUrl);
+      } else {
+        toast.error(error.message || "Failed to start chat");
+      }
     },
   }));
   
   const handleMessageCustomer = (sale: any) => {
     if (!session?.user) {
-      toast.error("Please log in to message the customer");
-      router.push("/");
+      // Redirect to login with current page as return URL
+      const loginUrl = `/sign-in?redirect=${encodeURIComponent(pathname)}`;
+      router.prefetch(loginUrl);
+      router.push(loginUrl);
       return;
     }
     

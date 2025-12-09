@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ import {
 export function UserSearchView() {
   const trpc = useTRPC();
   const router = useRouter();
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
   const [userType, setUserType] = useState<"all" | "tenants" | "clients">("all");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -41,7 +42,14 @@ export function UserSearchView() {
       toast.success("Chat started successfully");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to start chat");
+      if (error.data?.code === "UNAUTHORIZED") {
+        // Redirect to login page with return URL immediately (no toast to avoid flash)
+        const loginUrl = `/sign-in?redirect=${encodeURIComponent(pathname)}`;
+        router.prefetch(loginUrl);
+        router.push(loginUrl);
+      } else {
+        toast.error(error.message || "Failed to start chat");
+      }
     },
   }));
 
@@ -56,8 +64,10 @@ export function UserSearchView() {
 
   const handleMessageUser = (userId: string, username: string) => {
     if (!session?.user) {
-      toast.error("Please log in to message users");
-      router.push("/");
+      // Redirect to login with current page as return URL
+      const loginUrl = `/sign-in?redirect=${encodeURIComponent(pathname)}`;
+      router.prefetch(loginUrl);
+      router.push(loginUrl);
       return;
     }
 
