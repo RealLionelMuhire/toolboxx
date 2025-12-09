@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, User } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
@@ -19,6 +19,7 @@ interface ChatViewProps {
 
 export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
@@ -30,12 +31,15 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
     staleTime: 0, // Always check fresh
   });
 
-  // Redirect to homepage if user logs out in another tab
+  // Redirect to login if user logs out in another tab
   useEffect(() => {
     if (sessionQuery.isFetched && !sessionQuery.data?.user) {
-      router.push("/");
+      // Redirect to login with current chat page as return URL
+      const loginUrl = `/sign-in?redirect=${encodeURIComponent(pathname)}`;
+      router.prefetch(loginUrl);
+      router.push(loginUrl);
     }
-  }, [sessionQuery.isFetched, sessionQuery.data?.user, router]);
+  }, [sessionQuery.isFetched, sessionQuery.data?.user, router, pathname]);
 
   // Fetch conversation WITH messages in a single request
   const { data: conversationData, isLoading, error } = useQuery(

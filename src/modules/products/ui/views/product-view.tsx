@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Fragment, useState } from "react";
 import dynamic from "next/dynamic";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -47,6 +47,7 @@ interface ProductViewProps {
 export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   const trpc = useTRPC();
   const router = useRouter();
+  const pathname = usePathname();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(trpc.products.getOne.queryOptions({ id: productId }));
   
@@ -74,14 +75,23 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
       toast.success("Chat started with seller");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to start chat");
+      if (error.data?.code === "UNAUTHORIZED") {
+        // Redirect to login page with return URL immediately (no toast to avoid flash)
+        const loginUrl = `/sign-in?redirect=${encodeURIComponent(pathname)}`;
+        router.prefetch(loginUrl);
+        router.push(loginUrl);
+      } else {
+        toast.error(error.message || "Failed to start chat");
+      }
     },
   }));
   
   const handleContactSeller = () => {
     if (!session?.user) {
-      toast.error("Please log in to contact the seller");
-      router.push("/");
+      // Redirect to login with current product page as return URL
+      const loginUrl = `/sign-in?redirect=${encodeURIComponent(pathname)}`;
+      router.prefetch(loginUrl);
+      router.push(loginUrl);
       return;
     }
     
@@ -99,11 +109,8 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
       return;
     }
     
-    // Build the product URL
-    const productUrl = `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/tenants/${tenantSlug}/products/${productId}`;
-    
-    // Create rich initial message with product details
-    const initialMessage = `Hello, I am interested in the following item:\n${productUrl}\n\nPlease contact me.`;
+    // Create simple initial message - productId will trigger the product preview box
+    const initialMessage = `Hello, I am interested in the following item.`;
     
     startConversation.mutate({
       participantId: tenantOwnerId,

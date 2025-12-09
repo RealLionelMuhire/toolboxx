@@ -206,8 +206,12 @@ export function ChatWindow({
               // Parse product link from message content
               const { text, productUrl: messageProductUrl } = parseProductLink(message.content);
               
-              // Only show "View Product" button if the message actually contains a product URL
-              const displayProductUrl = messageProductUrl;
+              // Show "View Product" button if:
+              // 1. Message contains a product URL in content, OR
+              // 2. This is the first message AND conversation has a product
+              const isFirstMessage = index === sortedMessages.length - 1;
+              const displayProductUrl = messageProductUrl || (isFirstMessage && productUrl ? 
+                `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}${productUrl}` : null);
 
               return (
                 <div
