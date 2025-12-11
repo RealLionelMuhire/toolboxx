@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { StarIcon, ShieldCheck, Package, TrendingUp, MapPin } from "lucide-react";
+import { StarIcon, ShieldCheck, Package, TrendingUp, MapPin, Eye } from "lucide-react";
 
 import { formatCurrency } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
@@ -29,6 +29,7 @@ interface ProductCardProps {
   viewMode?: "grid" | "list";
   priority?: boolean; // For above-the-fold images
   totalSold?: number;
+  viewCount?: number;
 };
 
 export const ProductCard = ({
@@ -51,6 +52,7 @@ export const ProductCard = ({
   viewMode = "grid",
   priority = false,
   totalSold = 0,
+  viewCount = 0,
 }: ProductCardProps) => {
   const router = useRouter();
   
@@ -152,6 +154,17 @@ export const ProductCard = ({
               <span className="font-medium">{reviewRating.toFixed(1)}</span>
               <span className="text-gray-400">({reviewCount})</span>
             </div>
+            
+            {/* View Count */}
+            {viewCount !== undefined && viewCount > 0 && (
+              <>
+                <span className="text-gray-300">•</span>
+                <div className="flex items-center gap-1">
+                  <Eye className="size-3 sm:size-3.5 text-blue-500" />
+                  <span className="font-medium">{viewCount.toLocaleString()}</span>
+                </div>
+              </>
+            )}
             
             {/* Total Sold */}
             {totalSold > 0 && (
@@ -286,6 +299,17 @@ export const ProductCard = ({
             <span className="font-medium">{reviewRating.toFixed(1)}</span>
             <span className="text-gray-400">({reviewCount})</span>
           </div>
+          
+          {/* View Count */}
+          {viewCount !== undefined && viewCount > 0 && (
+            <>
+              <span className="text-gray-300">•</span>
+              <div className="flex items-center gap-1">
+                <Eye className="size-3.5 text-blue-500" />
+                <span className="font-medium">{viewCount.toLocaleString()}</span>
+              </div>
+            </>
+          )}
           
           {/* Total Sold */}
           {totalSold > 0 && (

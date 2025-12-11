@@ -6,7 +6,7 @@ import { Fragment, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
-import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
@@ -18,6 +18,7 @@ import { formatCurrency, generateTenantURL } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
 import { StockStatusBadge } from "@/components/quantity-selector";
 import { SuggestedProductCard, SuggestedProductCardSkeleton } from "../components/suggested-product-card";
+import { useTrackProductView } from "@/hooks/use-track-product-view";
 
 const CartButton = dynamic(
   () => import("../components/cart-button").then(
@@ -50,6 +51,9 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   const pathname = usePathname();
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery(trpc.products.getOne.queryOptions({ id: productId }));
+  
+  // Track product view
+  useTrackProductView(productId);
   
   // Fetch suggested products
   const { data: suggestedProducts, isLoading: isLoadingSuggested } = useQuery(
@@ -120,7 +124,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     
     // Create message with product name as markdown link
     const productName = (data as any)?.name || 'this product';
-    const initialMessage = `Hello, I am interested in this item : [${productName}](${productUrl})`;
+    const initialMessage = `Hello, I am interested in the following item:\n[${productName}](${productUrl})\n\nPlease contact me.`;
     
     startConversation.mutate({
       participantId: tenantOwnerId,
@@ -209,6 +213,16 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                     <span className="font-semibold text-gray-900">{data.reviewRating.toFixed(1)}</span>
                     <span className="text-sm text-gray-600">({data.reviewCount})</span>
                   </div>
+
+                  {/* View Count */}
+                  {(data as any).viewCount !== undefined && (data as any).viewCount > 0 && (
+                    <div className="flex items-center gap-1.5 bg-blue-50 px-3 py-1.5 rounded-full">
+                      <Eye className="size-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-700">
+                        {((data as any).viewCount).toLocaleString()} view{(data as any).viewCount !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Stock Status */}
