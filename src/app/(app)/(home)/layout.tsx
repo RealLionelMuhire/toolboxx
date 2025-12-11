@@ -4,7 +4,7 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { getQueryClient, trpc } from "@/trpc/server";
 
 import { Footer } from "@/modules/home/ui/components/footer";
-import { SearchFilters, SearchFiltersSkeleton } from "@/modules/home/ui/components/search-filters";
+import { ConditionalSearchFilters } from "@/modules/home/ui/components/conditional-search-filters";
 
 interface Props {
   children: React.ReactNode;
@@ -28,9 +28,7 @@ const Layout = async ({ children }: Props) => {
   return ( 
     <div className="flex flex-col min-h-screen lg:pt-16">
       <HydrationBoundary state={dehydrate(queryClient)}>
-       <Suspense fallback={<SearchFiltersSkeleton />}>
-         <SearchFilters />
-       </Suspense>
+        <ConditionalSearchFilters />
       </HydrationBoundary>
       <div className="flex-1 bg-[#F4F4F0]">
          {children}

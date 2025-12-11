@@ -129,7 +129,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
     
     // Create message with product name as markdown link
     const productName = (data as any)?.name || 'this product';
-    const initialMessage = `Hello, I am interested in the following item:\n[${productName}](${productUrl})\n\nPlease contact me.`;
+    const initialMessage = `Hello, I am interested in this item:[${productName}](${productUrl})\n`;
     
     startConversation.mutate({
       participantId: tenantOwnerId,
