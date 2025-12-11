@@ -6,7 +6,7 @@ import { Fragment, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
-import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp, Eye, Maximize2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
@@ -19,6 +19,7 @@ import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel"
 import { StockStatusBadge } from "@/components/quantity-selector";
 import { SuggestedProductCard, SuggestedProductCardSkeleton } from "../components/suggested-product-card";
 import { useTrackProductView } from "@/hooks/use-track-product-view";
+import { ImageLightbox } from "@/components/image-lightbox";
 
 const CartButton = dynamic(
   () => import("../components/cart-button").then(
@@ -54,6 +55,10 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   
   // Track product view
   useTrackProductView(productId);
+  
+  // Lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   
   // Fetch suggested products
   const { data: suggestedProducts, isLoading: isLoadingSuggested } = useQuery(
@@ -171,25 +176,42 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
             
             {/* LEFT SIDE - Product Image (Desktop: left, Mobile: top) */}
             <div className="order-1 lg:order-1">
-              <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100">
-                {images.length > 1 ? (
-                  <ImageCarousel
-                    images={images}
-                    className="aspect-square"
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                    loading="eager"
-                    quality={90}
-                  />
-                ) : (
-                  <Image
-                    src={images[0]?.url || "/placeholder.png"}
-                    alt={data.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 100vw, 50vw"
-                    priority
-                  />
-                )}
+              <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 group cursor-pointer">
+                {/* Expand icon overlay */}
+                <button
+                  onClick={() => {
+                    setLightboxIndex(0);
+                    setLightboxOpen(true);
+                  }}
+                  className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                  aria-label="View full size"
+                >
+                  <Maximize2 className="h-5 w-5 text-gray-800" />
+                </button>
+                
+                <div onClick={() => {
+                  setLightboxIndex(0);
+                  setLightboxOpen(true);
+                }}>
+                  {images.length > 1 ? (
+                    <ImageCarousel
+                      images={images}
+                      className="aspect-square"
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      loading="eager"
+                      quality={90}
+                    />
+                  ) : (
+                    <Image
+                      src={images[0]?.url || "/placeholder.png"}
+                      alt={data.name}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 100vw, 50vw"
+                      priority
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
@@ -473,6 +495,14 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
           </div>
         </div>
       )}
+      
+      {/* Image Lightbox */}
+      <ImageLightbox
+        images={images}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+      />
     </div>
   );
 };

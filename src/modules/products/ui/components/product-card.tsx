@@ -138,7 +138,7 @@ export const ProductCard = ({
           
           {/* Price with unit */}
           <div className="flex items-baseline gap-1.5">
-            <span className="text-xl xs:text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
+            <span className="text-xl xs:text-2xl sm:text-3xl font-bold text-black">
               {formatCurrency(price)}
             </span>
             <span className="text-xs sm:text-sm text-gray-500">
@@ -283,7 +283,7 @@ export const ProductCard = ({
         
         {/* Price with unit */}
         <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-500 to-pink-600 bg-clip-text text-transparent">
+          <span className="text-2xl sm:text-3xl font-bold text-black">
             {formatCurrency(price)}
           </span>
           <span className="text-xs sm:text-sm text-gray-500">
