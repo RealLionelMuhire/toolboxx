@@ -17,6 +17,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Badge } from '@/components/ui/badge';
 import { SearchIcon, PlusIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import { NotificationPrompt } from '@/components/notification-prompt';
 
 import { MyProductsList, MyProductsListSkeleton } from '@/modules/dashboard/ui/components/my-products-list';
 import { MySalesList, MySalesListSkeleton } from '@/modules/sales/ui/components/my-sales-list';
@@ -157,6 +158,11 @@ export default function MyStorePage() {
 
   return (
     <div className="container mx-auto px-4 py-4 md:py-8">
+      {/* Browser Notification Prompt */}
+      <div className="mb-4">
+        <NotificationPrompt />
+      </div>
+
       <div className="mb-4 md:mb-8">
         <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">My Store</h1>
         <p className="text-sm md:text-base text-gray-600">

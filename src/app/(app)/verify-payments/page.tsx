@@ -8,6 +8,7 @@ import type { Transaction } from '@/payload-types'
 import { useRouter } from 'next/navigation'
 import { PackageIcon, Grid3x3, List, CreditCard, Truck, ChevronDown, ChevronUp, Bell, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { NotificationPrompt } from '@/components/notification-prompt';
 
 // Notification type
 type NotificationItem = {
@@ -176,6 +177,11 @@ export default function VerifyPaymentsPage() {
 
   return (
     <div className="container mx-auto px-4 py-4 md:py-8">
+      {/* Browser Notification Prompt */}
+      <div className="mb-4">
+        <NotificationPrompt />
+      </div>
+
       <div className="mb-4 md:mb-8">
         <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">Transactions & Orders</h1>
         <p className="text-sm md:text-base text-gray-600">

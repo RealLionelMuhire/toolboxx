@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { PerformanceMonitor } from "@/components/performance-monitor";
 import { NavigationProgress } from "@/components/navigation-progress";
 import { Navbar } from "@/modules/home/ui/components/navbar";
+import { NotificationProvider } from "@/components/notification-provider";
 
 import "./globals.css";
 
@@ -32,11 +33,13 @@ export default function RootLayout({
       >
         <NuqsAdapter>
           <TRPCReactProvider>
-            <NavigationProgress />
-            <Navbar />
-            {children}
-            <Toaster />
-            <PerformanceMonitor />
+            <NotificationProvider>
+              <NavigationProgress />
+              <Navbar />
+              {children}
+              <Toaster />
+              <PerformanceMonitor />
+            </NotificationProvider>
           </TRPCReactProvider>
         </NuqsAdapter>
       </body>
