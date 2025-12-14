@@ -38,7 +38,7 @@ export function NotificationIndicator({ userId }: NotificationIndicatorProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="relative"
+          className="relative h-9 w-9 hover:bg-transparent"
           title={isSubscribed ? 'Notifications enabled' : 'Enable notifications'}
         >
           {isSubscribed ? (

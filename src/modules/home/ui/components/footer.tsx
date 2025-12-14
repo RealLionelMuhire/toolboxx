@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { InstallAppLink } from "@/components/install-app-link";
 
 export const Footer = () => {
   return (
@@ -57,6 +58,7 @@ export const Footer = () => {
         <div className="mt-8 pt-6 border-t flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
           <p>© {new Date().getFullYear()} Toolbay, Inc. All rights reserved.</p>
           <div className="flex items-center gap-4">
+            <InstallAppLink />
             <Link href="/about" className="hover:text-foreground transition-colors">
               About
             </Link>

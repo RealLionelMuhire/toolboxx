@@ -49,14 +49,38 @@ export class WebPushService {
       // Register service worker
       this.registration = await navigator.serviceWorker.register('/sw.js', {
         scope: '/',
+        updateViaCache: 'none', // Don't cache the service worker file
       });
 
       console.log('Service Worker registered:', this.registration);
 
-      // Wait for service worker to be ready
-      await navigator.serviceWorker.ready;
+      // Handle updates - force activation of new service worker
+      this.registration.addEventListener('updatefound', () => {
+        const newWorker = this.registration?.installing;
+        console.log('Service Worker update found');
+        
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            console.log('Service Worker state:', newWorker.state);
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // New service worker installed but old one still controlling
+              console.log('New service worker installed, will activate on next page load');
+            }
+          });
+        }
+      });
 
-      return this.registration;
+      // If there's a waiting service worker, skip waiting and activate immediately
+      if (this.registration.waiting) {
+        console.log('Service Worker waiting, activating now...');
+        this.registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      }
+
+      // Wait for service worker to be ready (active)
+      const readyRegistration = await navigator.serviceWorker.ready;
+      console.log('Service Worker ready and active:', readyRegistration.active?.state);
+
+      return readyRegistration;
     } catch (error) {
       console.error('Service Worker registration failed:', error);
       return null;

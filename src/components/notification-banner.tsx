@@ -25,9 +25,21 @@ export function NotificationBanner({
 
   useEffect(() => {
     // Small delay to ensure proper hydration in production
-    const timer = setTimeout(() => {
+    const timer = setTimeout(async () => {
       // Check if user has dismissed the banner
       const dismissed = localStorage.getItem(storageKey);
+      
+      // Additional service worker diagnostics
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        console.log('[NotificationBanner] Service Worker Status:', {
+          registration: !!registration,
+          active: registration?.active?.state,
+          installing: registration?.installing?.state,
+          waiting: registration?.waiting?.state,
+          scope: registration?.scope,
+        });
+      }
       
       console.log('[NotificationBanner] Debug:', {
         dismissed: !!dismissed,

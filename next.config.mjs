@@ -63,6 +63,7 @@ const config = withPWA({
   skipWaiting: true,
   disable: process.env.NODE_ENV === 'development', // Disable in dev for easier debugging
   sw: 'sw.js',
+  reloadOnOnline: true,
 })(nextConfig);
 
 export default config;

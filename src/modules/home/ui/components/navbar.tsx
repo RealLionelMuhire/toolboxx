@@ -481,7 +481,7 @@ export const Navbar = () => {
       {session.data?.user ? (
         <div className="hidden lg:flex items-center flex-shrink-0">
           {/* Notification Indicator */}
-          <div className="border-l border-t-0 border-b-0 border-r-0 h-full flex items-center px-2">
+          <div className="border-l border-t-0 border-b-0 border-r-0 h-full flex items-center justify-center px-2">
             <NotificationIndicator userId={session.data.user.id} />
           </div>
           

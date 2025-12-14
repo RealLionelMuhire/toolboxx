@@ -14,8 +14,17 @@ export function PWAInstallGlobal() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
+    // Check if device is mobile
+    const checkMobile = () => {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+             (window.innerWidth <= 768);
+    };
+    
+    setIsMobile(checkMobile());
+
     // Check if already installed/standalone (works on all browsers)
     const isStandaloneMode = 
       window.matchMedia('(display-mode: standalone)').matches ||
@@ -123,8 +132,8 @@ export function PWAInstallGlobal() {
     setShowPrompt(false);
   };
 
-  // Don't show if already installed or not ready
-  if (isStandalone || !showPrompt) {
+  // Don't show if already installed, not ready, or not on mobile
+  if (isStandalone || !showPrompt || !isMobile) {
     return null;
   }
 
