@@ -8,8 +8,10 @@
   },
   "scripts": {
     "dev": "next dev",
-    "prebuild": "rm -f public/sw.js public/workbox-*.js",
+    "clean:sw": "rm -f public/sw.js public/workbox-*.js",
+    "prebuild": "npm run clean:sw",
     "build": "next build",
+    "postbuild": "echo 'Build complete. Service worker generated.'",
     "start": "next start",
     "lint": "next lint",
     "generate:types": "PAYLOAD_DISABLE_TELEMETRY=true node ./node_modules/payload/bin.js --disable-transpile generate:types",
