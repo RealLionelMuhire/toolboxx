@@ -36,17 +36,16 @@ export function PWAInstallGlobal() {
       localStorage.removeItem('pwa-install-dismissed-time');
     }
 
-    // Show prompt if not dismissed and not standalone
-    if (!dismissed && !isStandaloneMode) {
-      // Wait for beforeinstallprompt OR show after 3 seconds
-      const fallbackTimer = setTimeout(() => {
-        setShowPrompt(true);
-      }, 3000);
-      
-      return () => clearTimeout(fallbackTimer);
+    // Force service worker update to get latest code
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => {
+          registration.update(); // Check for new service worker
+        });
+      });
     }
 
-    // Listen for the beforeinstallprompt event (Chromium browsers)
+    // Listen for the beforeinstallprompt event (Chromium browsers) - MUST be set up early!
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       const promptEvent = e as BeforeInstallPromptEvent;
@@ -69,6 +68,23 @@ export function PWAInstallGlobal() {
 
     window.addEventListener('appinstalled', handleAppInstalled);
 
+    // Show prompt if not dismissed and not standalone (after setting up listeners)
+    if (!dismissed && !isStandaloneMode) {
+      // Wait for beforeinstallprompt to fire, or show after 3 seconds as fallback
+      const fallbackTimer = setTimeout(() => {
+        if (!deferredPrompt) {
+          // Only show if beforeinstallprompt hasn't fired yet
+          setShowPrompt(true);
+        }
+      }, 3000);
+      
+      return () => {
+        clearTimeout(fallbackTimer);
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.removeEventListener('appinstalled', handleAppInstalled);
+      };
+    }
+
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
@@ -77,8 +93,9 @@ export function PWAInstallGlobal() {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) {
-      // Fallback: guide user to browser menu
-      alert('To install: Tap your browser menu (⋮) and select "Install app" or "Add to Home screen"');
+      // No native prompt available, just dismiss silently
+      // User can still install via browser menu if needed
+      handleDismiss();
       return;
     }
 
