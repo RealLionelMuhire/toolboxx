@@ -16,6 +16,7 @@ export class WebPushService {
   private registration: ServiceWorkerRegistration | null = null;
   private isInitializing: boolean = false;
   private registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
+  private hasAttemptedCleanup: boolean = false; // Prevent infinite cleanup loops
 
   private constructor() {
     // Auto-register service worker when supported
@@ -90,17 +91,27 @@ export class WebPushService {
         
         // Check if SW is in a bad state (redundant or no active worker)
         if (existingRegistration.active?.state === 'redundant' || !existingRegistration.active) {
-          console.warn('[WebPush] Service worker in invalid state, unregistering...');
-          await existingRegistration.unregister();
-          
-          // Clear all caches to start fresh
-          const cacheNames = await caches.keys();
-          await Promise.all(cacheNames.map(name => caches.delete(name)));
-          console.log('[WebPush] Cleared', cacheNames.length, 'cache(s)');
-          
-          // Re-register after cleanup
-          console.log('[WebPush] Re-registering service worker after cleanup...');
-          return this.registerServiceWorker();
+          // Only attempt cleanup once to prevent infinite loops
+          if (!this.hasAttemptedCleanup) {
+            console.warn('[WebPush] Service worker in invalid state, unregistering...');
+            this.hasAttemptedCleanup = true;
+            
+            await existingRegistration.unregister();
+            
+            // Clear all caches to start fresh
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+            console.log('[WebPush] Cleared', cacheNames.length, 'cache(s)');
+            console.log('[WebPush] Please hard refresh the page (Ctrl+Shift+R) to complete the reset');
+            
+            // Don't recursively call registerServiceWorker - just return null
+            // User needs to refresh the page for clean state
+            return null;
+          } else {
+            console.error('[WebPush] Service worker still in invalid state after cleanup. Manual intervention needed.');
+            console.error('[WebPush] Run this in console: navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));location.reload();');
+            return null;
+          }
         }
         
         this.registration = existingRegistration;
@@ -154,13 +165,9 @@ export class WebPushService {
             
             if (newWorker.state === 'redundant') {
               console.error('[WebPush] Service Worker became redundant, likely due to precache errors');
-              console.log('[WebPush] Clearing caches and reloading...');
-              caches.keys().then(names => {
-                return Promise.all(names.map(name => caches.delete(name)));
-              }).then(() => {
-                console.log('[WebPush] Caches cleared, reloading page...');
-                window.location.reload();
-              });
+              console.error('[WebPush] Please clear your browser cache or run:');
+              console.error('[WebPush] navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));caches.keys().then(k=>k.forEach(c=>caches.delete(c)));');
+              // DO NOT auto-reload - causes infinite loop
             }
             
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
