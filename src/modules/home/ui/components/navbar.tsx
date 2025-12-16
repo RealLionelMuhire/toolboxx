@@ -314,6 +314,7 @@ export const Navbar = () => {
           open={isSidebarOpen}
           onOpenChange={setIsSidebarOpen}
           isLoggedIn={isLoggedIn}
+          userId={session.data?.user?.id}
           onLogout={handleLogout}
           isLoggingOut={logout.isPending}
         />
@@ -445,6 +446,7 @@ export const Navbar = () => {
         open={isSidebarOpen}
         onOpenChange={setIsSidebarOpen}
         isLoggedIn={isLoggedIn}
+        userId={session.data?.user?.id}
         onLogout={handleLogout}
         isLoggingOut={logout.isPending}
       />

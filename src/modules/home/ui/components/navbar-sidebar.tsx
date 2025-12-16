@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LogOut, ChevronDown, ChevronRight, Store, BookmarkCheck } from "lucide-react";
+import { LogOut, ChevronDown, ChevronRight, Store, BookmarkCheck, Bell } from "lucide-react";
 
 import {
   Sheet,
@@ -14,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { OptimizedLink } from "@/components/optimized-link";
 import { cn } from "@/lib/utils";
+import { useWebPush } from "@/hooks/use-web-push";
 
 import type { NavbarItem } from "./navbar";
 
@@ -22,6 +23,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   isLoggedIn: boolean;
+  userId?: string;
   onLogout: () => void;
   isLoggingOut: boolean;
 }
@@ -31,10 +33,12 @@ export const NavbarSidebar = ({
   open,
   onOpenChange,
   isLoggedIn,
+  userId,
   onLogout,
   isLoggingOut,
 }: Props) => {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+  const { isSupported, isSubscribed, subscribe, isLoading } = useWebPush({ userId });
 
   const handleLogout = () => {
     onLogout();
@@ -121,6 +125,21 @@ export const NavbarSidebar = ({
             )
           ))}
           <div className="border-t">
+            {/* Notification Enable Button - Only show if logged in and not subscribed */}
+            {isLoggedIn && userId && isSupported && !isSubscribed && (
+              <Button
+                onClick={async () => {
+                  await subscribe();
+                }}
+                disabled={isLoading}
+                className="w-full text-left p-4 active:bg-blue-600 bg-transparent active:text-white flex items-center text-base font-medium gap-2 rounded-none justify-start text-blue-600 touch-manipulation"
+                variant="ghost"
+              >
+                <Bell className="h-4 w-4" />
+                {isLoading ? "Enabling..." : "Enable Notifications"}
+              </Button>
+            )}
+            
             {isLoggedIn ? (
               <Button
                 onClick={handleLogout}
