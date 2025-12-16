@@ -95,6 +95,7 @@ export const authRouter = createTRPCRouter({
           storeManagerId: undefined, // Explicitly set to undefined to avoid validation issues
           category: input.category,
           location: input.location,
+          contactPhone: input.contactPhone, // Required field from sign-up form
           currency: input.currency,
           paymentMethod: input.paymentMethod,
           ...(input.paymentMethod === "bank_transfer" && {

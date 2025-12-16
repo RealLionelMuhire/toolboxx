@@ -153,6 +153,23 @@ export const Tenants: CollectionConfig = {
       },
     },
     {
+      name: "contactPhone",
+      type: "text",
+      required: true,
+      admin: {
+        description: "Contact phone number with country code (e.g., +250788888888)",
+      },
+      validate: (value: any) => {
+        if (!value) return "Contact phone number is required";
+        const phoneStr = String(value);
+        // Basic validation for phone number format with country code
+        if (!/^\+\d{10,15}$/.test(phoneStr)) {
+          return "Phone number must start with + and contain 10-15 digits (e.g., +250788888888)";
+        }
+        return true;
+      },
+    },
+    {
       name: "currency",
       type: "select",
       required: true,

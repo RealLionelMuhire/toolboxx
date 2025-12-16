@@ -15,6 +15,10 @@ export const registerSchema = z.object({
   // Rwanda-specific fields - TIN and Store Manager ID are now optional (added by super admin during verification)
   category: z.enum(["retailer", "wholesale", "industry", "renter", "logistics"]),
   location: z.string().min(5, "Location must be at least 5 characters"),
+  contactPhone: z
+    .string()
+    .min(1, "Contact phone number is required")
+    .regex(/^\+\d{10,15}$/, "Phone number must start with + and contain 10-15 digits (e.g., +250788888888)"),
   currency: z.enum(["USD", "RWF", "UGX", "TZS", "BIF", "KSH"], {
     required_error: "Please select a currency",
   }),
