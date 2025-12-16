@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload';
 
 import { isSuperAdmin } from '@/lib/access';
+import { sendPaymentNotification } from '@/lib/notifications/send-push';
 
 // Helper function to generate payment reference
 function generatePaymentReference(): string {
@@ -410,6 +411,22 @@ export const Transactions: CollectionConfig = {
           //   subject: `New payment to verify: ${doc.paymentReference}`,
           //   html: `Customer ${doc.customerName} has submitted payment...`,
           // });
+        }
+
+        // Notify tenant when payment is successfully verified
+        if (operation === 'update' && doc.status === 'verified' && previousDoc.status !== 'verified') {
+          const tenantId = typeof doc.tenant === 'string' ? doc.tenant : doc.tenant?.id;
+          
+          if (tenantId) {
+            sendPaymentNotification(
+              tenantId,
+              doc.totalAmount || 0,
+              doc.paymentReference
+            ).catch((error) => {
+              // Log error but don't fail the transaction update
+              req.payload.logger.error(`Failed to send payment notification: ${error}`);
+            });
+          }
         }
       },
     ],

@@ -1,7 +1,8 @@
 import type { CollectionConfig } from "payload";
 
 import { isSuperAdmin } from "@/lib/access";
-import type { Tenant } from "@/payload-types";
+import type { Tenant, Product } from "@/payload-types";
+import { sendOrderNotification } from '@/lib/notifications/send-push';
 
 export const Orders: CollectionConfig = {
   slug: "orders",
@@ -19,6 +20,35 @@ export const Orders: CollectionConfig = {
     ],
     afterChange: [
       async ({ doc, operation, req, previousDoc }) => {
+        // Send push notification when order is created
+        if (operation === 'create') {
+          try {
+            // Get product details
+            const product = await req.payload.findByID({
+              collection: 'products',
+              id: typeof doc.product === 'string' ? doc.product : doc.product.id,
+              depth: 1,
+            });
+
+            // Get tenant ID from product
+            const tenantId = typeof product.tenant === 'string' ? product.tenant : (product.tenant as Tenant)?.id;
+            const productName = (product as Product).name || 'Unknown Product';
+
+            if (tenantId) {
+              // Notify tenant of new order
+              sendOrderNotification(
+                tenantId,
+                doc.orderNumber || doc.id,
+                productName
+              ).catch((error) => {
+                req.payload.logger.error(`Failed to send order notification: ${error}`);
+              });
+            }
+          } catch (error) {
+            req.payload.logger.error(`Failed to get product details for notification: ${error}`);
+          }
+        }
+
         // TEMPORARILY DISABLED: Create sale record when order is created (after payment verification)
         // TODO: Re-enable after fixing "Category, Location" validation error
         if (false && operation === 'create') {

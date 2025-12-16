@@ -3,6 +3,7 @@ import { TRPCError } from '@trpc/server';
 
 import { protectedProcedure, createTRPCRouter } from '@/trpc/init';
 import type { User, Conversation, Message } from '@/payload-types';
+import { sendMessageNotification } from '@/lib/notifications/send-push';
 
 export const chatRouter = createTRPCRouter({
   /**
@@ -173,6 +174,20 @@ export const chatRouter = createTRPCRouter({
           }),
         },
         depth: 1, // Populate sender and receiver
+      });
+
+      // Send push notification to receiver (fire and forget)
+      const senderName = typeof message.sender === 'object' && message.sender !== null
+        ? (message.sender as User).username || 'Someone'
+        : ctx.session.user.username || 'Someone';
+
+      sendMessageNotification(
+        input.receiverId,
+        senderName,
+        input.conversationId
+      ).catch((error) => {
+        // Log error but don't fail the message send
+        console.error('Failed to send message notification:', error);
       });
 
       // Update conversation metadata asynchronously (don't wait for it)
