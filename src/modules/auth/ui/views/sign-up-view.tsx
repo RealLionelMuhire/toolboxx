@@ -127,6 +127,7 @@ export const SignUpView = () => {
       // TIN and Store Manager ID removed - will be added by super admin during verification
       category: "retailer" as const,
       location: "",
+      contactPhone: "",
       currency: "RWF" as const,
       paymentMethod: "bank_transfer" as const,
       bankName: "",
@@ -635,6 +636,22 @@ export const SignUpView = () => {
                     </FormControl>
                     <FormDescription>
                       Enter your business address or location
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                name="contactPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base">Contact Phone Number *</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="+250788888888" />
+                    </FormControl>
+                    <FormDescription>
+                      Phone number with country code for customer contact
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

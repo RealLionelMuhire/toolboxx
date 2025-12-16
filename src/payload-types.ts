@@ -205,6 +205,10 @@ export interface Tenant {
    */
   location: string;
   /**
+   * Contact phone number with country code (e.g., +250788888888)
+   */
+  contactPhone: string;
+  /**
    * Currency for all transactions in your store
    */
   currency: 'USD' | 'RWF' | 'UGX' | 'TZS' | 'BIF' | 'KSH';
@@ -1134,6 +1138,7 @@ export interface TenantsSelect<T extends boolean = true> {
   storeManagerId?: T;
   category?: T;
   location?: T;
+  contactPhone?: T;
   currency?: T;
   rdbCertificate?: T;
   paymentMethod?: T;
