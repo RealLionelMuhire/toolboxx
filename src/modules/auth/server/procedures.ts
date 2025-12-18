@@ -4,8 +4,21 @@ import { headers as getHeaders } from "next/headers";
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
 
 import { generateAuthCookie, clearAuthCookie } from "../utils";
-import { loginSchema, registerSchema } from "../schemas";
+import { 
+  loginSchema, 
+  registerSchema, 
+  forgotPasswordSchema, 
+  resetPasswordSchema, 
+  verifyEmailSchema,
+  resendVerificationSchema 
+} from "../schemas";
 import { registerClientSchema } from "../schemas-client";
+import { 
+  generateToken, 
+  getTokenExpiration, 
+  sendVerificationEmail, 
+  sendPasswordResetEmail 
+} from "../email-utils";
 
 export const authRouter = createTRPCRouter({
   session: baseProcedure.query(async ({ ctx }) => {
@@ -116,18 +129,30 @@ export const authRouter = createTRPCRouter({
         } as any
       })
 
-      await ctx.db.create({
+      // Generate email verification token
+      const verificationToken = generateToken();
+      const verificationExpires = getTokenExpiration();
+
+      const newUser = await ctx.db.create({
         collection: "users",
         data: {
           email: input.email,
           username: username,
           password: input.password, // This will be hashed
+          emailVerified: false,
+          verificationToken: verificationToken,
+          verificationExpires: verificationExpires.toISOString(),
           tenants: [
             {
               tenant: tenant.id,
             },
           ],
-        },
+        } as any,
+      });
+
+      // Send verification email (don't await to not slow down registration)
+      sendVerificationEmail(input.email, verificationToken, username).catch((error) => {
+        console.error("Failed to send verification email:", error);
       });
 
       const data = await ctx.db.login({
@@ -189,17 +214,29 @@ export const authRouter = createTRPCRouter({
         }
       }
 
+      // Generate email verification token
+      const verificationToken = generateToken();
+      const verificationExpires = getTokenExpiration();
+
       // Create client user (buyer) - no tenant association needed
-      await ctx.db.create({
+      const newUser = await ctx.db.create({
         collection: "users",
         data: {
           email: input.email,
           username: input.username,
           password: input.password,
           roles: ["client"], // Explicitly set client role
+          emailVerified: false,
+          verificationToken: verificationToken,
+          verificationExpires: verificationExpires.toISOString(),
           // Client users don't have tenants
           tenants: [],
-        },
+        } as any,
+      });
+
+      // Send verification email (don't await to not slow down registration)
+      sendVerificationEmail(input.email, verificationToken, input.username).catch((error) => {
+        console.error("Failed to send verification email:", error);
       });
 
       const data = await ctx.db.login({
@@ -303,4 +340,191 @@ export const authRouter = createTRPCRouter({
     
     return { success: true };
   }),
+
+  /**
+   * Verify email with token
+   */
+  verifyEmail: baseProcedure
+    .input(verifyEmailSchema)
+    .mutation(async ({ input, ctx }) => {
+      // Find user with this verification token
+      const users = await ctx.db.find({
+        collection: "users",
+        where: {
+          verificationToken: {
+            equals: input.token,
+          },
+        },
+        limit: 1,
+      });
+
+      const user = users.docs[0];
+
+      if (!user) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid or expired verification token",
+        });
+      }
+
+      // Check if token has expired
+      if (user.verificationExpires && new Date(user.verificationExpires) < new Date()) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Verification token has expired. Please request a new one.",
+        });
+      }
+
+      // Update user to verified
+      await ctx.db.update({
+        collection: "users",
+        id: user.id,
+        data: {
+          emailVerified: true,
+          verificationToken: null,
+          verificationExpires: null,
+        } as any,
+      });
+
+      return { success: true, message: "Email verified successfully!" };
+    }),
+
+  /**
+   * Resend verification email
+   */
+  resendVerification: baseProcedure
+    .input(resendVerificationSchema)
+    .mutation(async ({ input, ctx }) => {
+      const users = await ctx.db.find({
+        collection: "users",
+        where: {
+          email: {
+            equals: input.email,
+          },
+        },
+        limit: 1,
+      });
+
+      const user = users.docs[0];
+
+      if (!user) {
+        // Don't reveal if email exists or not
+        return { success: true, message: "If the email exists, a verification link has been sent." };
+      }
+
+      if (user.emailVerified) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Email is already verified",
+        });
+      }
+
+      // Generate new verification token
+      const token = generateToken();
+      const expires = getTokenExpiration();
+
+      await ctx.db.update({
+        collection: "users",
+        id: user.id,
+        data: {
+          verificationToken: token,
+          verificationExpires: expires.toISOString(),
+        } as any,
+      });
+
+      // Send verification email
+      await sendVerificationEmail(user.email, token, user.username);
+
+      return { success: true, message: "Verification email sent!" };
+    }),
+
+  /**
+   * Request password reset
+   */
+  forgotPassword: baseProcedure
+    .input(forgotPasswordSchema)
+    .mutation(async ({ input, ctx }) => {
+      const users = await ctx.db.find({
+        collection: "users",
+        where: {
+          email: {
+            equals: input.email,
+          },
+        },
+        limit: 1,
+      });
+
+      const user = users.docs[0];
+
+      if (!user) {
+        // Don't reveal if email exists or not (security best practice)
+        return { success: true, message: "If the email exists, a password reset link has been sent." };
+      }
+
+      // Generate password reset token
+      const token = generateToken();
+      const expires = getTokenExpiration();
+
+      await ctx.db.update({
+        collection: "users",
+        id: user.id,
+        data: {
+          resetPasswordToken: token,
+          resetPasswordExpiration: expires.toISOString(),
+        } as any,
+      });
+
+      // Send password reset email
+      await sendPasswordResetEmail(user.email, token, user.username);
+
+      return { success: true, message: "Password reset email sent!" };
+    }),
+
+  /**
+   * Reset password with token
+   */
+  resetPassword: baseProcedure
+    .input(resetPasswordSchema)
+    .mutation(async ({ input, ctx }) => {
+      // Find user with this reset token
+      const users = await ctx.db.find({
+        collection: "users",
+        where: {
+          resetPasswordToken: {
+            equals: input.token,
+          },
+        },
+        limit: 1,
+      });
+
+      const user = users.docs[0];
+
+      if (!user) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Invalid or expired reset token",
+        });
+      }
+
+      // Check if token has expired
+      if (user.resetPasswordExpiration && new Date(user.resetPasswordExpiration) < new Date()) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Reset token has expired. Please request a new one.",
+        });
+      }
+
+      // Update password and clear reset token
+      await ctx.db.update({
+        collection: "users",
+        id: user.id,
+        data: {
+          password: input.password, // Will be hashed by Payload
+          resetPasswordToken: null,
+          resetPasswordExpiration: null,
+        } as any,
+      });
+
+      return { success: true, message: "Password reset successfully!" };
+    }),
 });

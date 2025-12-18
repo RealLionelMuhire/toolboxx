@@ -104,6 +104,44 @@ export const Users: CollectionConfig = {
         },
       ],
     },
+    // Email verification fields
+    {
+      name: "emailVerified",
+      type: "checkbox",
+      defaultValue: false,
+      admin: {
+        position: "sidebar",
+        description: "Whether the user has verified their email address",
+      },
+      access: {
+        create: () => false, // Never set on creation
+        update: ({ req }) => isSuperAdmin(req.user), // Only super-admin can manually verify
+      },
+    },
+    {
+      name: "verificationToken",
+      type: "text",
+      admin: {
+        hidden: true, // Hidden from UI, used internally
+      },
+      access: {
+        read: () => false, // Never expose to API
+        create: () => false,
+        update: () => false,
+      },
+    },
+    {
+      name: "verificationExpires",
+      type: "date",
+      admin: {
+        hidden: true, // Hidden from UI, used internally
+      },
+      access: {
+        read: () => false, // Never expose to API
+        create: () => false,
+        update: () => false,
+      },
+    },
     // Verification section for account page
     // Only shown for tenant users (not clients or super-admins)
     {

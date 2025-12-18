@@ -153,6 +153,12 @@ export interface User {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Whether the user has verified their email address
+   */
+  emailVerified?: boolean | null;
+  verificationToken?: string | null;
+  verificationExpires?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -1033,6 +1039,9 @@ export interface UsersSelect<T extends boolean = true> {
         tenant?: T;
         id?: T;
       };
+  emailVerified?: T;
+  verificationToken?: T;
+  verificationExpires?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
