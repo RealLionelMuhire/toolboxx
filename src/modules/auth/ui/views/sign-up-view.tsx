@@ -37,7 +37,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Store, ShoppingBag } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Store, ShoppingBag, Eye, EyeOff, Mail, CheckCircle } from "lucide-react";
 
 import { registerSchema } from "../../schemas";
 import { registerClientSchema } from "../../schemas-client";
@@ -54,6 +62,10 @@ export const SignUpView = () => {
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect");
   const [accountType, setAccountType] = useState<AccountType | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState<string>("");
 
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -64,26 +76,9 @@ export const SignUpView = () => {
       toast.error(error.message);
     },
     onSuccess: async (data) => {
-      toast.success("Account created successfully!");
-      
-      // Immediately update the session cache with the logged-in user
-      if (data?.user) {
-        queryClient.setQueryData(
-          trpc.auth.session.queryKey(),
-          { user: data.user, permissions: {} }
-        );
-      }
-      
-      // Also invalidate to ensure fresh data
-      await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
-      
-      // Small delay to ensure cache is updated
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      // Navigate to the redirect URL if provided, otherwise go to homepage
-      const redirectUrl = redirect || "/";
-      router.push(redirectUrl);
-      router.refresh();
+      // Store the registered email and show success dialog
+      setRegisteredEmail(data.user.email);
+      setShowSuccessDialog(true);
     },
   }));
 
@@ -93,26 +88,9 @@ export const SignUpView = () => {
       toast.error(error.message);
     },
     onSuccess: async (data) => {
-      toast.success("Account created successfully!");
-      
-      // Immediately update the session cache with the logged-in user
-      if (data?.user) {
-        queryClient.setQueryData(
-          trpc.auth.session.queryKey(),
-          { user: data.user, permissions: {} }
-        );
-      }
-      
-      // Also invalidate to ensure fresh data
-      await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
-      
-      // Small delay to ensure cache is updated
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      // Navigate to the redirect URL if provided, otherwise go to homepage
-      const redirectUrl = redirect || "/";
-      router.push(redirectUrl);
-      router.refresh();
+      // Store the registered email and show success dialog
+      setRegisteredEmail(data.user.email);
+      setShowSuccessDialog(true);
     },
   }));
 
@@ -123,6 +101,7 @@ export const SignUpView = () => {
     defaultValues: {
       email: "",
       password: "",
+      confirmPassword: "",
       storeName: "",
       // TIN and Store Manager ID removed - will be added by super admin during verification
       category: "retailer" as const,
@@ -145,6 +124,7 @@ export const SignUpView = () => {
     defaultValues: {
       email: "",
       password: "",
+      confirmPassword: "",
       username: "",
       firstName: "",
       lastName: "",
@@ -390,10 +370,45 @@ export const SignUpView = () => {
                   <FormItem>
                     <FormLabel className="text-base">Password</FormLabel>
                     <FormControl>
-                      <Input {...field} type="password" placeholder="••••••••" />
+                      <div className="relative">
+                        <Input {...field} type={showPassword ? "text" : "password"} placeholder="••••••••" />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormDescription>
                       Must be at least 6 characters
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                name="confirmPassword"
+                control={clientForm.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base">Confirm Password</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input {...field} type={showConfirmPassword ? "text" : "password"} placeholder="••••••••" />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Re-enter your password
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -587,7 +602,38 @@ export const SignUpView = () => {
                 <FormItem>
                   <FormLabel className="text-base">Password</FormLabel>
                   <FormControl>
-                    <Input {...field} type="password" />
+                    <div className="relative">
+                      <Input {...field} type={showPassword ? "text" : "password"} />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-base">Confirm Password</FormLabel>
+                  <FormControl>
+                    <div className="relative">
+                      <Input {...field} type={showConfirmPassword ? "text" : "password"} />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -837,6 +883,46 @@ export const SignUpView = () => {
           backgroundPosition: "center",
          }}
       />
+      
+      {/* Success Dialog */}
+      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+            </div>
+            <DialogTitle className="text-center text-xl">
+              Account Created Successfully!
+            </DialogTitle>
+            <DialogDescription className="text-center pt-2">
+              <div className="space-y-3">
+                <div className="flex items-center justify-center gap-2 text-sm">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="font-medium">{registeredEmail}</span>
+                </div>
+                <p className="text-base">
+                  We&apos;ve sent a verification email to your inbox. Please click the verification link to activate your account.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Once verified, you&apos;ll be able to log in and access all features.
+                </p>
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button
+              onClick={() => {
+                setShowSuccessDialog(false);
+                router.push("/sign-in?registered=true");
+                router.refresh();
+              }}
+              className="w-full sm:w-auto"
+            >
+              Okay, Got It!
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
