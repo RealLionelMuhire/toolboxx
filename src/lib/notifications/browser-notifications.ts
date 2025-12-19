@@ -65,6 +65,7 @@ export class BrowserNotificationService {
 
   /**
    * Show a browser notification
+   * Uses Service Worker API when available (required for mobile)
    */
   async show(payload: NotificationPayload): Promise<Notification | null> {
     if (!this.isEnabled()) {
@@ -88,6 +89,22 @@ export class BrowserNotificationService {
         },
       };
 
+      // Try to use Service Worker API first (required for mobile browsers)
+      if ('serviceWorker' in navigator) {
+        try {
+          const registration = await navigator.serviceWorker.getRegistration();
+          if (registration) {
+            // Use Service Worker to show notification (works on mobile)
+            await registration.showNotification(payload.title, options);
+            console.log('[Notifications] Shown via Service Worker');
+            return null; // SW notifications don't return a Notification object
+          }
+        } catch (swError) {
+          console.warn('[Notifications] Service Worker method failed, falling back to Notification API:', swError);
+        }
+      }
+
+      // Fallback to regular Notification API (desktop browsers)
       const notification = new Notification(payload.title, options);
 
       // Handle notification click
@@ -106,6 +123,7 @@ export class BrowserNotificationService {
         notification.close();
       };
 
+      console.log('[Notifications] Shown via Notification API');
       return notification;
     } catch (error) {
       console.error('Error showing notification:', error);
