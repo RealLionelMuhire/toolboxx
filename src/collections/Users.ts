@@ -43,6 +43,7 @@ export const Users: CollectionConfig = {
     },
   },
   auth: {
+    tokenExpiration: 2592000, // 30 days in seconds (30 * 24 * 60 * 60)
     cookies: {
       sameSite: "Lax",
       secure: process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_APP_URL?.includes('localhost'),
