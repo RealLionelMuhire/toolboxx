@@ -4,6 +4,7 @@ import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
+import { resendAdapter } from '@/lib/email/resend-adapter'
 // import { multiTenantPlugin } from "@payloadcms/plugin-multi-tenant";
 import path from 'path'
 import { buildConfig } from 'payload'
@@ -41,20 +42,12 @@ export default buildConfig({
       afterNavLinks: ['@/components/admin/UserVerificationBadge'],
     },
   },
-  email: nodemailerAdapter({
-    defaultFromAddress: process.env.SMTP_FROM_EMAIL || 'noreply@toolbay.store',
+  // Use Resend for both development and production
+  email: resendAdapter({
+    apiKey: process.env.RESEND_API_KEY || 're_B9Locd8M_ASuAoooS9D1RE8PTT89SYGqr',
+    defaultFromAddress: 'onboarding@resend.dev',
     defaultFromName: 'Toolbay',
-    // Configure SMTP transport
-    transportOptions: {
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: false, // Use TLS
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    },
-  }),
+  }) as any,
   collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
