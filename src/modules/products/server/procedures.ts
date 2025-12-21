@@ -1068,6 +1068,52 @@ export const productsRouter = createTRPCRouter({
       };
     }),
 
+  // Get total views count for all tenant's products
+  getTotalViewsCount: protectedProcedure
+    .query(async ({ ctx }) => {
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+      });
+
+      if (!userData.tenants?.[0]) {
+        return { totalViews: 0 };
+      }
+
+      const tenantId = typeof userData.tenants[0].tenant === 'string' 
+        ? userData.tenants[0].tenant 
+        : userData.tenants[0].tenant.id;
+
+      // Get all products for this tenant (not archived)
+      const products = await ctx.db.find({
+        collection: "products",
+        where: {
+          and: [
+            {
+              tenant: {
+                equals: tenantId,
+              },
+            },
+            {
+              isArchived: {
+                not_equals: true,
+              },
+            },
+          ],
+        },
+        pagination: false,
+      });
+
+      // Sum up all viewCount values
+      let totalViews = 0;
+      products.docs.forEach((product: any) => {
+        totalViews += product.viewCount || 0;
+      });
+
+      return { totalViews };
+    }),
+
   // Track product view
   trackView: baseProcedure
     .input(

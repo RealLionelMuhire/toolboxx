@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -227,6 +227,14 @@ export const Navbar = () => {
     staleTime: 30000,
   });
 
+  // Get total views count for tenants
+  const { data: totalViewsData } = useQuery({
+    ...trpc.products.getTotalViewsCount.queryOptions(),
+    enabled: !!isTenant,
+    refetchInterval: 60000, // Check every 60 seconds
+    staleTime: 30000,
+  });
+
   // Get order notification count for buyers (customers)
   const isCustomer = session.data?.user?.roles?.includes('client');
   const { data: orderNotifications } = useQuery({
@@ -418,9 +426,20 @@ export const Navbar = () => {
             console.log('Mobile Display Name:', displayName, 'Length:', displayName.length);
             
             return (
-              <span className="text-xs lg:hidden text-gray-600 -mt-1 whitespace-nowrap">
-                {displayName}
-              </span>
+              <div className="flex items-center gap-2 lg:hidden -mt-1">
+                <span className="text-xs text-gray-600 whitespace-nowrap">
+                  {displayName}
+                </span>
+                {/* Show total views for tenants only */}
+                {isTenant && totalViewsData && (
+                  <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 rounded-full">
+                    <Eye className="h-3 w-3 text-gray-600" />
+                    <span className="text-xs font-medium text-gray-700">
+                      {totalViewsData.totalViews.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+              </div>
             );
           })()}
         </div>
@@ -434,9 +453,20 @@ export const Navbar = () => {
              'User').trim();
           
           return (
-            <span className="hidden lg:block text-base text-gray-600 border-l pl-3 whitespace-nowrap">
-              {displayName}
-            </span>
+            <div className="hidden lg:flex items-center gap-3 border-l pl-3">
+              <span className="text-base text-gray-600 whitespace-nowrap">
+                {displayName}
+              </span>
+              {/* Show total views for tenants only */}
+              {isTenant && totalViewsData && (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 rounded-full">
+                  <Eye className="h-4 w-4 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-700">
+                    {totalViewsData.totalViews.toLocaleString()}
+                  </span>
+                </div>
+              )}
+            </div>
           );
         })()}
       </Link>
