@@ -359,43 +359,36 @@ export const Navbar = () => {
           </Button>
         </div>
         {/* Mobile Icons - Right Side: Sign In, Cart, Menu */}
-        <div className="flex lg:hidden items-center gap-1 pr-2 flex-shrink-0">
-          <Link
+        <div className="flex lg:hidden items-center gap-0.5 pr-1 flex-shrink-0">
+          <OptimizedLink
             href="/sign-in"
             prefetch={true}
-            className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
-            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+            className="relative h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
             <LogIn className="h-5 w-5" />
-          </Link>
-          <Link
+          </OptimizedLink>
+          <OptimizedLink
             href="/cart"
             prefetch={true}
-            className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
-            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+            className="relative h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
             <ShoppingCart className="h-5 w-5" />
             {cartItemCount > 0 && (
               <Badge
                 variant="destructive"
-                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
+                className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px] rounded-full pointer-events-none z-10"
               >
                 {cartItemCount > 99 ? "99+" : cartItemCount}
               </Badge>
             )}
-          </Link>
+          </OptimizedLink>
           <button
             type="button"
-            className="h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsSidebarOpen(true);
-            }}
-            onTouchStart={(e) => {
-              e.stopPropagation();
-            }}
-            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+            className="h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            onClick={() => setIsSidebarOpen(true)}
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
             aria-label="Open menu"
           >
             <MenuIcon className="h-5 w-5" />
@@ -580,36 +573,36 @@ export const Navbar = () => {
       )}
 
       {/* Mobile Icons - Right Side */}
-        <div className="flex lg:hidden items-center gap-1 pr-2 flex-shrink-0">
+        <div className="flex lg:hidden items-center gap-0.5 pr-1 flex-shrink-0">
         {isTenant && (
-          <Link
+          <OptimizedLink
             href="/my-store"
             prefetch={true}
-            className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation transition-colors"
-            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+            className="relative h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
             <Store className="h-5 w-5" />
             {productNotifications?.count !== undefined && productNotifications.count > 0 && (
               <Badge
                 variant="destructive"
-                className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
+                className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px] rounded-full pointer-events-none z-10"
               >
                 {productNotifications.count > 99 ? "99+" : productNotifications.count}
               </Badge>
             )}
-          </Link>
+          </OptimizedLink>
         )}
-        <Link
+        <OptimizedLink
           href={isTenant ? "/verify-payments" : "/orders"}
           prefetch={true}
-          className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation transition-colors"
-          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-          >
+          className="relative h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
+        >
           <Wallet className="h-5 w-5" />
           {isTenant && transactionNotifications?.count !== undefined && transactionNotifications.count > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
+              className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px] rounded-full pointer-events-none z-10"
             >
               {transactionNotifications.count > 99 ? "99+" : transactionNotifications.count}
             </Badge>
@@ -617,56 +610,49 @@ export const Navbar = () => {
           {!isTenant && orderNotifications?.count !== undefined && orderNotifications.count > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
+              className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px] rounded-full pointer-events-none z-10"
             >
               {orderNotifications.count > 99 ? "99+" : orderNotifications.count}
             </Badge>
           )}
-        </Link>
-        <Link
+        </OptimizedLink>
+        <OptimizedLink
           href="/chat"
           prefetch={true}
-          className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation transition-colors"
-          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+          className="relative h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
         >
           <MessageCircle className="h-5 w-5" />
           {(unreadData?.totalUnread || 0) > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
+              className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px] rounded-full pointer-events-none z-10"
             >
               {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
             </Badge>
           )}
-        </Link>
-        <Link
+        </OptimizedLink>
+        <OptimizedLink
           href="/cart"
           prefetch={true}
-          className="relative h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation transition-colors"
-          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+          className="relative h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
         >
           <ShoppingCart className="h-5 w-5" />
           {cartItemCount > 0 && (
             <Badge
               variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none z-10"
+              className="absolute -top-0.5 -right-0.5 h-4 w-4 flex items-center justify-center p-0 text-[10px] rounded-full pointer-events-none z-10"
             >
               {cartItemCount > 99 ? "99+" : cartItemCount}
             </Badge>
           )}
-        </Link>
+        </OptimizedLink>
         <button
           type="button"
-          className="h-12 w-12 min-w-[48px] flex items-center justify-center rounded-full active:bg-gray-200 hover:bg-gray-100 outline-none focus:outline-none focus:ring-2 focus:ring-primary/50 touch-manipulation transition-colors"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsSidebarOpen(true);
-          }}
-          onTouchStart={(e) => {
-            e.stopPropagation();
-          }}
-          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+          className="h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+          onClick={() => setIsSidebarOpen(true)}
+          style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           aria-label="Open menu"
         >
           <MenuIcon className="h-5 w-5" />
