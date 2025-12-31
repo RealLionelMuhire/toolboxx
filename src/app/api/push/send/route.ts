@@ -3,19 +3,32 @@ import { getPayload } from 'payload';
 import config from '@payload-config';
 import webpush from 'web-push';
 
-// Configure web-push with VAPID keys
-const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!;
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY!;
-// VAPID subject must be mailto: or https: URL
-const vapidSubject = process.env.NEXT_PUBLIC_APP_URL?.startsWith('https://') 
-  ? process.env.NEXT_PUBLIC_APP_URL 
-  : 'mailto:lionelmuhire1997@gmail.com';
+// Lazy initialization flag to avoid setting VAPID during build
+let vapidConfigured = false;
 
-webpush.setVapidDetails(
-  vapidSubject,
-  vapidPublicKey,
-  vapidPrivateKey
-);
+function ensureVapidConfigured() {
+  if (vapidConfigured) return;
+  
+  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+  
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    throw new Error('VAPID keys not configured. Set NEXT_PUBLIC_VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY environment variables.');
+  }
+  
+  // VAPID subject must be mailto: or https: URL
+  const vapidSubject = process.env.NEXT_PUBLIC_APP_URL?.startsWith('https://') 
+    ? process.env.NEXT_PUBLIC_APP_URL 
+    : 'mailto:lionelmuhire1997@gmail.com';
+
+  webpush.setVapidDetails(
+    vapidSubject,
+    vapidPublicKey,
+    vapidPrivateKey
+  );
+  
+  vapidConfigured = true;
+}
 
 export interface PushNotificationPayload {
   title: string;
@@ -31,6 +44,9 @@ export interface PushNotificationPayload {
 
 export async function POST(req: NextRequest) {
   try {
+    // Initialize VAPID on first request (not at build time)
+    ensureVapidConfigured();
+    
     const payload = await getPayload({ config });
     const body = await req.json();
     

@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { StarIcon, ShieldCheck, Package, TrendingUp, MapPin, Eye } from "lucide-react";
+import { StarIcon, ShieldCheck, Package, TrendingUp, MapPin, Eye, Loader2 } from "lucide-react";
 
 import { formatCurrency } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
@@ -55,33 +55,74 @@ export const ProductCard = ({
   viewCount = 0,
 }: ProductCardProps) => {
   const router = useRouter();
+  const [isNavigatingToStore, setIsNavigatingToStore] = useState(false);
   
   // Generate URLs consistently for server/client
   const productUrl = `/tenants/${tenantSlug}/products/${id}`;
-  const tenantUrl = `/tenants/${tenantSlug}`;
+  
+  // Check if subdomain routing is enabled
+  const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
+  
+  // Generate tenant URL - use subdomain if enabled, otherwise use path-based routing
+  const tenantUrl = isSubdomainRoutingEnabled && rootDomain
+    ? `https://${tenantSlug}.${rootDomain}`
+    : `/tenants/${tenantSlug}`;
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Only navigate if not clicking on interactive elements
     const target = e.target as HTMLElement;
     const closestButton = target.closest('button');
+    const closestLink = target.closest('a');
     
-    if (closestButton) {
-      return; // Let button handle its own click
+    if (closestButton || closestLink) {
+      return; // Let button/link handle its own click
     }
     
     // Navigate immediately - router.push is synchronous
     router.push(productUrl);
   };
 
-  const handleTenantClick = (e: React.MouseEvent) => {
+  const handleTenantClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click
-    router.push(tenantUrl);
-  };
+    e.preventDefault(); // Prevent default link behavior for controlled navigation
+    
+    // Show loading state immediately for visual feedback
+    setIsNavigatingToStore(true);
+    
+    // Use window.location for subdomain navigation
+    if (isSubdomainRoutingEnabled && rootDomain) {
+      // Small delay to show the loading state before navigation
+      requestAnimationFrame(() => {
+        window.location.href = tenantUrl;
+      });
+    } else {
+      router.push(tenantUrl);
+    }
+  }, [isSubdomainRoutingEnabled, rootDomain, tenantUrl, router]);
   
   // Prefetch on hover for instant navigation
   const handleMouseEnter = () => {
     router.prefetch(productUrl);
   };
+  
+  // Prefetch tenant URL on hover (for same-origin only)
+  const handleTenantMouseEnter = useCallback(() => {
+    if (!isSubdomainRoutingEnabled) {
+      router.prefetch(tenantUrl);
+    }
+    // For subdomain URLs, we can create a prefetch link
+    if (isSubdomainRoutingEnabled && rootDomain) {
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = tenantUrl;
+      link.as = 'document';
+      // Only add if not already present
+      if (!document.querySelector(`link[href="${tenantUrl}"]`)) {
+        document.head.appendChild(link);
+      }
+    }
+  }, [isSubdomainRoutingEnabled, rootDomain, tenantUrl, router]);
 
   // Prepare images for carousel
   const images = gallery && gallery.length > 0
@@ -183,12 +224,15 @@ export const ProductCard = ({
           
           {/* Seller Info */}
           <div className="flex flex-col gap-1">
-            <button 
-              type="button"
+            <a 
+              href={tenantUrl}
               className="flex items-center gap-1.5 sm:gap-2 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
               onClick={handleTenantClick}
+              onMouseEnter={handleTenantMouseEnter}
             >
-              {tenantImageUrl && (
+              {isNavigatingToStore ? (
+                <Loader2 className="size-[18px] sm:size-[20px] animate-spin text-pink-500" />
+              ) : tenantImageUrl ? (
                 <Image
                   alt={tenantSlug}
                   src={tenantImageUrl}
@@ -198,11 +242,11 @@ export const ProductCard = ({
                   loading="lazy"
                   quality={75}
                 />
-              )}
-              <span className="text-xs sm:text-sm font-medium text-gray-700 truncate">
-                {tenantName || tenantSlug}
+              ) : null}
+              <span className={`text-xs sm:text-sm font-medium truncate ${isNavigatingToStore ? 'text-pink-500' : 'text-gray-700'}`}>
+                {isNavigatingToStore ? 'Opening store...' : (tenantName || tenantSlug)}
               </span>
-            </button>
+            </a>
             
             {/* Badges Row */}
             <div className="flex flex-wrap items-center gap-1.5">
@@ -275,27 +319,27 @@ export const ProductCard = ({
       </div>
       
       {/* Product Details */}
-      <div className="p-3 sm:p-4 flex flex-col gap-2 flex-1">
+      <div className="p-2.5 sm:p-3 flex flex-col gap-1 flex-1">
         {/* Product Name */}
-        <h2 className="text-sm sm:text-base font-semibold line-clamp-2 group-hover:text-pink-600 transition-colors min-h-[2.5rem]">
+        <h2 className="text-sm sm:text-base font-semibold line-clamp-2 group-hover:text-pink-600 transition-colors min-h-[2.25rem]">
           {name}
         </h2>
         
         {/* Price with unit */}
-        <div className="flex items-baseline gap-1.5">
-          <span className="text-2xl sm:text-3xl font-bold text-black">
+        <div className="flex items-baseline gap-1 whitespace-nowrap overflow-hidden">
+          <span className="text-lg sm:text-xl font-bold text-black truncate">
             {formatCurrency(price)}
           </span>
-          <span className="text-xs sm:text-sm text-gray-500">
+          <span className="text-xs text-gray-500 shrink-0">
             / {unit || "unit"}
           </span>
         </div>
         
         {/* Stats Row */}
-        <div className="flex items-center gap-2.5 text-xs sm:text-sm text-gray-600">
+        <div className="flex items-center gap-2 text-xs text-gray-600">
           {/* Rating */}
-          <div className="flex items-center gap-1">
-            <StarIcon className="size-4 fill-yellow-400 text-yellow-400" />
+          <div className="flex items-center gap-0.5">
+            <StarIcon className="size-3.5 fill-yellow-400 text-yellow-400" />
             <span className="font-medium">{reviewRating.toFixed(1)}</span>
             <span className="text-gray-400">({reviewCount})</span>
           </div>
@@ -304,8 +348,8 @@ export const ProductCard = ({
           {viewCount !== undefined && viewCount > 0 && (
             <>
               <span className="text-gray-300">•</span>
-              <div className="flex items-center gap-1">
-                <Eye className="size-3.5 text-blue-500" />
+              <div className="flex items-center gap-0.5">
+                <Eye className="size-3 text-blue-500" />
                 <span className="font-medium">{viewCount.toLocaleString()}</span>
               </div>
             </>
@@ -315,8 +359,8 @@ export const ProductCard = ({
           {totalSold > 0 && (
             <>
               <span className="text-gray-300">•</span>
-              <div className="flex items-center gap-1">
-                <TrendingUp className="size-3.5 text-orange-500" />
+              <div className="flex items-center gap-0.5">
+                <TrendingUp className="size-3 text-orange-500" />
                 <span className="font-medium">{totalSold} sold</span>
               </div>
             </>
@@ -324,55 +368,58 @@ export const ProductCard = ({
         </div>
         
         {/* Divider */}
-        <div className="border-t border-gray-100 my-0.5"></div>
+        <div className="border-t border-gray-100"></div>
         
         {/* Seller Info */}
-        <div className="flex flex-col gap-1.5 mt-auto">
-          <button 
-            type="button"
+        <div className="flex flex-col gap-1 mt-auto">
+          <a 
+            href={tenantUrl}
             className="flex items-center gap-1.5 hover:opacity-70 w-fit cursor-pointer z-10 transition-opacity"
             onClick={handleTenantClick}
+            onMouseEnter={handleTenantMouseEnter}
           >
-            {tenantImageUrl && (
+            {isNavigatingToStore ? (
+              <Loader2 className="size-5 animate-spin text-pink-500" />
+            ) : tenantImageUrl ? (
               <Image
                 alt={tenantSlug}
                 src={tenantImageUrl}
-                width={24}
-                height={24}
+                width={20}
+                height={20}
                 className="rounded-full ring-2 ring-gray-100 shrink-0"
                 loading="lazy"
                 quality={75}
               />
-            )}
-            <span className="text-xs sm:text-sm font-medium text-gray-700">
-              {tenantName || tenantSlug}
+            ) : null}
+            <span className={`text-xs font-medium ${isNavigatingToStore ? 'text-pink-500' : 'text-gray-700'}`}>
+              {isNavigatingToStore ? 'Opening store...' : (tenantName || tenantSlug)}
             </span>
-          </button>
+          </a>
           
           {/* Badges Row */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1">
             {/* Verification Badge */}
             {tenantIsVerified && (
-              <div className="flex items-center gap-1 px-2 py-0.5 bg-green-50 rounded-full">
-                <ShieldCheck className="size-3 text-green-600" />
-                <span className="text-xs font-medium text-green-700">Verified</span>
+              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-green-50 rounded-full">
+                <ShieldCheck className="size-2.5 text-green-600" />
+                <span className="text-[10px] font-medium text-green-700">Verified</span>
               </div>
             )}
             
             {/* Successful Orders */}
             {tenantSuccessfulOrders > 0 && (
-              <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-50 rounded-full">
-                <Package className="size-3 text-blue-600" />
-                <span className="text-xs text-blue-700">{tenantSuccessfulOrders} orders</span>
+              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-50 rounded-full">
+                <Package className="size-2.5 text-blue-600" />
+                <span className="text-[10px] text-blue-700">{tenantSuccessfulOrders} orders</span>
               </div>
             )}
           </div>
           
           {/* Tenant Location */}
           {tenantLocation && (
-            <div className="flex items-center gap-1 text-gray-500">
-              <MapPin className="size-3.5" />
-              <span className="text-xs truncate">{tenantLocation}</span>
+            <div className="flex items-center gap-0.5 text-gray-500">
+              <MapPin className="size-3" />
+              <span className="text-[10px] truncate">{tenantLocation}</span>
             </div>
           )}
         </div>

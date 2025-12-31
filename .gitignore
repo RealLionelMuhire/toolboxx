@@ -1,3 +1,18 @@
+node_modules/
+.next/
+.env
+.env.local
+.env.*.local
+dist/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+.vscode/
+.idea/
+/.cache
+/*.log
 # Node.js
 node_modules/
 npm-debug.log
