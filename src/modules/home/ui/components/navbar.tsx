@@ -327,9 +327,10 @@ export const Navbar = () => {
     
     if (isSubdomainRoutingEnabled && rootDomain) {
       const hostname = window.location.hostname;
-      // Check if we're on a subdomain
-      if (hostname.endsWith(`.${rootDomain}`) && hostname !== rootDomain) {
-        // Return main domain URL
+      const rootDomainWithoutPort = rootDomain.split(':')[0];
+      
+      // Always return main domain URL if on any subdomain
+      if (rootDomainWithoutPort && hostname.includes('.') && hostname.endsWith(rootDomainWithoutPort)) {
         return `${window.location.protocol}//${rootDomain}`;
       }
     }
