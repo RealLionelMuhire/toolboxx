@@ -354,7 +354,15 @@ export const Navbar = () => {
   if (!isLoggedIn) {
     return (
       <nav className="h-16 flex border-b justify-between font-medium bg-white w-full overflow-x-auto overflow-y-visible sticky top-0 z-50 lg:fixed">
-        <Link href={getHomeUrl()} className="pl-3 lg:pl-4 flex items-center flex-shrink-0">
+        <Link href={getHomeUrl()} className="pl-3 lg:pl-4 flex items-center gap-2 flex-shrink-0">
+          <Image
+            src="/logo.jpeg"
+            alt="Toolbay Logo"
+            width={32}
+            height={32}
+            className="rounded"
+            priority
+          />
           <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
             Toolbay
           </span>
