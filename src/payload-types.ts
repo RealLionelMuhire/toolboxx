@@ -80,6 +80,7 @@ export interface Config {
     conversations: Conversation;
     messages: Message;
     'push-subscriptions': PushSubscription;
+    notifications: Notification;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -103,6 +104,7 @@ export interface Config {
     conversations: ConversationsSelect<false> | ConversationsSelect<true>;
     messages: MessagesSelect<false> | MessagesSelect<true>;
     'push-subscriptions': PushSubscriptionsSelect<false> | PushSubscriptionsSelect<true>;
+    notifications: NotificationsSelect<false> | NotificationsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -927,6 +929,71 @@ export interface PushSubscription {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications".
+ */
+export interface Notification {
+  id: string;
+  /**
+   * The user who will receive this notification
+   */
+  user: string | User;
+  /**
+   * The type of notification
+   */
+  type: 'payment' | 'order' | 'message' | 'product' | 'transaction' | 'system' | 'engagement' | 'promotion';
+  /**
+   * Notification title (shown in bold)
+   */
+  title: string;
+  /**
+   * Notification message content
+   */
+  message: string;
+  /**
+   * Emoji or icon to display (e.g., 💰, 🛒, 💬)
+   */
+  icon?: string | null;
+  /**
+   * URL to navigate to when notification is clicked
+   */
+  url?: string | null;
+  /**
+   * Whether the user has seen this notification
+   */
+  seen?: boolean | null;
+  /**
+   * Whether the user has read/clicked this notification
+   */
+  read?: boolean | null;
+  /**
+   * Notification priority level
+   */
+  priority?: ('low' | 'normal' | 'high' | 'urgent') | null;
+  /**
+   * Additional data payload for the notification
+   */
+  data?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Whether this notification was sent via push notification
+   */
+  sentViaPush?: boolean | null;
+  /**
+   * Optional expiration date for time-sensitive notifications
+   */
+  expiresAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -983,6 +1050,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'push-subscriptions';
         value: string | PushSubscription;
+      } | null)
+    | ({
+        relationTo: 'notifications';
+        value: string | Notification;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1349,6 +1420,26 @@ export interface PushSubscriptionsSelect<T extends boolean = true> {
       };
   userAgent?: T;
   isActive?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "notifications_select".
+ */
+export interface NotificationsSelect<T extends boolean = true> {
+  user?: T;
+  type?: T;
+  title?: T;
+  message?: T;
+  icon?: T;
+  url?: T;
+  seen?: T;
+  read?: T;
+  priority?: T;
+  data?: T;
+  sentViaPush?: T;
+  expiresAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

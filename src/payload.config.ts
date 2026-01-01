@@ -26,6 +26,7 @@ import { Transactions } from './collections/Transactions'
 import { Messages } from './collections/Messages'
 import { Conversations } from './collections/Conversations'
 import { PushSubscriptions } from './collections/PushSubscriptions'
+import { Notifications } from './collections/Notifications'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -48,7 +49,7 @@ export default buildConfig({
     defaultFromAddress: 'onboarding@resend.dev',
     defaultFromName: 'Toolbay',
   }),
-  collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions],
+  collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions, Notifications],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

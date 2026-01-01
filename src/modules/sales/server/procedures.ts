@@ -4,6 +4,7 @@ import type { Where } from "payload";
 
 import { DEFAULT_LIMIT } from "@/constants";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { notifyOrderStatusChange } from "@/lib/notifications/notification-manager";
 
 export const salesRouter = createTRPCRouter({
   // Get sales for current tenant (dashboard view)
@@ -281,6 +282,29 @@ export const salesRouter = createTRPCRouter({
         id: input.orderId,
         data: updateData,
       });
+
+      // Send notification to customer about order status change
+      try {
+        const customerId = typeof order.user === 'string' ? order.user : order.user?.id;
+        const products = Array.isArray(order.products) ? order.products : [];
+        const firstProduct = products[0];
+        const productName = typeof firstProduct?.product === 'object' 
+          ? firstProduct.product.name 
+          : 'your product';
+
+        if (customerId) {
+          await notifyOrderStatusChange(
+            customerId,
+            order.id,
+            order.orderNumber || 'N/A',
+            input.status,
+            productName
+          );
+        }
+      } catch (notifError) {
+        console.error('Failed to send order status notification:', notifError);
+        // Don't fail the status update if notification fails
+      }
 
       return { success: true };
     }),
