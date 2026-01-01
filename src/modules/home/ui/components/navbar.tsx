@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -240,6 +240,14 @@ export const Navbar = () => {
   const { data: orderNotifications } = useQuery({
     ...trpc.orders.getOrderNotificationCount.queryOptions(),
     enabled: !!isCustomer,
+    refetchInterval: 30000, // Check every 30 seconds
+    staleTime: 10000,
+  });
+
+  // Get unseen notifications count (for all users)
+  const { data: unseenNotifications } = useQuery({
+    ...trpc.notifications.getUnseenCount.queryOptions(),
+    enabled: !!session.data?.user,
     refetchInterval: 30000, // Check every 30 seconds
     staleTime: 10000,
   });
@@ -505,7 +513,27 @@ export const Navbar = () => {
       {/* Desktop Auth Buttons - Hidden on mobile */}
       {session.data?.user ? (
         <div className="hidden lg:flex items-center flex-shrink-0">
-          {/* Notification Indicator */}
+          {/* Notifications Bell with Badge */}
+          <OptimizedLink
+            href="/notifications"
+            prefetch={true}
+            className={cn(
+              "relative border-l border-t-0 border-b-0 border-r-0 px-4 h-full flex items-center justify-center hover:bg-muted transition-colors",
+              pathname.startsWith('/notifications') && "bg-muted"
+            )}
+          >
+            <Bell className="h-5 w-5" />
+            {unseenNotifications && unseenNotifications.count > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute top-2 right-2 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none"
+              >
+                {unseenNotifications.count > 99 ? "99+" : unseenNotifications.count}
+              </Badge>
+            )}
+          </OptimizedLink>
+          
+          {/* Notification Indicator (for push settings) */}
           <div className="border-l border-t-0 border-b-0 border-r-0 h-full flex items-center justify-center px-2">
             <NotificationIndicator userId={session.data.user.id} />
           </div>

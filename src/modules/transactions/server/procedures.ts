@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import type { Tenant } from "@/payload-types";
+import { notifyNewOrder } from "@/lib/notifications/notification-manager";
 
 export const transactionsRouter = createTRPCRouter({
   // Get transactions awaiting verification for current tenant
