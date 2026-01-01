@@ -1,11 +1,10 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "SKIP_ENV_VALIDATION=true bun install && bun run build"
+    "builder": "DOCKERFILE"
   },
   "deploy": {
-    "startCommand": "bun run start",
+    "startCommand": "node server.js",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10,
     "healthcheckPath": "/api/health",
