@@ -4,6 +4,7 @@ import { TRPCError } from '@trpc/server';
 import { protectedProcedure, createTRPCRouter } from '@/trpc/init';
 import type { User, Conversation, Message } from '@/payload-types';
 import { sendMessageNotification } from '@/lib/notifications/send-push';
+import { notifyNewMessage } from '@/lib/notifications/notification-manager';
 
 export const chatRouter = createTRPCRouter({
   /**
@@ -188,6 +189,16 @@ export const chatRouter = createTRPCRouter({
       ).catch((error) => {
         // Log error but don't fail the message send
         console.error('Failed to send message notification:', error);
+      });
+
+      // Also create in-app notification with message preview
+      notifyNewMessage(
+        input.receiverId,
+        senderName,
+        input.conversationId,
+        input.content
+      ).catch((error) => {
+        console.error('Failed to create in-app notification:', error);
       });
 
       // Update conversation metadata asynchronously (don't wait for it)

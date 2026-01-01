@@ -156,7 +156,7 @@ export const transactionsRouter = createTRPCRouter({
             ? await ctx.db.findByID({ collection: 'products', id: item.product })
             : item.product;
 
-          return await ctx.db.create({
+          const order = await ctx.db.create({
             collection: "orders",
             data: {
               name: `Order for ${product?.name || 'Product'}`,
@@ -185,6 +185,21 @@ export const transactionsRouter = createTRPCRouter({
               status: "pending",
             }
           });
+          
+          // Send notification to tenant owner about new order
+          try {
+            await notifyNewOrder(
+              ctx.session.user.id, // Tenant owner (current user who verified)
+              order.id,
+              product?.name || 'Product',
+              order.orderNumber || 'N/A'
+            );
+          } catch (notifError) {
+            console.error('Failed to send order notification:', notifError);
+            // Don't fail the transaction if notification fails
+          }
+          
+          return order;
         })
       );
 
