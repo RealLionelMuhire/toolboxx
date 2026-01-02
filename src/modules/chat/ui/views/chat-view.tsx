@@ -4,6 +4,7 @@ import { ArrowLeft, User } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { useTRPC } from "@/trpc/client";
@@ -69,6 +70,9 @@ export function ChatView({ conversationId, currentUserId }: ChatViewProps) {
         }),
         conversationData.messages
       );
+      
+      // Dismiss the loading toast from product page when chat is fully loaded
+      toast.dismiss("chat-loading");
     }
   }, [conversationData?.messages, conversationId, queryClient, trpc]);
 

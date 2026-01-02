@@ -6,7 +6,7 @@ import { Fragment, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
-import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp, Eye, Maximize2, Phone } from "lucide-react";
+import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp, Eye, Maximize2, Phone, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
@@ -318,8 +318,17 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                       onClick={handleContactSeller}
                       disabled={startConversation.isPending || !data?.tenant}
                     >
-                      <MessageCircle className="mr-1.5 h-4 w-4" />
-                      {startConversation.isPending ? "..." : "Chat"}
+                      {startConversation.isPending ? (
+                        <>
+                          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                          Starting chat...
+                        </>
+                      ) : (
+                        <>
+                          <MessageCircle className="mr-1.5 h-4 w-4" />
+                          Chat
+                        </>
+                      )}
                     </Button>
                   </div>
                 </div>
