@@ -24,7 +24,7 @@ export async function sendPushNotification(options: SendPushOptions): Promise<bo
     userId,
     title,
     body,
-    icon = '/icon-192x192.png',
+    icon = '/icon-192x192.png', // App icon for notification
     url = '/',
     type = 'general',
     data = {},
@@ -36,13 +36,16 @@ export async function sendPushNotification(options: SendPushOptions): Promise<bo
     const notification: PushNotificationPayload = {
       title,
       body,
-      icon,
-      badge: '/icon-192x192.png',
+      icon, // App icon (large, shown in notification)
+      badge: '/badge-72x72.png', // Badge icon (small, shown in status bar)
       data: {
         url,
         type,
         ...data,
       },
+      vibrate: [200, 100, 200], // Vibration pattern
+      timestamp: Date.now(),
+      tag: `${type}-${Date.now()}`, // Unique tag for each notification
     };
 
     const response = await fetch(`${appUrl}/api/push/send`, {

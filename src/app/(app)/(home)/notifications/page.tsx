@@ -42,6 +42,26 @@ export default function NotificationsPage() {
     refetchInterval: 30000,
   });
 
+  // Get unread count for page title
+  const { data: unreadCount } = useQuery({
+    ...trpc.notifications.getUnreadCount.queryOptions(),
+    refetchInterval: 30000,
+  });
+
+  // Update page title with unread count
+  useEffect(() => {
+    if (unreadCount && unreadCount.count > 0) {
+      document.title = `(${unreadCount.count}) Notifications - Toolbay`;
+    } else {
+      document.title = 'Notifications - Toolbay';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.title = 'Toolbay';
+    };
+  }, [unreadCount]);
+
   // Mark as seen mutation
   const markAsSeen = useMutation(
     trpc.notifications.markAsSeen.mutationOptions({

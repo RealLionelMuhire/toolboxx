@@ -35,6 +35,12 @@ export interface PushNotificationPayload {
   body: string;
   icon?: string;
   badge?: string;
+  image?: string;
+  vibrate?: number[];
+  timestamp?: number;
+  tag?: string;
+  requireInteraction?: boolean;
+  silent?: boolean;
   data?: {
     url?: string;
     type?: 'payment' | 'order' | 'message' | 'general';

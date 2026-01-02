@@ -54,12 +54,13 @@ self.addEventListener('push', (event) => {
   console.log('[SW] Push event received:', event);
 
   let notificationData = {
-    title: 'New Notification',
+    title: 'Toolbay',
     body: 'You have a new notification',
     icon: '/icon-192x192.png',
     badge: '/badge-72x72.png',
     tag: 'default',
-    data: {}
+    data: {},
+    image: null,
   };
 
   try {
@@ -70,14 +71,18 @@ self.addEventListener('push', (event) => {
       notificationData = {
         title: payload.title || notificationData.title,
         body: payload.body || payload.message || notificationData.body,
-        icon: payload.icon || notificationData.icon,
-        badge: payload.badge || notificationData.badge,
+        icon: payload.icon || '/icon-192x192.png', // Always use app icon
+        badge: payload.badge || '/badge-72x72.png', // Always use app badge
         tag: payload.tag || notificationData.tag,
         data: payload.data || payload,
-        // Additional options
+        image: payload.image || null, // Optional large image
+        // Additional options for better mobile experience
         requireInteraction: payload.requireInteraction || false,
         silent: payload.silent || false,
         vibrate: payload.vibrate || [200, 100, 200],
+        timestamp: payload.timestamp || Date.now(),
+        renotify: true, // Renotify even if tag is same
+        actions: payload.actions || [], // Action buttons
       };
     }
   } catch (error) {
@@ -92,9 +97,13 @@ self.addEventListener('push', (event) => {
       badge: notificationData.badge,
       tag: notificationData.tag,
       data: notificationData.data,
+      image: notificationData.image,
       requireInteraction: notificationData.requireInteraction,
       silent: notificationData.silent,
       vibrate: notificationData.vibrate,
+      timestamp: notificationData.timestamp,
+      renotify: notificationData.renotify,
+      actions: notificationData.actions,
     }
   );
 
