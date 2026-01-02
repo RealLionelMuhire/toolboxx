@@ -320,19 +320,16 @@ export const Navbar = () => {
   
   // Detect if on subdomain and generate correct home URL
   const getHomeUrl = () => {
-    if (typeof window === 'undefined') return '/';
-    
     const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
     const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
     
+    // Always return full root domain URL when subdomain routing is enabled
     if (isSubdomainRoutingEnabled && rootDomain) {
-      const hostname = window.location.hostname;
-      const rootDomainWithoutPort = rootDomain.split(':')[0];
-      
-      // Always return main domain URL if on any subdomain
-      if (rootDomainWithoutPort && hostname.includes('.') && hostname.endsWith(rootDomainWithoutPort)) {
+      if (typeof window !== 'undefined') {
         return `${window.location.protocol}//${rootDomain}`;
       }
+      // Fallback for SSR
+      return `https://${rootDomain}`;
     }
     
     return '/';
