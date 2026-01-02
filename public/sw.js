@@ -1,16 +1,18 @@
 /**
  * Custom Service Worker for Push Notifications
- * Version: 1.1.0
+ * Version: 1.2.0
  * 
  * Simple service worker that handles push notifications only.
  * No precaching, no complex workbox logic - just push notifications.
+ * Optimized to not block initial page loads.
  * 
  * Changelog:
+ * - 1.2.0: Optimized to not block page loads, improved activation
  * - 1.1.0: Force PWA cache update, improved mobile support
  * - 1.0.0: Initial release
  */
 
-const SW_VERSION = '1.1.0';
+const SW_VERSION = '1.2.0';
 const CACHE_NAME = `toolboxx-sw-${SW_VERSION}`;
 
 // Install event - just skip waiting to activate immediately

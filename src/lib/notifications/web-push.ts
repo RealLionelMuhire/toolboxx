@@ -18,10 +18,8 @@ export class WebPushService {
   private registrationPromise: Promise<ServiceWorkerRegistration | null> | null = null;
 
   private constructor() {
-    // Auto-register service worker when supported
-    if (typeof window !== 'undefined' && this.isSupported()) {
-      this.initializeServiceWorker();
-    }
+    // Don't auto-register on construction to avoid blocking
+    // Registration will happen lazily when needed
   }
 
   static getInstance(): WebPushService {
@@ -32,7 +30,7 @@ export class WebPushService {
   }
 
   /**
-   * Initialize service worker registration
+   * Initialize service worker registration (lazy initialization)
    */
   private async initializeServiceWorker(): Promise<void> {
     if (this.isInitializing || this.registration || this.registrationPromise) {
@@ -41,13 +39,13 @@ export class WebPushService {
     }
 
     this.isInitializing = true;
-    console.log('[WebPush] Auto-initializing service worker...');
+    console.log('[WebPush] Initializing service worker...');
     
     try {
       this.registrationPromise = this.registerServiceWorker();
       this.registration = await this.registrationPromise;
     } catch (error) {
-      console.error('[WebPush] Auto-initialization failed:', error);
+      console.error('[WebPush] Initialization failed:', error);
       this.registrationPromise = null;
     } finally {
       this.isInitializing = false;
@@ -132,10 +130,11 @@ export class WebPushService {
    * Get the current push subscription
    */
   async getSubscription(): Promise<PushSubscription | null> {
-    if (!this.registration) {
-      this.registration = await this.registerServiceWorker();
+    // Lazy initialization - only register when actually needed
+    if (!this.registration && !this.isInitializing) {
+      await this.initializeServiceWorker();
     }
-
+    
     if (!this.registration) {
       return null;
     }
