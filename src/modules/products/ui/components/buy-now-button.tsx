@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useTRPC } from "@/trpc/client";
@@ -42,6 +42,9 @@ export const BuyNowButton = ({
   const trpc = useTRPC();
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  // Check if user is authenticated
+  const { data: session } = useQuery(trpc.auth.session.queryOptions());
+
   // Determine if product is available for purchase
   const isOutOfStock = stockStatus === "out_of_stock" && !allowBackorder;
   const canPurchase = quantity > 0 || allowBackorder;
@@ -75,6 +78,16 @@ export const BuyNowButton = ({
   );
 
   const handleBuyNow = () => {
+    // Check authentication before opening dialog
+    if (!session?.user) {
+      // Redirect to login with current product page as return URL
+      const loginUrl = `/sign-in?redirect=${encodeURIComponent(pathname)}`;
+      router.prefetch(loginUrl);
+      router.push(loginUrl);
+      return;
+    }
+    
+    // User is authenticated, open the checkout dialog
     setDialogOpen(true);
   };
 
