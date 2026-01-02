@@ -132,8 +132,9 @@ export function PWAInstallGlobal() {
     setShowPrompt(false);
   };
 
-  // Don't show if already installed, not ready, or not on mobile
-  if (isStandalone || !showPrompt || !isMobile) {
+  // Don't show if already installed or not ready
+  // Removed mobile check to show on all devices
+  if (isStandalone || !showPrompt) {
     return null;
   }
 
@@ -144,7 +145,7 @@ export function PWAInstallGlobal() {
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex items-center gap-2">
               <Download className="h-5 w-5 text-blue-600" />
-              <h3 className="font-semibold text-sm">Install ToolBay</h3>
+              <h3 className="font-semibold text-sm">Install Toolbay</h3>
             </div>
             <button
               onClick={handleDismiss}
