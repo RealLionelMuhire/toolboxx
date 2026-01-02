@@ -24,11 +24,18 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/package.json ./package.json
 
+# Copy startup script
+COPY start-server.sh ./start-server.sh
+RUN chmod +x ./start-server.sh
+
 ENV NODE_ENV=production
-ENV PORT=10000
 
-# Expose port for Render (optional)
-EXPOSE 10000
+# Railway provides PORT dynamically - don't hardcode it
+# Default to 3000 for local testing, but Railway will override
+ENV PORT=3000
 
-# Start the standalone server (server.js is at root of standalone copy)
-CMD ["node", "server.js"]
+# Expose port (Railway will use its own PORT env var)
+EXPOSE 3000
+
+# Start the standalone server using the startup script
+CMD ["./start-server.sh"]
