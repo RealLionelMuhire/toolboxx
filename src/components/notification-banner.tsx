@@ -25,7 +25,7 @@ export function NotificationBanner({
 
   useEffect(() => {
     // Small delay to ensure proper hydration in production
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       // If user is subscribed, clear any previous dismissals so banner can show again if they unsubscribe
       if (isSubscribed) {
         localStorage.removeItem(storageKey);
@@ -36,27 +36,6 @@ export function NotificationBanner({
 
       // Check if user has dismissed the banner
       const dismissed = localStorage.getItem(storageKey);
-      
-      // Additional service worker diagnostics
-      if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.getRegistration();
-        console.log('[NotificationBanner] Service Worker Status:', {
-          registration: !!registration,
-          active: registration?.active?.state,
-          installing: registration?.installing?.state,
-          waiting: registration?.waiting?.state,
-          scope: registration?.scope,
-        });
-      }
-      
-      console.log('[NotificationBanner] Debug:', {
-        dismissed: !!dismissed,
-        isSupported,
-        userId: !!userId,
-        isSubscribed,
-        isLoading,
-        notificationPermission: typeof Notification !== 'undefined' ? Notification.permission : 'unknown'
-      });
       
       // Show banner if:
       // 1. Not dismissed
@@ -72,24 +51,7 @@ export function NotificationBanner({
                         !isLoading &&
                         (typeof Notification === 'undefined' || Notification.permission !== 'denied');
       
-      if (shouldShow) {
-        console.log('[NotificationBanner] Showing banner');
-        setIsDismissed(false);
-      } else {
-        console.log('[NotificationBanner] Not showing banner:', {
-          dismissed: !!dismissed,
-          isSupported,
-          userId: !!userId,
-          isSubscribed,
-          isLoading,
-          permission: typeof Notification !== 'undefined' ? Notification.permission : 'unknown'
-        });
-      }
-      
-      if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
-        console.log('[NotificationBanner] Permission denied - showing blocked banner instead');
-      }
-      
+      setIsDismissed(!shouldShow);
       setIsInitialized(true);
     }, 100); // Small delay for hydration
 

@@ -44,12 +44,24 @@ export function useWebPush(options: UseWebPushOptions = {}): UseWebPushReturn {
           return;
         }
 
-        // Check if already subscribed
-        const subscription = await webPushService.getSubscription();
-        setIsSubscribed(!!subscription);
+        // Check if there's an EXISTING service worker registration WITHOUT initializing a new one
+        // This prevents blocking the initial page load
+        if ('serviceWorker' in navigator) {
+          const existingReg = await navigator.serviceWorker.getRegistration('/');
+          if (existingReg) {
+            // Only check subscription if SW already exists
+            const subscription = await existingReg.pushManager.getSubscription();
+            setIsSubscribed(!!subscription);
+          } else {
+            // No service worker yet, definitely not subscribed
+            setIsSubscribed(false);
+          }
+        } else {
+          setIsSubscribed(false);
+        }
 
-        // Auto-subscribe if enabled and user is logged in
-        if (autoSubscribe && !subscription && userId) {
+        // Auto-subscribe if enabled and user is logged in (this will initialize SW)
+        if (autoSubscribe && !isSubscribed && userId) {
           await handleSubscribe();
         }
       } catch (err) {
