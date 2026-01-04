@@ -1,7 +1,7 @@
 {
-  "name": "ToolBay - Construction Materials Marketplace",
+  "name": "ToolBay - Materials, Tools and Engineering Marketplace",
   "short_name": "ToolBay",
-  "description": "Rwanda's premier online marketplace for construction materials, tools, and engineering supplies",
+  "description": "Marketplace for materials, tools, and engineering supplies",
   "start_url": "/?v=2.0",
   "scope": "/",
   "display": "standalone",

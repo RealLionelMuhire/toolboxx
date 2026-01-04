@@ -21,7 +21,7 @@ export const Footer = () => {
               <h3 className="text-xl font-bold">Toolbay</h3>
             </div>
             <p className="text-sm text-muted-foreground">
-              Marketplace for construction materials, tools, and engineering supplies.
+              Marketplace for  materials, tools, and engineering supplies.
             </p>
           </div>
 
