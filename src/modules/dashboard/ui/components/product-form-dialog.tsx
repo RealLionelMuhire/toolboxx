@@ -553,7 +553,7 @@ export const ProductFormDialog = ({
               <Input
                 id="price"
                 type="number"
-                step="100"
+                step="1"
                 {...register("price", { 
                   required: "Price is required",
                   valueAsNumber: true,
