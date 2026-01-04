@@ -52,23 +52,30 @@ export const SuggestedProductCard = ({
     console.log('[SuggestedProductCard] Card clicked');
     const startTime = performance.now();
     
+    const clickProcessingTime = performance.now() - startTime;
+    console.log('[SuggestedProductCard] Click processing time:', clickProcessingTime.toFixed(2), 'ms');
+    
     // If subdomain routing enabled and not on the tenant's subdomain, navigate to full subdomain URL
     if (isSubdomainRoutingEnabled && rootDomain && !isAlreadyOnTenantSubdomain) {
-      // Use window.location for cross-origin navigation (no preventDefault needed)
       const fullUrl = `${tenantUrl}/products/${id}`;
       console.log('[SuggestedProductCard] Cross-origin navigation to:', fullUrl);
+      e.preventDefault();
       window.location.href = fullUrl;
       return;
     }
     
     // For same-origin navigation, prevent default and use router
+    console.log('[SuggestedProductCard] Same-origin navigation to:', productUrl);
     e.preventDefault();
     
-    const clickProcessingTime = performance.now() - startTime;
-    console.log('[SuggestedProductCard] Click processing time:', clickProcessingTime.toFixed(2), 'ms');
-    console.log('[SuggestedProductCard] Same-origin navigation to:', productUrl);
-    
-    router.push(productUrl);
+    try {
+      router.push(productUrl);
+      console.log('[SuggestedProductCard] Router.push called successfully');
+    } catch (error) {
+      console.error('[SuggestedProductCard] Router.push failed:', error);
+      // Fallback to window.location
+      window.location.href = productUrl;
+    }
   };
   
   // Prefetch on hover for instant navigation

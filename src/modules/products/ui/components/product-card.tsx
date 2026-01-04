@@ -112,9 +112,6 @@ export const ProductCard = ({
       return; // Let button handle its own click
     }
     
-    // Handle product navigation - no loading state, just navigate
-    e.preventDefault();
-    
     const clickProcessingTime = performance.now() - startTime;
     console.log('[ProductCard] Click processing time:', clickProcessingTime.toFixed(2), 'ms');
     
@@ -122,13 +119,23 @@ export const ProductCard = ({
     if (isSubdomainRoutingEnabled && rootDomain && !isAlreadyOnTenantSubdomain) {
       const fullUrl = `${tenantUrl}/products/${id}`;
       console.log('[ProductCard] Cross-origin navigation to:', fullUrl);
+      e.preventDefault();
       window.location.href = fullUrl;
       return;
     }
     
-    // Navigate to product
+    // Navigate to product - don't prevent default, let router handle it
     console.log('[ProductCard] Same-origin navigation to:', productUrl);
-    router.push(productUrl);
+    e.preventDefault();
+    
+    try {
+      router.push(productUrl);
+      console.log('[ProductCard] Router.push called successfully');
+    } catch (error) {
+      console.error('[ProductCard] Router.push failed:', error);
+      // Fallback to window.location
+      window.location.href = productUrl;
+    }
   };
 
   const handleTenantClick = useCallback((e: React.MouseEvent) => {
