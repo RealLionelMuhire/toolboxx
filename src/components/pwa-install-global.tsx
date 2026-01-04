@@ -43,11 +43,6 @@ export function PWAInstallGlobal() {
     
     setIsStandalone(isStandaloneMode);
 
-    // Don't show to users who already have the app installed
-    if (isStandaloneMode) {
-      return;
-    }
-
     // Check if user has dismissed the prompt before (using cross-domain storage)
     const dismissed = getCrossDomainItem('pwa-install-dismissed');
     const dismissedTime = getCrossDomainItem('pwa-install-dismissed-time');
@@ -74,8 +69,7 @@ export function PWAInstallGlobal() {
       const promptEvent = e as BeforeInstallPromptEvent;
       setDeferredPrompt(promptEvent);
       
-      // Show prompt to new users who haven't dismissed it
-      if (!dismissed && !isStandaloneMode) {
+      if (!dismissed) {
         setTimeout(() => setShowPrompt(true), 2000);
       }
     };
@@ -93,7 +87,6 @@ export function PWAInstallGlobal() {
     window.addEventListener('appinstalled', handleAppInstalled);
 
     // Show prompt if not dismissed and not standalone (after setting up listeners)
-    // This is for new users
     if (!dismissed && !isStandaloneMode) {
       // Wait for beforeinstallprompt to fire, or show after 3 seconds as fallback
       const fallbackTimer = setTimeout(() => {
