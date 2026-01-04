@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -27,19 +27,20 @@ export const SuggestedProductCard = ({
   priority = false,
 }: SuggestedProductCardProps) => {
   const router = useRouter();
+  const [isAlreadyOnTenantSubdomain, setIsAlreadyOnTenantSubdomain] = useState(false);
   
   const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
   const tenantUrl = generateTenantURL(tenantSlug);
   
-  // Check if user is already on this tenant's subdomain - use useMemo for synchronous check
-  const isAlreadyOnTenantSubdomain = useMemo(() => {
-    if (typeof window === 'undefined' || !isSubdomainRoutingEnabled || !rootDomain) {
-      return false;
+  // Check if user is already on this tenant's subdomain - only runs on client after mount
+  useEffect(() => {
+    if (!isSubdomainRoutingEnabled || !rootDomain) {
+      return;
     }
     const currentHostname = window.location.hostname;
     const expectedSubdomain = `${tenantSlug}.${rootDomain.split(':')[0]}`;
-    return currentHostname === expectedSubdomain;
+    setIsAlreadyOnTenantSubdomain(currentHostname === expectedSubdomain);
   }, [tenantSlug, isSubdomainRoutingEnabled, rootDomain]);
   
   // Generate URL for the product - use short path only if on tenant's subdomain
