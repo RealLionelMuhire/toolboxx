@@ -407,22 +407,22 @@ export const Navbar = () => {
           </Button>
         </div>
         {/* Mobile Icons - Right Side: Sign In, Cart, Menu */}
-        <div className="flex lg:hidden items-center gap-0.5 pr-1 flex-shrink-0">
+        <div className="flex lg:hidden items-center gap-0 pr-0.5 flex-shrink-0">
           <OptimizedLink
             href="/sign-in"
             prefetch={true}
-            className="relative h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
-            <LogIn className="h-5 w-5" />
+            <LogIn className="h-[18px] w-[18px]" />
           </OptimizedLink>
           <OptimizedLink
             href="/cart"
             prefetch={true}
-            className="relative h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
-            <ShoppingCart className="h-5 w-5" />
+            <ShoppingCart className="h-[18px] w-[18px]" />
             {cartItemCount > 0 && (
               <Badge
                 variant="destructive"
@@ -434,12 +434,12 @@ export const Navbar = () => {
           </OptimizedLink>
           <button
             type="button"
-            className="h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            className="h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
             onClick={() => setIsSidebarOpen(true)}
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
             aria-label="Open menu"
           >
-            <MenuIcon className="h-5 w-5" />
+            <MenuIcon className="h-[18px] w-[18px]" />
           </button>
         </div>
       </nav>
@@ -447,11 +447,11 @@ export const Navbar = () => {
   }
 
   return (
-    <nav className="h-16 flex border-b justify-between font-medium bg-white w-full overflow-x-auto overflow-y-visible sticky top-0 z-50 lg:fixed">
-      {/* Logo - Smaller, more compact */}
-      <Link href={getHomeUrl()} className="pl-3 lg:pl-4 flex items-center flex-shrink-0 gap-3">
-        {/* Logo Image */}
-        <div className="relative w-10 h-10 lg:w-12 lg:h-12 flex-shrink-0">
+    <nav className="h-16 flex border-b justify-between font-medium bg-white w-full sticky top-0 z-50 lg:fixed">
+      {/* Logo - Compact for mobile */}
+      <Link href={getHomeUrl()} className="pl-2 lg:pl-4 flex items-center flex-shrink-0 gap-1.5 lg:gap-3">
+        {/* Logo Image - Smaller on mobile */}
+        <div className="relative w-8 h-8 lg:w-12 lg:h-12 flex-shrink-0">
           <Image
             src="/logo.jpeg"
             alt="Toolbay Logo"
@@ -461,8 +461,8 @@ export const Navbar = () => {
           />
         </div>
         <div className="flex flex-col min-w-0">
-          {/* Toolbay Brand Name */}
-          <span className={cn("text-2xl lg:text-3xl font-semibold", poppins.className)}>
+          {/* Toolbay Brand Name - Smaller on mobile */}
+          <span className={cn("text-lg lg:text-3xl font-semibold", poppins.className)}>
             Toolbay
           </span>
           {/* Mobile: Username/Company below Logo */}
@@ -652,15 +652,15 @@ export const Navbar = () => {
       )}
 
       {/* Mobile Icons - Right Side */}
-        <div className="flex lg:hidden items-center gap-0.5 pr-1 flex-shrink-0">
+        <div className="flex lg:hidden items-center gap-0 pr-0.5 flex-shrink-0">
         {isTenant && (
           <OptimizedLink
             href="/my-store"
             prefetch={true}
-            className="relative h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
-            <Store className="h-5 w-5" />
+            <Store className="h-[18px] w-[18px]" />
             {productNotifications?.count !== undefined && productNotifications.count > 0 && (
               <Badge
                 variant="destructive"
@@ -674,10 +674,10 @@ export const Navbar = () => {
         <OptimizedLink
           href={isTenant ? "/verify-payments" : "/orders"}
           prefetch={true}
-          className="relative h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+          className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
         >
-          <Wallet className="h-5 w-5" />
+          <Wallet className="h-[18px] w-[18px]" />
           {isTenant && transactionNotifications?.count !== undefined && transactionNotifications.count > 0 && (
             <Badge
               variant="destructive"
@@ -698,10 +698,10 @@ export const Navbar = () => {
         <OptimizedLink
           href="/chat"
           prefetch={true}
-          className="relative h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+          className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
         >
-          <MessageCircle className="h-5 w-5" />
+          <MessageCircle className="h-[18px] w-[18px]" />
           {(unreadData?.totalUnread || 0) > 0 && (
             <Badge
               variant="destructive"
@@ -714,10 +714,10 @@ export const Navbar = () => {
         <OptimizedLink
           href="/cart"
           prefetch={true}
-          className="relative h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+          className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
         >
-          <ShoppingCart className="h-5 w-5" />
+          <ShoppingCart className="h-[18px] w-[18px]" />
           {cartItemCount > 0 && (
             <Badge
               variant="destructive"
@@ -729,12 +729,12 @@ export const Navbar = () => {
         </OptimizedLink>
         <button
           type="button"
-          className="h-11 w-11 min-w-[44px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+          className="h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
           onClick={() => setIsSidebarOpen(true)}
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           aria-label="Open menu"
         >
-          <MenuIcon className="h-5 w-5" />
+          <MenuIcon className="h-[18px] w-[18px]" />
         </button>
       </div>
     </nav>
