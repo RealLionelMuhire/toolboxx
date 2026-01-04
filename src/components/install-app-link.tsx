@@ -24,17 +24,7 @@ export function InstallAppLink() {
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true;
     
-    if (isStandaloneMode) {
-      setIsInstalled(true);
-      return;
-    }
-
-    // Check if dismissed via cross-domain storage
-    const dismissed = getCrossDomainItem('pwa-install-dismissed');
-    if (dismissed) {
-      setIsInstalled(true); // Hide the link if dismissed
-      return;
-    }
+    setIsInstalled(isStandaloneMode);
 
     // Listen for beforeinstallprompt
     const handler = (e: Event) => {
@@ -74,18 +64,14 @@ export function InstallAppLink() {
     setDeferredPrompt(null);
   };
 
-  // Don't show if already installed
-  if (isInstalled) {
-    return null;
-  }
-
+  // Always show the button, but change text if installed
   return (
     <button
       onClick={handleInstall}
       className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors"
     >
       <Smartphone className="h-3.5 w-3.5" />
-      <span>Install App</span>
+      <span>{isInstalled ? 'App Installed' : 'Install App'}</span>
     </button>
   );
 }
