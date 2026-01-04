@@ -64,18 +64,11 @@ export const SuggestedProductCard = ({
       return;
     }
     
-    // For same-origin navigation, prevent default and use router
+    // For same-origin navigation, use window.location for immediate navigation
     console.log('[SuggestedProductCard] Same-origin navigation to:', productUrl);
     e.preventDefault();
-    
-    try {
-      router.push(productUrl);
-      console.log('[SuggestedProductCard] Router.push called successfully');
-    } catch (error) {
-      console.error('[SuggestedProductCard] Router.push failed:', error);
-      // Fallback to window.location
-      window.location.href = productUrl;
-    }
+    console.log('[SuggestedProductCard] Using window.location for immediate navigation');
+    window.location.href = productUrl;
   };
   
   // Prefetch on hover for instant navigation

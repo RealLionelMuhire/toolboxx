@@ -101,7 +101,7 @@ export const ProductCard = ({
       }
       
       console.log('[ProductCard] Using router push to tenant:', tenantUrl);
-      router.push(tenantUrl);
+      window.location.href = tenantUrl;
       return;
     }
     
@@ -124,18 +124,11 @@ export const ProductCard = ({
       return;
     }
     
-    // Navigate to product - don't prevent default, let router handle it
+    // Navigate to product immediately using window.location for instant navigation
     console.log('[ProductCard] Same-origin navigation to:', productUrl);
     e.preventDefault();
-    
-    try {
-      router.push(productUrl);
-      console.log('[ProductCard] Router.push called successfully');
-    } catch (error) {
-      console.error('[ProductCard] Router.push failed:', error);
-      // Fallback to window.location
-      window.location.href = productUrl;
-    }
+    console.log('[ProductCard] Using window.location for immediate navigation');
+    window.location.href = productUrl;
   };
 
   const handleTenantClick = useCallback((e: React.MouseEvent) => {
