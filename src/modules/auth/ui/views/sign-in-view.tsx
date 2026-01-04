@@ -129,7 +129,7 @@ export const SignInView = () => {
               </Button>
             </div>
             <h1 className="text-4xl font-medium">
-              Welcome back to Toolbay.
+              Welcome back.
             </h1>
             
             {/* Registration Success Notice */}

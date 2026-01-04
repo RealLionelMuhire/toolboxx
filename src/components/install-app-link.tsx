@@ -26,6 +26,11 @@ export function InstallAppLink() {
     
     setIsInstalled(isStandaloneMode);
 
+    const dismissed = getCrossDomainItem('pwa-install-dismissed');
+    if (dismissed) {
+      setIsInstalled(true);
+    }
+
     // Listen for beforeinstallprompt
     const handler = (e: Event) => {
       e.preventDefault();
