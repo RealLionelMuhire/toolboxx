@@ -31,10 +31,13 @@ export const ImageCarousel = ({
   const [direction, setDirection] = useState<'next' | 'prev' | null>(null);
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set([0]));
   const [loadingImages, setLoadingImages] = useState<Set<number>>(new Set());
+  const [startTime, setStartTime] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Minimum swipe distance (in px)
   const minSwipeDistance = 50;
+  // Maximum time for a tap (in ms)
+  const maxTapTime = 200;
 
   // Preload adjacent images
   useEffect(() => {
@@ -125,21 +128,30 @@ export const ImageCarousel = ({
   }, [isTransitioning, goToPrevious]);
 
   const onTouchStart = (e: React.TouchEvent) => {
+    console.log('[ImageCarousel] Touch start detected');
     setTouchEnd(null);
     setSwipeOffset(0);
-    setIsSwiping(true);
+    setIsSwiping(false); // Don't mark as swiping yet
+    setStartTime(Date.now());
     const touch = e.targetTouches[0];
     if (touch) setTouchStart(touch.clientX);
   };
 
   const onTouchMove = (e: React.TouchEvent) => {
     const touch = e.targetTouches[0];
-    if (touch) {
+    if (touch && touchStart !== null) {
       setTouchEnd(touch.clientX);
       
       // Calculate swipe offset for visual feedback
-      if (touchStart !== null && containerRef.current) {
+      if (containerRef.current) {
         const offset = touch.clientX - touchStart;
+        
+        // Only mark as swiping if moved more than 10px
+        if (Math.abs(offset) > 10 && !isSwiping) {
+          console.log('[ImageCarousel] Movement detected, marking as swipe');
+          setIsSwiping(true);
+        }
+        
         // Show the full sliding effect without limits during swipe
         setSwipeOffset(offset);
       }
@@ -147,10 +159,25 @@ export const ImageCarousel = ({
   };
 
   const onTouchEnd = (e: React.TouchEvent) => {
+    const endTime = Date.now();
+    const touchDuration = endTime - startTime;
+    console.log('[ImageCarousel] Touch end detected, duration:', touchDuration, 'ms');
+    
+    // If it's a quick tap (no movement or very short duration), allow click through
+    if (!isSwiping || touchDuration < maxTapTime) {
+      console.log('[ImageCarousel] Quick tap detected, allowing click through');
+      setIsSwiping(false);
+      setSwipeOffset(0);
+      setTouchStart(null);
+      setTouchEnd(null);
+      return;
+    }
+    
     setIsSwiping(false);
     
     if (!touchStart || !touchEnd) {
       setSwipeOffset(0);
+      console.log('[ImageCarousel] No swipe detected, allowing click through');
       return;
     }
 
@@ -160,6 +187,7 @@ export const ImageCarousel = ({
 
     if (isLeftSwipe || isRightSwipe) {
       // Only prevent navigation if user actually swiped
+      console.log('[ImageCarousel] Swipe detected, preventing click propagation');
       e.preventDefault();
       e.stopPropagation();
       
@@ -180,8 +208,13 @@ export const ImageCarousel = ({
       }
     } else {
       // Snap back if swipe was too short
+      console.log('[ImageCarousel] Swipe too short, allowing click through');
       setSwipeOffset(0);
     }
+    
+    // Reset touch state
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
   // Handle keyboard navigation
@@ -233,10 +266,13 @@ export const ImageCarousel = ({
   return (
     <div
       ref={containerRef}
-      className={`relative group ${className} overflow-hidden`}
+      className={`relative group ${className} overflow-hidden ${isSwiping ? 'cursor-grabbing' : 'cursor-pointer'}`}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
+      style={{
+        touchAction: isSwiping ? 'none' : 'auto',
+      }}
     >
       {/* Images Container - All images move together */}
       <div 

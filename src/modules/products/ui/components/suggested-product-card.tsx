@@ -49,20 +49,31 @@ export const SuggestedProductCard = ({
     : `/tenants/${tenantSlug}/products/${id}`;
 
   const handleCardClick = (e: React.MouseEvent) => {
+    console.log('[SuggestedProductCard] Card clicked');
+    const startTime = performance.now();
+    
     // If subdomain routing enabled and not on the tenant's subdomain, navigate to full subdomain URL
     if (isSubdomainRoutingEnabled && rootDomain && !isAlreadyOnTenantSubdomain) {
       // Use window.location for cross-origin navigation (no preventDefault needed)
-      window.location.href = `${tenantUrl}/products/${id}`;
+      const fullUrl = `${tenantUrl}/products/${id}`;
+      console.log('[SuggestedProductCard] Cross-origin navigation to:', fullUrl);
+      window.location.href = fullUrl;
       return;
     }
     
     // For same-origin navigation, prevent default and use router
     e.preventDefault();
+    
+    const clickProcessingTime = performance.now() - startTime;
+    console.log('[SuggestedProductCard] Click processing time:', clickProcessingTime.toFixed(2), 'ms');
+    console.log('[SuggestedProductCard] Same-origin navigation to:', productUrl);
+    
     router.push(productUrl);
   };
   
   // Prefetch on hover for instant navigation
   const handleMouseEnter = () => {
+    console.log('[SuggestedProductCard] Prefetching product:', productUrl);
     router.prefetch(productUrl);
   };
 
@@ -77,7 +88,10 @@ export const SuggestedProductCard = ({
     <div 
       onClick={handleCardClick}
       onMouseEnter={handleMouseEnter}
-      className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all border-2 border-black rounded-lg bg-white overflow-hidden flex flex-col cursor-pointer h-full relative"
+      className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 border-2 border-black rounded-lg bg-white overflow-hidden flex flex-col cursor-pointer h-full relative touch-manipulation"
+      style={{
+        WebkitTapHighlightColor: 'transparent',
+      }}
     >
       {/* Product Image */}
       <div className="relative aspect-square border-b-2 border-black">

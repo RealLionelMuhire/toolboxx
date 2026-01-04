@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Card Click Diagnostic</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .status.info { background: #e3f2fd; color: #1976d2; }
+        .status.success { background: #e8f5e9; color: #388e3c; }
+        .status.warning { background: #fff3e0; color: #f57c00; }
+        .logs {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 8px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin-bottom: 20px;
+        }
+        .log-entry {
+            padding: 2px 0;
+            border-bottom: 1px solid #333;
+        }
+        .log-time {
+            color: #858585;
+            margin-right: 8px;
+        }
+        .log-carousel { color: #4ec9b0; }
+        .log-card { color: #dcdcaa; }
+        .log-perf { color: #ce9178; }
+        .controls {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background: #1976d2;
+        }
+        button.secondary {
+            background: #757575;
+        }
+        button.secondary:hover {
+            background: #616161;
+        }
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .metric-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .metric-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2196f3;
+        }
+        .metric-label {
+            color: #666;
+            font-size: 14px;
+        }
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 5px 0;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔍 Product Card Click Diagnostic Tool</h1>
+        <p>Monitor and diagnose product card click performance in production</p>
+    </div>
+
+    <div class="instructions">
+        <h3>How to Use:</h3>
+        <ol>
+            <li>Open your browser's DevTools Console (F12 or Cmd+Option+J)</li>
+            <li>Navigate to your product pages</li>
+            <li>Click or tap on product cards</li>
+            <li>Watch the console logs and metrics update in real-time</li>
+            <li>Look for logs starting with <code>[ImageCarousel]</code> and <code>[ProductCard]</code></li>
+        </ol>
+    </div>
+
+    <div class="metrics">
+        <div class="metric-card">
+            <div class="metric-value" id="clickCount">0</div>
+            <div class="metric-label">Total Clicks</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value" id="avgTime">-</div>
+            <div class="metric-label">Avg Response (ms)</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value" id="fastClicks">0</div>
+            <div class="metric-label">Fast Clicks (&lt;50ms)</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value" id="slowClicks">0</div>
+            <div class="metric-label">Slow Clicks (&gt;50ms)</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="clearLogs()">Clear Logs</button>
+        <button onclick="exportLogs()" class="secondary">Export Logs</button>
+        <button onclick="location.reload()" class="secondary">Refresh Page</button>
+    </div>
+
+    <div class="status info">
+        <strong>Status:</strong> <span id="status">Monitoring console logs...</span>
+    </div>
+
+    <div class="logs" id="logContainer"></div>
+
+    <script>
+        let clickCount = 0;
+        let responseTimes = [];
+        let fastClicks = 0;
+        let slowClicks = 0;
+        let allLogs = [];
+
+        // Override console.log to capture logs
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            
+            const message = args.join(' ');
+            const timestamp = new Date().toLocaleTimeString('en-US', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                fractionalSecondDigits: 3
+            });
+
+            // Check if it's one of our monitored logs
+            if (message.includes('[ImageCarousel]') || 
+                message.includes('[ProductCard]') || 
+                message.includes('[SuggestedProductCard]')) {
+                
+                addLog(timestamp, message);
+                
+                // Track clicks
+                if (message.includes('Card clicked')) {
+                    clickCount++;
+                    document.getElementById('clickCount').textContent = clickCount;
+                    updateStatus('Click detected! Processing...');
+                }
+                
+                // Track performance
+                if (message.includes('Click processing time:')) {
+                    const match = message.match(/(\d+\.\d+) ms/);
+                    if (match) {
+                        const time = parseFloat(match[1]);
+                        responseTimes.push(time);
+                        
+                        if (time < 50) {
+                            fastClicks++;
+                            document.getElementById('fastClicks').textContent = fastClicks;
+                        } else {
+                            slowClicks++;
+                            document.getElementById('slowClicks').textContent = slowClicks;
+                        }
+                        
+                        const avg = (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(2);
+                        document.getElementById('avgTime').textContent = avg;
+                        
+                        if (time < 2) {
+                            updateStatus('✓ Excellent performance! Click processed in ' + time.toFixed(2) + 'ms', 'success');
+                        } else if (time < 10) {
+                            updateStatus('✓ Good performance! Click processed in ' + time.toFixed(2) + 'ms', 'success');
+                        } else {
+                            updateStatus('⚠ Slow click detected: ' + time.toFixed(2) + 'ms', 'warning');
+                        }
+                    }
+                }
+                
+                // Track carousel behavior
+                if (message.includes('Quick tap detected')) {
+                    updateStatus('✓ Tap correctly identified (not a swipe)', 'success');
+                }
+                if (message.includes('Swipe detected')) {
+                    updateStatus('Swipe detected - click properly prevented', 'info');
+                }
+            }
+        };
+
+        function addLog(timestamp, message) {
+            allLogs.push({ timestamp, message });
+            
+            const logContainer = document.getElementById('logContainer');
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            
+            let className = '';
+            if (message.includes('[ImageCarousel]')) className = 'log-carousel';
+            else if (message.includes('[ProductCard]')) className = 'log-card';
+            else if (message.includes('[SuggestedProductCard]')) className = 'log-card';
+            if (message.includes('processing time')) className += ' log-perf';
+            
+            logEntry.innerHTML = `<span class="log-time">[${timestamp}]</span><span class="${className}">${escapeHtml(message)}</span>`;
+            logContainer.appendChild(logEntry);
+            
+            // Auto-scroll to bottom
+            logContainer.scrollTop = logContainer.scrollHeight;
+            
+            // Limit to last 100 logs in display
+            while (logContainer.children.length > 100) {
+                logContainer.removeChild(logContainer.firstChild);
+            }
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            const statusContainer = statusEl.parentElement;
+            statusContainer.className = 'status ' + type;
+            statusEl.textContent = message;
+        }
+
+        function clearLogs() {
+            document.getElementById('logContainer').innerHTML = '';
+            allLogs = [];
+            clickCount = 0;
+            responseTimes = [];
+            fastClicks = 0;
+            slowClicks = 0;
+            document.getElementById('clickCount').textContent = '0';
+            document.getElementById('avgTime').textContent = '-';
+            document.getElementById('fastClicks').textContent = '0';
+            document.getElementById('slowClicks').textContent = '0';
+            updateStatus('Logs cleared. Ready to monitor...', 'info');
+        }
+
+        function exportLogs() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                metrics: {
+                    totalClicks: clickCount,
+                    averageResponseTime: responseTimes.length > 0 
+                        ? (responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length).toFixed(2) 
+                        : null,
+                    fastClicks,
+                    slowClicks,
+                    responseTimes
+                },
+                logs: allLogs
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `product-card-diagnostic-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            updateStatus('Logs exported successfully!', 'success');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Initial status
+        updateStatus('Ready to monitor. Navigate to product pages and start clicking!', 'info');
+        
+        // Add a test log
+        setTimeout(() => {
+            addLog(new Date().toLocaleTimeString('en-US', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                fractionalSecondDigits: 3
+            }), '[Diagnostic] Monitoring started - waiting for product card interactions...');
+        }, 100);
+    </script>
+</body>
+</html>

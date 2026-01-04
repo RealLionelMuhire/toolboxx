@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -81,20 +81,26 @@ export const ProductCard = ({
     : `/tenants/${tenantSlug}/products/${id}`;
 
   const handleCardClick = (e: React.MouseEvent) => {
+    console.log('[ProductCard] Card clicked');
+    const startTime = performance.now();
+    
     // Check if clicking on tenant link area
     const target = e.target as HTMLElement;
     const tenantLink = target.closest('[data-tenant-link]');
     
     if (tenantLink && !isAlreadyOnTenantSubdomain) {
       // Handle tenant navigation
+      console.log('[ProductCard] Tenant link clicked');
       e.preventDefault();
       e.stopPropagation();
       
       if (isSubdomainRoutingEnabled && rootDomain) {
+        console.log('[ProductCard] Navigating to tenant subdomain:', tenantUrl);
         window.location.href = tenantUrl;
         return;
       }
       
+      console.log('[ProductCard] Using router push to tenant:', tenantUrl);
       router.push(tenantUrl);
       return;
     }
@@ -102,49 +108,86 @@ export const ProductCard = ({
     // Check for other interactive elements (buttons)
     const closestButton = target.closest('button');
     if (closestButton) {
+      console.log('[ProductCard] Button clicked, ignoring card click');
       return; // Let button handle its own click
     }
     
     // Handle product navigation - no loading state, just navigate
     e.preventDefault();
     
+    const clickProcessingTime = performance.now() - startTime;
+    console.log('[ProductCard] Click processing time:', clickProcessingTime.toFixed(2), 'ms');
+    
     // If subdomain routing enabled and not on the tenant's subdomain, navigate to full subdomain URL
     if (isSubdomainRoutingEnabled && rootDomain && !isAlreadyOnTenantSubdomain) {
-      window.location.href = `${tenantUrl}/products/${id}`;
+      const fullUrl = `${tenantUrl}/products/${id}`;
+      console.log('[ProductCard] Cross-origin navigation to:', fullUrl);
+      window.location.href = fullUrl;
       return;
     }
     
     // Navigate to product
+    console.log('[ProductCard] Same-origin navigation to:', productUrl);
     router.push(productUrl);
   };
 
   const handleTenantClick = useCallback((e: React.MouseEvent) => {
     // This is now just for accessibility - actual click is handled by card
+    console.log('[ProductCard] Tenant link direct click');
     e.preventDefault();
     e.stopPropagation();
   }, []);
   
-  // Prefetch on hover for instant navigation
-  const handleMouseEnter = () => {
-    router.prefetch(productUrl);
-  };
+  // Prefetch on hover for instant navigation - debounced
+  const prefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const handleMouseEnter = useCallback(() => {
+    // Clear any existing timeout
+    if (prefetchTimeoutRef.current) {
+      clearTimeout(prefetchTimeoutRef.current);
+    }
+    
+    // Debounce prefetch to avoid excessive calls
+    prefetchTimeoutRef.current = setTimeout(() => {
+      console.log('[ProductCard] Prefetching product:', productUrl);
+      router.prefetch(productUrl);
+    }, 100);
+  }, [router, productUrl]);
   
-  // Prefetch tenant URL on hover (for same-origin only)
-  const handleTenantMouseEnter = useCallback(() => {
-    if (!isSubdomainRoutingEnabled) {
-      router.prefetch(tenantUrl);
-    }
-    // For subdomain URLs, we can create a prefetch link
-    if (isSubdomainRoutingEnabled && rootDomain) {
-      const link = document.createElement('link');
-      link.rel = 'prefetch';
-      link.href = tenantUrl;
-      link.as = 'document';
-      // Only add if not already present
-      if (!document.querySelector(`link[href="${tenantUrl}"]`)) {
-        document.head.appendChild(link);
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (prefetchTimeoutRef.current) {
+        clearTimeout(prefetchTimeoutRef.current);
       }
+    };
+  }, []);
+  
+  // Prefetch tenant URL on hover (for same-origin only) - debounced
+  const tenantPrefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const handleTenantMouseEnter = useCallback(() => {
+    // Clear any existing timeout
+    if (tenantPrefetchTimeoutRef.current) {
+      clearTimeout(tenantPrefetchTimeoutRef.current);
     }
+    
+    tenantPrefetchTimeoutRef.current = setTimeout(() => {
+      if (!isSubdomainRoutingEnabled) {
+        console.log('[ProductCard] Prefetching tenant:', tenantUrl);
+        router.prefetch(tenantUrl);
+      }
+      // For subdomain URLs, we can create a prefetch link
+      if (isSubdomainRoutingEnabled && rootDomain) {
+        const link = document.createElement('link');
+        link.rel = 'prefetch';
+        link.href = tenantUrl;
+        link.as = 'document';
+        // Only add if not already present
+        if (!document.querySelector(`link[href="${tenantUrl}"]`)) {
+          console.log('[ProductCard] Adding prefetch link for tenant subdomain:', tenantUrl);
+          document.head.appendChild(link);
+        }
+      }
+    }, 100);
   }, [isSubdomainRoutingEnabled, rootDomain, tenantUrl, router]);
 
   // Prepare images for carousel
@@ -160,7 +203,10 @@ export const ProductCard = ({
       <div 
         onClick={handleCardClick}
         onMouseEnter={handleMouseEnter}
-        className="group hover:shadow-xl transition-all duration-300 border border-gray-200 rounded-2xl bg-white overflow-hidden flex flex-row cursor-pointer max-w-full hover:-translate-y-1 relative"
+        className="group hover:shadow-xl active:shadow-md transition-all duration-200 border border-gray-200 rounded-2xl bg-white overflow-hidden flex flex-row cursor-pointer max-w-full hover:-translate-y-1 active:translate-y-0 relative touch-manipulation"
+        style={{
+          WebkitTapHighlightColor: 'transparent',
+        }}
       >
         {/* Image on the left - takes full height of card */}
         <div className="relative w-40 xs:w-48 sm:w-56 md:w-64 lg:w-72 shrink-0 overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
@@ -328,7 +374,10 @@ export const ProductCard = ({
     <div 
       onClick={handleCardClick}
       onMouseEnter={handleMouseEnter}
-      className="group hover:shadow-xl transition-all duration-300 border border-gray-200 rounded-2xl bg-white overflow-hidden h-full flex flex-col cursor-pointer hover:-translate-y-1 relative"
+      className="group hover:shadow-xl active:shadow-md transition-all duration-200 border border-gray-200 rounded-2xl bg-white overflow-hidden h-full flex flex-col cursor-pointer hover:-translate-y-1 active:translate-y-0 relative touch-manipulation"
+      style={{
+        WebkitTapHighlightColor: 'transparent',
+      }}
     >
       {/* Product Image */}
       <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
