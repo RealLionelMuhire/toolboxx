@@ -120,7 +120,7 @@ async function seed() {
   const adminTenant = await payload.create({
     collection: "tenants",
     data: {
-      name: "toolbay-admin",
+      name: "Toolbay Admin",
       slug: "toolbay-admin",
       tinNumber: "999000001", // Sample admin TIN
       storeManagerId: "ADMIN001",
@@ -138,14 +138,17 @@ async function seed() {
     },
   });
 
+  console.log("✅ Admin tenant created:", adminTenant.id);
+
   // Create admin user
   const adminUser = await payload.create({
     collection: "users",
     data: {
-      email: "admin@toolbay.rw",
+      email: "admin@toolbay.net",
       password: "demo",
       roles: ["super-admin"],
       username: "admin",
+      emailVerified: true, // Auto-verify admin for production
       tenants: [
         {
           tenant: adminTenant.id,
@@ -153,6 +156,8 @@ async function seed() {
       ],
     },
   });
+
+  console.log("✅ Admin user created:", adminUser.email);
 
   // Update admin tenant with verifiedBy field
   await payload.update({
@@ -162,6 +167,10 @@ async function seed() {
       verifiedBy: adminUser.id,
     },
   });
+
+  console.log("✅ Admin tenant updated with verifiedBy");
+
+  console.log("📦 Creating categories...");
 
   for (const category of categories) {
     const parentCategory = await payload.create({
@@ -174,6 +183,8 @@ async function seed() {
       },
     });
 
+    console.log(`  ✅ Created category: ${category.name}`);
+
     for (const subCategory of category.subcategories || []) {
       await payload.create({
         collection: "categories",
@@ -183,15 +194,22 @@ async function seed() {
           parent: parentCategory.id,
         },
       });
+      console.log(`    ✅ Created subcategory: ${subCategory.name}`);
     }
   }
+
+  console.log("✅ All categories created successfully");
 }
 
 try {
   await seed();
-  console.log('Seeding completed successfully');
+  console.log('\n🎉 Seeding completed successfully!');
+  console.log('\n📋 Admin Credentials:');
+  console.log('   Email: admin@toolbay.net');
+  console.log('   Password: demo');
+  console.log('\n⚠️  IMPORTANT: Change the admin password immediately after first login!');
   process.exit(0);
 } catch (error) {
-  console.error('Error during seeding:', error);
+  console.error('\n❌ Error during seeding:', error);
   process.exit(1); // Exit with error code
 }
