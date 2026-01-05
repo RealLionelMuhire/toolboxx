@@ -264,9 +264,12 @@ export const productsRouter = createTRPCRouter({
         },
       };
       let sort: Sort = "-createdAt";
+      let shouldRandomize = false;
 
       if (input.sort === "curated") {
-        sort = "-createdAt";
+        // Default - use randomization for fair product visibility
+        shouldRandomize = true;
+        sort = "-createdAt"; // Initial sort, will be randomized
       }
 
       if (input.sort === "hot_and_new") {
@@ -456,9 +459,23 @@ export const productsRouter = createTRPCRouter({
         };
       });
 
+      // Randomize product order for fair visibility (Fisher-Yates shuffle)
+      let finalDocs = dataWithSummarizedReviews;
+      if (shouldRandomize) {
+        finalDocs = [...dataWithSummarizedReviews];
+        for (let i = finalDocs.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          const temp = finalDocs[i];
+          if (temp && finalDocs[j]) {
+            finalDocs[i] = finalDocs[j];
+            finalDocs[j] = temp;
+          }
+        }
+      }
+
       return {
         ...data,
-        docs: dataWithSummarizedReviews.map((doc) => ({
+        docs: finalDocs.map((doc) => ({
           ...doc,
           image: (doc as PopulatedProduct).image,
           tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null; location?: string | null },
