@@ -43,11 +43,19 @@ export default buildConfig({
       afterNavLinks: ['@/components/admin/UserVerificationBadge'],
     },
   },
-  // Use Resend for both development and production
-  email: resendAdapter({
-    apiKey: process.env.RESEND_API_KEY || 're_B9Locd8M_ASuAoooS9D1RE8PTT89SYGqr',
-    defaultFromAddress: 'onboarding@resend.dev',
-    defaultFromName: 'Toolbay',
+  // Use SMTP/Nodemailer for email delivery
+  email: nodemailerAdapter({
+    defaultFromAddress: process.env.SMTP_FROM_EMAIL || 'noreply@toolbay.store',
+    defaultFromName: process.env.SMTP_FROM_NAME || 'Toolbay',
+    transportOptions: {
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587'),
+      secure: false, // Use TLS
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    },
   }),
   collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions, Notifications],
   editor: lexicalEditor(),
