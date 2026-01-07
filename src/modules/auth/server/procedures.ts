@@ -167,14 +167,30 @@ export const authRouter = createTRPCRouter({
         });
       });
 
-      // Don't automatically log in - require email verification first
+      // Auto-login the user after registration
+      const loginData = await ctx.db.login({
+        collection: "users",
+        data: {
+          email: input.email,
+          password: input.password,
+        },
+      });
+
+      if (loginData.token) {
+        await generateAuthCookie({
+          prefix: ctx.db.config.cookiePrefix,
+          value: loginData.token,
+          rememberMe: true,
+        });
+      }
+
       return {
         user: {
           id: newUser.id,
           email: newUser.email,
           username: username,
         },
-        message: "Account created successfully! Please check your email to verify your account before logging in.",
+        message: "Account created successfully! Redirecting to your dashboard...",
       };
     }),
     
@@ -250,14 +266,30 @@ export const authRouter = createTRPCRouter({
         });
       });
 
-      // Don't automatically log in - require email verification first
+      // Auto-login the user after registration
+      const loginData = await ctx.db.login({
+        collection: "users",
+        data: {
+          email: input.email,
+          password: input.password,
+        },
+      });
+
+      if (loginData.token) {
+        await generateAuthCookie({
+          prefix: ctx.db.config.cookiePrefix,
+          value: loginData.token,
+          rememberMe: true,
+        });
+      }
+
       return {
         user: {
           id: newUser.id,
           email: newUser.email,
           username: input.username,
         },
-        message: "Account created successfully! Please check your email to verify your account before logging in.",
+        message: "Account created successfully! Redirecting to homepage...",
       };
     }),
     
@@ -339,16 +371,15 @@ export const authRouter = createTRPCRouter({
 
       const user = userData.docs[0];
 
-      // If emailVerified field exists and is false, prevent login
-      if (user && user.emailVerified === false) {
-        // Clear any generated cookie
-        await clearAuthCookie(ctx.db.config.cookiePrefix);
-        
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Please verify your email before logging in. Check your inbox for the verification link.",
-        });
-      }
+      // TEMPORARILY DISABLED: Email verification check
+      // TODO: Re-enable once email delivery is fixed
+      // if (user && user.emailVerified === false) {
+      //   await clearAuthCookie(ctx.db.config.cookiePrefix);
+      //   throw new TRPCError({
+      //     code: "FORBIDDEN",
+      //     message: "Please verify your email before logging in. Check your inbox for the verification link.",
+      //   });
+      // }
 
       await generateAuthCookie({
         prefix: ctx.db.config.cookiePrefix,
