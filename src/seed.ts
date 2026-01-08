@@ -116,48 +116,84 @@ async function seed() {
 
   const payload = await getPayloadSingleton();
 
-  // Create admin tenant with Rwanda-specific fields
-  const adminTenant = await payload.create({
+  // Check if admin tenant already exists
+  const existingAdminTenant = await payload.find({
     collection: "tenants",
-    data: {
-      name: "Toolbay Admin",
-      slug: "toolbay-admin",
-      tinNumber: "999000001", // Sample admin TIN
-      storeManagerId: "ADMIN001",
-      category: "retailer" as const,
-      location: "Kigali, Rwanda",
-      contactPhone: "+250788888888",
-      currency: "RWF" as const,
-      paymentMethod: "bank_transfer" as const,
-      bankName: "Bank of Kigali",
-      bankAccountNumber: "4000000000001",
-      isVerified: true,
-      verificationStatus: "document_verified" as const,
-      canAddMerchants: true,
-      verifiedAt: new Date().toISOString(),
+    where: {
+      slug: {
+        equals: "toolbay-admin",
+      },
     },
+    limit: 1,
   });
 
-  console.log("✅ Admin tenant created:", adminTenant.id);
+  let adminTenant;
+  
+  if (existingAdminTenant.docs.length > 0) {
+    console.log("✅ Admin tenant already exists:", existingAdminTenant.docs[0].id);
+    adminTenant = existingAdminTenant.docs[0];
+  } else {
+    // Create admin tenant with Rwanda-specific fields
+    adminTenant = await payload.create({
+      collection: "tenants",
+      data: {
+        name: "Toolbay Admin",
+        slug: "toolbay-admin",
+        tinNumber: "999000001", // Sample admin TIN
+        storeManagerId: "ADMIN001",
+        category: "retailer" as const,
+        location: "Kigali, Rwanda",
+        contactPhone: "+250788888888",
+        currency: "RWF" as const,
+        paymentMethod: "bank_transfer" as const,
+        bankName: "Bank of Kigali",
+        bankAccountNumber: "4000000000001",
+        isVerified: true,
+        verificationStatus: "document_verified" as const,
+        canAddMerchants: true,
+        verifiedAt: new Date().toISOString(),
+      },
+    });
 
-  // Create admin user
-  const adminUser = await payload.create({
+    console.log("✅ Admin tenant created:", adminTenant.id);
+  }
+
+  // Check if admin user already exists
+  const existingAdminUser = await payload.find({
     collection: "users",
-    data: {
-      email: "admin@toolbay.net",
-      password: "demo",
-      roles: ["super-admin"],
-      username: "admin",
-      emailVerified: true, // Auto-verify admin for production
-      tenants: [
-        {
-          tenant: adminTenant.id,
-        },
-      ],
+    where: {
+      email: {
+        equals: "admin@toolbay.net",
+      },
     },
+    limit: 1,
   });
 
-  console.log("✅ Admin user created:", adminUser.email);
+  let adminUser;
+  
+  if (existingAdminUser.docs.length > 0) {
+    console.log("✅ Admin user already exists:", existingAdminUser.docs[0].email);
+    adminUser = existingAdminUser.docs[0];
+  } else {
+    // Create admin user
+    adminUser = await payload.create({
+      collection: "users",
+      data: {
+        email: "admin@toolbay.net",
+        password: "demo",
+        roles: ["super-admin"],
+        username: "admin",
+        emailVerified: true, // Auto-verify admin for production
+        tenants: [
+          {
+            tenant: adminTenant.id,
+          },
+        ],
+      },
+    });
+
+    console.log("✅ Admin user created:", adminUser.email);
+  }
 
   // Update admin tenant with verifiedBy field
   await payload.update({

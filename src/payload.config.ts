@@ -65,6 +65,7 @@ export default buildConfig({
   },
   db: mongooseAdapter({
     url: process.env.DATABASE_URI || '',
+    transactionOptions: false, // Disable transactions for compatibility
     connectOptions: {
       maxPoolSize: 10,  // Maximum number of connections in the pool
       minPoolSize: 2,   // Minimum number of connections to maintain
