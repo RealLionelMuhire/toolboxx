@@ -73,10 +73,13 @@ export default buildConfig({
     transactionOptions: false, // Disable transactions for compatibility
     connectOptions: {
       maxPoolSize: 10,  // Maximum number of connections in the pool
-      minPoolSize: 2,   // Minimum number of connections to maintain
-      socketTimeoutMS: 45000,  // Close sockets after 45 seconds of inactivity
-      serverSelectionTimeoutMS: 5000,  // Timeout for server selection
+      minPoolSize: 1,   // Minimum number of connections to maintain
+      socketTimeoutMS: 30000,  // Close sockets after 30 seconds of inactivity
+      serverSelectionTimeoutMS: 30000,  // Increased to 30s for Render/MongoDB Atlas
+      connectTimeoutMS: 30000, // Connection establishment timeout
       maxIdleTimeMS: 30000,  // Close idle connections after 30 seconds
+      retryWrites: true, // Retry writes on network errors
+      retryReads: true, // Retry reads on network errors
     },
   }),
   sharp,
