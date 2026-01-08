@@ -47,10 +47,15 @@ export default buildConfig({
   email: nodemailerAdapter({
     defaultFromAddress: process.env.SMTP_FROM_EMAIL || 'noreply@toolbay.store',
     defaultFromName: process.env.SMTP_FROM_NAME || 'Toolbay',
+    // Skip verification to prevent blocking server startup
+    skipVerify: true,
     transportOptions: {
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: false, // Use TLS
+      connectionTimeout: 5000, // 5 second connection timeout
+      greetingTimeout: 5000,
+      socketTimeout: 10000,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
