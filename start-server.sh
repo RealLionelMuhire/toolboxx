@@ -36,7 +36,14 @@ if [ -z "$PAYLOAD_SECRET" ]; then
 fi
 
 echo "✅ Starting Next.js server..."
+echo "🎯 Port: ${PORT}"
+echo "🎯 Hostname: ${HOSTNAME:-0.0.0.0}"
+
+# Set HOSTNAME to 0.0.0.0 to listen on all interfaces (required for Render)
+export HOSTNAME=0.0.0.0
+
 echo "🎯 Executing: node server.js"
 
-# Start the server and capture any errors
+# The Dockerfile copies standalone output to /app root
+# So server.js is at /app/server.js (copied from .next/standalone/server.js)
 exec node server.js
