@@ -103,7 +103,8 @@ pids/
 # yarn.lock
 # bun.lock
 # package-lock.json
-# Production files with credentials
+# Production files with credentials (except deployment guide)
 PRODUCTION_*.txt
-PRODUCTION_*.md
+PRODUCTION_ENV_VARIABLES.txt
+PRODUCTION_SEEDING_GUIDE.md
 scripts/seed-production.mjs
