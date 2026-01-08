@@ -129,7 +129,7 @@ async function seed() {
 
   let adminTenant;
   
-  if (existingAdminTenant.docs.length > 0) {
+  if (existingAdminTenant.docs.length > 0 && existingAdminTenant.docs[0]) {
     console.log("✅ Admin tenant already exists:", existingAdminTenant.docs[0].id);
     adminTenant = existingAdminTenant.docs[0];
   } else {
@@ -171,7 +171,7 @@ async function seed() {
 
   let adminUser;
   
-  if (existingAdminUser.docs.length > 0) {
+  if (existingAdminUser.docs.length > 0 && existingAdminUser.docs[0]) {
     console.log("✅ Admin user already exists:", existingAdminUser.docs[0].email);
     adminUser = existingAdminUser.docs[0];
   } else {
