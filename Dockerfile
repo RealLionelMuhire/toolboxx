@@ -19,7 +19,7 @@ RUN bun run build
 RUN ls -la .next/standalone && \
     test -f .next/standalone/server.js || (echo "ERROR: server.js not found in standalone build!" && exit 1)
 
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 # Install production dependencies that may be missing from standalone
