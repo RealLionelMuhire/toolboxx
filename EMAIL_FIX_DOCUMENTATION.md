@@ -15,7 +15,7 @@ Switched from Resend adapter to Nodemailer adapter to use Gmail SMTP directly.
 **Before:**
 ```typescript
 email: resendAdapter({
-  apiKey: process.env.RESEND_API_KEY || 're_B9Locd8M_ASuAoooS9D1RE8PTT89SYGqr',
+  apiKey: process.env.RESEND_API_KEY || 'your_resend_api_key_here',
   defaultFromAddress: 'onboarding@resend.dev',
   defaultFromName: 'Toolbay',
 }),
@@ -50,7 +50,7 @@ Make sure these are set in your **production environment** (Railway/Vercel):
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=mlcorporateservicesit@gmail.com
-SMTP_PASS=fksg puuj hqtq rsdr  # Gmail App Password (remove spaces if needed)
+SMTP_PASS=your_gmail_app_password_here  # Gmail App Password (no spaces)
 SMTP_FROM_EMAIL=noreply@toolbay.store
 SMTP_FROM_NAME=Toolbay
 ```
@@ -61,7 +61,7 @@ SMTP_FROM_NAME=Toolbay
 2. **Remove all spaces** - Some implementations include spaces but they should be removed
 3. The format is: `xxxx xxxx xxxx xxxx` (with spaces) → Remove spaces → `xxxxxxxxxxxxxxxx`
 
-Your current password in production appears to have spaces: `fksg puuj hqtq rsdr`
+Your current password in production appears to have spaces - check your .env file
 
 **For Production, use:** `fksgpuujhqtqrsdr` (no spaces)
 

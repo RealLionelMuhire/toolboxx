@@ -79,37 +79,37 @@ NODE_ENV=production
 PORT=10000
 
 # Database
-DATABASE_URI=mongodb+srv://toolbaystore_db_user:IEdRPcmPzmJrGgk6@toolbayprodb.zphlktf.mongodb.net/toolbaydb?retryWrites=true&w=majority&appName=ToolbayProductionCluster
-PAYLOAD_SECRET=456dc321fa8e3861ecc2d373eed69a6100acd09717af063e3627e3247f0019a1
+DATABASE_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority
+PAYLOAD_SECRET=your_payload_secret_here
 
 # App URLs (IMPORTANT: Use HTTPS after SSL setup)
-NEXT_PUBLIC_APP_URL=https://toolbay.net
-NEXT_PUBLIC_ROOT_DOMAIN=toolbay.net
+NEXT_PUBLIC_APP_URL=https://yourdomain.com
+NEXT_PUBLIC_ROOT_DOMAIN=yourdomain.com
 NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING=false
 
 # Stripe (Use production keys for live transactions)
-STRIPE_SECRET_KEY=sk_test_51RSlvhQNXfgJjmVmcxDVOhMuaDDWalu5oRhb00tNkU4lVwd0ZXG8FhQf51qWrS0gxaSDSSaXcSrk1xsIofQWdr0d00cQUbS90h
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_51RSlvhQNXfgJjmVmbxbORXTE4HHf9lBjtnokeXxem6ZaWlTO8Ifhti9MMc2N4wdCEOIGbjNZudVwVp6WdWDOljXE00WIlFINpT
-STRIPE_WEBHOOK_SECRET=whsec_da810d29c67c2955ae27246f4d3f2566eb2eedbe4570e478c6ebda9285a447d5
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 
 # Vercel Blob Storage
-BLOB_READ_WRITE_TOKEN=vercel_blob_rw_stL2WgafPHil5ATC_F74doONeFL88DfPYegMeJmmjEe3g2z
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_your_token_here
 
 # Web Push Notifications
-NEXT_PUBLIC_VAPID_PUBLIC_KEY=BLeVKTDnMj65UCfFcfoBmEouXdKTDRcyLeF_7Sc64fkRxF8knQsYcLzco9PM4aYIIrMbBeU8i783P1R4SDlh6gE
-VAPID_PRIVATE_KEY=NflOoTj5qVB3FLhoVdWMkOE5scSTC9CEsuYwUitu73Y
-VAPID_EMAIL=mailto:lionelmuhire1997@gmail.com
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_vapid_public_key
+VAPID_PRIVATE_KEY=your_vapid_private_key
+VAPID_EMAIL=mailto:youremail@example.com
 
 # SMTP Email Configuration
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USER=mlcorporateservicesit@gmail.com
-SMTP_PASS=fksg puuj hqtq rsdr
-SMTP_FROM_EMAIL=noreply@toolbay.store
-SMTP_FROM_NAME=Toolbay
+SMTP_USER=your_email@gmail.com
+SMTP_PASS=your_gmail_app_password
+SMTP_FROM_EMAIL=noreply@yourdomain.com
+SMTP_FROM_NAME=YourAppName
 
 # Resend API
-RESEND_API_KEY=re_B9Locd8M_ASuAoooS9D1RE8PTT89SYGqr
+RESEND_API_KEY=re_your_resend_api_key
 ```
 
 Save with `Ctrl+X`, `Y`, `Enter`.

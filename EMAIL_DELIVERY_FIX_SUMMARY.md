@@ -35,7 +35,7 @@
 
 **Current (with spaces):**
 ```
-SMTP_PASS=fksg puuj hqtq rsdr
+SMTP_PASS=your_gmail_app_password_here
 ```
 
 **Required (no spaces):**
@@ -101,7 +101,7 @@ Railway will auto-deploy when you update the environment variables.
 ## 🔍 Why This Happened
 
 The application was configured to use **Resend** email service:
-- Resend API key: `re_B9Locd8M_ASuAoooS9D1RE8PTT89SYGqr`
+- Resend API key: `your_resend_api_key_here`
 - From address: `onboarding@resend.dev`
 
 However, this Resend configuration had issues:
@@ -111,7 +111,7 @@ However, this Resend configuration had issues:
 
 Meanwhile, you had **working Gmail SMTP credentials** in your environment:
 - Gmail account: `mlcorporateservicesit@gmail.com`
-- App Password: `fksg puuj hqtq rsdr` (with spaces)
+- App Password: `your_gmail_app_password_here` (no spaces)
 - But these weren't being used!
 
 **The Fix:** Simply switched to use the Gmail SMTP that was already configured.
