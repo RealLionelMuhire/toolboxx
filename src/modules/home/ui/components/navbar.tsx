@@ -391,7 +391,7 @@ export const Navbar = () => {
           <Button
             asChild
             variant="secondary"
-            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-white hover:bg-pink-400 transition-colors text-sm"
+            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-white hover:bg-orange-400 transition-colors text-sm"
           >
             <Link href="/sign-in" prefetch={true}>
               Log in
@@ -399,7 +399,7 @@ export const Navbar = () => {
           </Button>
           <Button
             asChild
-            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-sm"
+            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-black text-white hover:bg-orange-400 hover:text-black transition-colors text-sm"
           >
             <Link href="/sign-up" prefetch={true}>
               Sign Up
@@ -467,11 +467,11 @@ export const Navbar = () => {
           </span>
           {/* Mobile: Username/Company below Logo */}
           {session.data?.user && (() => {
-            const displayName = (session.data.user.username || 
-               (session.data.user.tenants?.[0] && 
+            const displayName = ((session.data.user.tenants?.[0] && 
                 typeof session.data.user.tenants[0].tenant === 'object' 
                   ? (session.data.user.tenants[0].tenant as any).name 
-                  : null) || 
+                  : null) ||
+               session.data.user.username || 
                'User').trim();
             
             // Debug: Log the actual value
@@ -497,11 +497,11 @@ export const Navbar = () => {
         </div>
         {/* Desktop: Username/Company next to Toolbay */}
         {session.data?.user && (() => {
-          const displayName = (session.data.user.username || 
-             (session.data.user.tenants?.[0] && 
+          const displayName = ((session.data.user.tenants?.[0] && 
               typeof session.data.user.tenants[0].tenant === 'object' 
                 ? (session.data.user.tenants[0].tenant as any).name 
-                : null) || 
+                : null) ||
+             session.data.user.username || 
              'User').trim();
           
           return (
@@ -611,7 +611,7 @@ export const Navbar = () => {
 
           <Button
             asChild
-            className="border-l border-t-0 border-b-0 border-r-0 px-6 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-sm whitespace-nowrap"
+            className="border-l border-t-0 border-b-0 border-r-0 px-6 h-full rounded-none bg-black text-white hover:bg-orange-400 hover:text-black transition-colors text-sm whitespace-nowrap"
           >
             <Link 
               href={session.data.user.roles?.includes('super-admin') ? "/admin" : session.data.user.roles?.includes('tenant') ? "/dashboard" : "/my-account"}
@@ -634,7 +634,7 @@ export const Navbar = () => {
           <Button
             asChild
             variant="secondary"
-            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-white hover:bg-pink-400 transition-colors text-sm"
+            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-white hover:bg-orange-400 transition-colors text-sm"
           >
             <Link href="/sign-in" prefetch={true}>
               Log in
@@ -642,7 +642,7 @@ export const Navbar = () => {
           </Button>
           <Button
             asChild
-            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-black text-white hover:bg-pink-400 hover:text-black transition-colors text-sm"
+            className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-black text-white hover:bg-orange-400 hover:text-black transition-colors text-sm"
           >
             <Link href="/sign-up" prefetch={true}>
               Sign Up

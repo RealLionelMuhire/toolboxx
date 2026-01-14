@@ -80,7 +80,7 @@ export const ForgotPasswordView = () => {
                 Didn't receive the email? Check your spam folder or{" "}
                 <button
                   onClick={() => setEmailSent(false)}
-                  className="text-black underline hover:text-pink-600"
+                  className="text-black underline hover:text-orange-600"
                 >
                   try again
                 </button>
@@ -159,14 +159,14 @@ export const ForgotPasswordView = () => {
               type="submit"
               size="lg"
               variant="elevated"
-              className="bg-black text-white hover:bg-pink-400 hover:text-primary touch-manipulation"
+              className="bg-black text-white hover:bg-orange-400 hover:text-primary touch-manipulation"
               style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
             >
               {forgotPassword.isPending ? "Sending..." : "Send Reset Link"}
             </Button>
             <div className="text-center text-sm text-gray-600">
               Remember your password?{" "}
-              <Link href="/sign-in" className="text-black underline hover:text-pink-600">
+              <Link href="/sign-in" className="text-black underline hover:text-orange-600">
                 Sign in
               </Link>
             </div>

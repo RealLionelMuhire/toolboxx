@@ -190,7 +190,7 @@ function ResetPasswordContent() {
               type="submit"
               size="lg"
               variant="elevated"
-              className="bg-black text-white hover:bg-pink-400 hover:text-primary touch-manipulation"
+              className="bg-black text-white hover:bg-orange-400 hover:text-primary touch-manipulation"
               style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
             >
               {resetPassword.isPending ? "Resetting Password..." : "Reset Password"}

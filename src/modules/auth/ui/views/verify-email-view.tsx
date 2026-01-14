@@ -99,7 +99,7 @@ function VerifyEmailContent() {
               <Button
                 onClick={() => router.push("/sign-in")}
                 size="lg"
-                className="w-full bg-black text-white hover:bg-pink-400 hover:text-primary"
+                className="w-full bg-black text-white hover:bg-orange-400 hover:text-primary"
               >
                 Continue to Login
               </Button>

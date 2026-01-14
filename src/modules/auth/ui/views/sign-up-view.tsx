@@ -217,8 +217,8 @@ export const SignUpView = () => {
                 >
                   <CardHeader className="pb-2">
                     <div className="flex items-center gap-3 mb-1">
-                      <div className="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full bg-pink-100 shrink-0">
-                        <Store className="h-6 w-6 md:h-8 md:w-8 text-pink-600" />
+                      <div className="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full bg-orange-100 shrink-0">
+                        <Store className="h-6 w-6 md:h-8 md:w-8 text-orange-600" />
                       </div>
                       <CardTitle className="text-xl md:text-2xl">I want to sell</CardTitle>
                     </div>
@@ -554,8 +554,8 @@ export const SignUpView = () => {
             </div>
 
             <div className="flex items-center gap-3 mb-4">
-              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-pink-100">
-                <Store className="h-6 w-6 text-pink-600" />
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-orange-100">
+                <Store className="h-6 w-6 text-orange-600" />
               </div>
               <div>
                 <h1 className="text-3xl font-medium">Start Supplying on Toolbay</h1>
@@ -853,7 +853,7 @@ export const SignUpView = () => {
               type="submit"
               size="lg"
               variant="elevated"
-              className="bg-black text-white hover:bg-pink-400 hover:text-primary"
+              className="bg-black text-white hover:bg-orange-400 hover:text-primary"
             >
               {registerTenant.isPending ? "Creating account..." : "Create Seller Account"}
             </Button>

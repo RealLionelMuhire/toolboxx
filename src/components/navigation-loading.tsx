@@ -16,7 +16,7 @@ export function NavigationLoadingBar() {
   if (!isLoading) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 z-[9999] animate-pulse">
+    <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-purple-500 to-blue-500 z-[9999] animate-pulse">
       <div className="h-full w-full bg-gradient-to-r from-transparent via-white to-transparent animate-[shimmer_1s_ease-in-out_infinite]" />
     </div>
   );

@@ -125,7 +125,7 @@ export const SuggestedProductCard = ({
         
         {/* Price */}
         <div className="flex items-center gap-2 mt-auto">
-          <div className="relative px-2 py-1 border-2 border-black bg-pink-400 w-fit rounded">
+          <div className="relative px-2 py-1 border-2 border-black bg-orange-400 w-fit rounded">
             <p className="text-sm font-bold">
               {formatCurrency(price)}
             </p>

@@ -138,7 +138,7 @@ export default function NotificationsPage() {
       product: "bg-orange-100 text-orange-800 border-orange-300",
       transaction: "bg-yellow-100 text-yellow-800 border-yellow-300",
       system: "bg-gray-100 text-gray-800 border-gray-300",
-      engagement: "bg-pink-100 text-pink-800 border-pink-300",
+      engagement: "bg-orange-100 text-orange-800 border-orange-300",
       promotion: "bg-red-100 text-red-800 border-red-300",
     };
     return colors[type] || colors.system;

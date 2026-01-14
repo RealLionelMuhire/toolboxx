@@ -75,7 +75,7 @@ export const CartButton = ({
           </div>
           <Button
             variant="elevated"
-            className="w-full bg-pink-400"
+            className="w-full bg-orange-400"
             onClick={() => cart.addProduct(productId, selectedQuantity)}
             disabled={!canPurchase}
           >

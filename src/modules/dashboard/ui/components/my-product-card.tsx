@@ -155,7 +155,7 @@ export const MyProductCard = ({
           )}
           
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative px-1 xs:px-1.5 sm:px-2 py-0.5 border bg-pink-400 w-fit">
+            <div className="relative px-1 xs:px-1.5 sm:px-2 py-0.5 border bg-orange-400 w-fit">
               <p className="text-xs xs:text-sm font-medium">
                 {formatCurrency(price)}
               </p>
@@ -283,7 +283,7 @@ export const MyProductCard = ({
       
       <div className="p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <div className="relative px-2 py-1 border bg-pink-400 w-fit">
+          <div className="relative px-2 py-1 border bg-orange-400 w-fit">
             <p className="text-sm font-medium">
               {formatCurrency(price)}
             </p>

@@ -242,7 +242,7 @@ export const ProductCard = ({
         {/* Product details */}
         <div className="flex-1 p-2 xs:p-3 sm:p-4 flex flex-col justify-between gap-1 xs:gap-1.5 min-w-0">
           {/* Product Name */}
-          <h2 className="text-sm xs:text-base sm:text-lg font-semibold line-clamp-2 group-hover:text-pink-600 transition-colors">
+          <h2 className="text-sm xs:text-base sm:text-lg font-semibold line-clamp-2 group-hover:text-orange-600 transition-colors">
             {name}
           </h2>
           
@@ -331,7 +331,7 @@ export const ProductCard = ({
                     quality={75}
                   />
                 ) : null}
-                <span className="text-xs sm:text-sm font-medium truncate text-gray-700 hover:text-pink-600">
+                <span className="text-xs sm:text-sm font-medium truncate text-gray-700 hover:text-orange-600">
                   {tenantName || tenantSlug}
                 </span>
               </a>
@@ -413,7 +413,7 @@ export const ProductCard = ({
       {/* Product Details */}
       <div className="p-2.5 sm:p-3 flex flex-col gap-1 flex-1">
         {/* Product Name */}
-        <h2 className="text-sm sm:text-base font-semibold line-clamp-2 group-hover:text-pink-600 transition-colors min-h-[2.25rem]">
+        <h2 className="text-sm sm:text-base font-semibold line-clamp-2 group-hover:text-orange-600 transition-colors min-h-[2.25rem]">
           {name}
         </h2>
         
@@ -502,7 +502,7 @@ export const ProductCard = ({
                   quality={75}
                 />
               ) : null}
-              <span className="text-xs font-medium text-gray-700 hover:text-pink-600">
+              <span className="text-xs font-medium text-gray-700 hover:text-orange-600">
                 {tenantName || tenantSlug}
               </span>
             </a>

@@ -27,7 +27,7 @@ const CartButton = dynamic(
   ),
   {
     ssr: false,
-    loading: () => <Button disabled className="flex-1 bg-pink-400">Add to cart</Button>
+    loading: () => <Button disabled className="flex-1 bg-orange-400">Add to cart</Button>
   },
 );
 
@@ -408,7 +408,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                     {!isDescriptionExpanded && (
                       <button
                         onClick={() => setIsDescriptionExpanded(true)}
-                        className="mt-1.5 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                        className="mt-1.5 text-sm font-medium text-orange-600 hover:text-orange-700 flex items-center gap-1"
                       >
                         View more <ChevronDown className="size-4" />
                       </button>
@@ -416,7 +416,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                     {isDescriptionExpanded && (
                       <button
                         onClick={() => setIsDescriptionExpanded(false)}
-                        className="mt-1.5 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                        className="mt-1.5 text-sm font-medium text-orange-600 hover:text-orange-700 flex items-center gap-1"
                       >
                         View less <ChevronUp className="size-4" />
                       </button>
@@ -454,7 +454,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                       ))}
                       <button
                         onClick={() => setShowAllRatings(true)}
-                        className="mt-2 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                        className="mt-2 text-sm font-medium text-orange-600 hover:text-orange-700 flex items-center gap-1"
                       >
                         View all ratings <ChevronDown className="size-4" />
                       </button>
@@ -475,7 +475,7 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                       ))}
                       <button
                         onClick={() => setShowAllRatings(false)}
-                        className="mt-2 text-sm font-medium text-pink-600 hover:text-pink-700 flex items-center gap-1"
+                        className="mt-2 text-sm font-medium text-orange-600 hover:text-orange-700 flex items-center gap-1"
                       >
                         Show less <ChevronUp className="size-4" />
                       </button>

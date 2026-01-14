@@ -26,7 +26,7 @@ export function NavigationProgress() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-pink-400 via-blue-500 to-pink-400 z-[9999] animate-pulse"
+      className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 via-blue-500 to-orange-400 z-[9999] animate-pulse"
       style={{
         animation: "progress 1s ease-in-out infinite",
       }}

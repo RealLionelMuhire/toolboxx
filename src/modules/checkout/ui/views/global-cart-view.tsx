@@ -103,7 +103,7 @@ export const GlobalCartView = () => {
                       e.preventDefault();
                       router.push(`${generateTenantURL(tenantSlug)}/cart`);
                     }}
-                    className="bg-pink-400 hover:bg-pink-500 text-white border-2 border-black cursor-pointer pointer-events-auto"
+                    className="bg-orange-400 hover:bg-orange-500 text-white border-2 border-black cursor-pointer pointer-events-auto"
                   >
                     View Cart
                   </Button>
@@ -130,7 +130,7 @@ export const GlobalCartView = () => {
                     router.push(`${generateTenantURL(tenantSlug)}/checkout`);
                   }}
                   variant="outline"
-                  className="w-full mt-4 border-2 border-black hover:bg-pink-400 cursor-pointer pointer-events-auto"
+                  className="w-full mt-4 border-2 border-black hover:bg-orange-400 cursor-pointer pointer-events-auto"
                 >
                   Checkout from {tenantSlug}
                 </Button>
@@ -149,7 +149,7 @@ export const GlobalCartView = () => {
           }}
           variant="outline"
           size="lg"
-          className="border-2 border-black hover:bg-pink-400"
+          className="border-2 border-black hover:bg-orange-400"
         >
           Continue Shopping
         </Button>

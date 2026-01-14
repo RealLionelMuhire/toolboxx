@@ -205,7 +205,7 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
                   
                   {/* Price with unit */}
                   <div className="flex items-center gap-1.5 sm:gap-2">
-                    <div className="relative px-2 sm:px-3 py-1 sm:py-1.5 border-2 border-black bg-pink-400 w-fit rounded">
+                    <div className="relative px-2 sm:px-3 py-1 sm:py-1.5 border-2 border-black bg-orange-400 w-fit rounded">
                       <p className="text-sm xs:text-base sm:text-lg font-bold">
                         {sale.totalAmount.toLocaleString()} RWF
                       </p>
@@ -314,7 +314,7 @@ export const MySalesList = ({ searchQuery, statusFilter }: MySalesListProps) => 
                 
                 {/* Price with unit */}
                 <div className="flex items-center gap-2">
-                  <div className="relative px-2 sm:px-3 py-1.5 sm:py-2 border-2 border-black bg-pink-400 w-fit rounded">
+                  <div className="relative px-2 sm:px-3 py-1.5 sm:py-2 border-2 border-black bg-orange-400 w-fit rounded">
                     <p className="text-base sm:text-lg font-bold">
                       {sale.totalAmount.toLocaleString()} RWF
                     </p>
