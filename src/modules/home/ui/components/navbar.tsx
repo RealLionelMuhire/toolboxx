@@ -349,10 +349,33 @@ export const Navbar = () => {
   }));
   const sidebarItems = isLoggedIn ? navbarItems : publicNavbarItems;
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    const homeUrl = getHomeUrl();
+    const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
+    
+    // If subdomain routing enabled and we're on a subdomain, use full page navigation
+    if (isSubdomainRoutingEnabled && rootDomain && typeof window !== 'undefined') {
+      const currentHostname = window.location.hostname;
+      const isOnRootDomain = currentHostname === rootDomain.split(':')[0];
+      
+      if (!isOnRootDomain) {
+        // We're on a subdomain, need full navigation to root
+        return; // Let the Link handle it normally
+      }
+    }
+    
+    // Same domain - use client-side navigation
+    if (homeUrl === '/') {
+      e.preventDefault();
+      router.push('/');
+    }
+  };
+
   if (!isLoggedIn) {
     return (
       <nav className="h-16 flex border-b justify-between font-medium bg-white w-full overflow-x-auto overflow-y-visible sticky top-0 z-50 lg:fixed">
-        <Link href={getHomeUrl()} className="pl-3 lg:pl-4 flex items-center gap-2 flex-shrink-0">
+        <Link href={getHomeUrl()} onClick={handleLogoClick} className="pl-3 lg:pl-4 flex items-center gap-2 flex-shrink-0">
           <Image
             src="/logo.jpeg"
             alt="Toolbay Logo"
@@ -449,7 +472,7 @@ export const Navbar = () => {
   return (
     <nav className="h-16 flex border-b justify-between font-medium bg-white w-full sticky top-0 z-50 lg:fixed">
       {/* Logo - Compact for mobile */}
-      <Link href={getHomeUrl()} className="pl-2 lg:pl-4 flex items-center flex-shrink-0 gap-1.5 lg:gap-3">
+      <Link href={getHomeUrl()} onClick={handleLogoClick} className="pl-2 lg:pl-4 flex items-center flex-shrink-0 gap-1.5 lg:gap-3">
         {/* Logo Image - Smaller on mobile */}
         <div className="relative w-8 h-8 lg:w-12 lg:h-12 flex-shrink-0">
           <Image

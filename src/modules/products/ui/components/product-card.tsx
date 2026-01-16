@@ -101,7 +101,7 @@ export const ProductCard = ({
       }
       
       console.log('[ProductCard] Using router push to tenant:', tenantUrl);
-      window.location.href = tenantUrl;
+      router.push(tenantUrl);
       return;
     }
     
@@ -124,19 +124,28 @@ export const ProductCard = ({
       return;
     }
     
-    // Navigate to product immediately using window.location for instant navigation
+    // Navigate to product using Next.js router for smooth client-side navigation
     console.log('[ProductCard] Same-origin navigation to:', productUrl);
     e.preventDefault();
-    console.log('[ProductCard] Using window.location for immediate navigation');
-    window.location.href = productUrl;
+    console.log('[ProductCard] Using router.push for smooth navigation');
+    router.push(productUrl);
   };
 
   const handleTenantClick = useCallback((e: React.MouseEvent) => {
-    // This is now just for accessibility - actual click is handled by card
+    // Handle tenant link navigation
     console.log('[ProductCard] Tenant link direct click');
     e.preventDefault();
     e.stopPropagation();
-  }, []);
+    
+    // Navigate to tenant store
+    if (isSubdomainRoutingEnabled && rootDomain && !isAlreadyOnTenantSubdomain) {
+      console.log('[ProductCard] Navigating to tenant subdomain:', tenantUrl);
+      window.location.href = tenantUrl;
+    } else if (!isAlreadyOnTenantSubdomain) {
+      console.log('[ProductCard] Using router push to tenant:', tenantUrl);
+      router.push(tenantUrl);
+    }
+  }, [isSubdomainRoutingEnabled, rootDomain, isAlreadyOnTenantSubdomain, tenantUrl, router]);
   
   // Prefetch on hover for instant navigation - debounced
   const prefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
