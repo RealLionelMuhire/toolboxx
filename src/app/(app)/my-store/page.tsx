@@ -4,7 +4,8 @@ import { useTRPC } from '@/trpc/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 import { OrderStats } from '@/components/dashboard/OrderStats';
 import { OrderCard } from '@/components/orders/OrderCard';
@@ -16,8 +17,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Badge } from '@/components/ui/badge';
 import { SearchIcon, PlusIcon } from 'lucide-react';
-import { toast } from 'sonner';
 import { NotificationPrompt } from '@/components/notification-prompt';
+import { generateTenantURL } from '@/lib/utils';
+import { ShareStoreDialog } from '@/modules/tenants/ui/components/share-store-dialog';
 
 import { MyProductsList, MyProductsListSkeleton } from '@/modules/dashboard/ui/components/my-products-list';
 import { MySalesList, MySalesListSkeleton } from '@/modules/sales/ui/components/my-sales-list';
@@ -45,6 +47,7 @@ export default function MyStorePage() {
   const [productNotifications, setProductNotifications] = useState<ProductNotification[]>([]);
   const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(new Set());
   const [showAllNotifications, setShowAllNotifications] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   // Load dismissed notifications from localStorage on mount
   useEffect(() => {
@@ -135,6 +138,53 @@ export default function MyStorePage() {
     staleTime: 0, // Always check fresh
   });
 
+  // Get tenant info for share button
+  const tenantSlug = session.data?.user?.tenants?.[0] && 
+    typeof session.data.user.tenants[0].tenant === 'object'
+      ? (session.data.user.tenants[0].tenant as any).slug
+      : null;
+  
+  const tenantName = session.data?.user?.tenants?.[0] && 
+    typeof session.data.user.tenants[0].tenant === 'object'
+      ? (session.data.user.tenants[0].tenant as any).name
+      : null;
+
+  const handleShare = async () => {
+    if (!tenantSlug) {
+      toast.error("No store found to share");
+      return;
+    }
+
+    const storeUrl = generateTenantURL(tenantSlug);
+    
+    // Check if we're on mobile/tablet - use native share
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+    
+    // Try using Web Share API on mobile
+    if (isMobile && navigator.share) {
+      try {
+        await navigator.share({
+          title: `${tenantName || 'My Store'} - Store`,
+          text: `Check out ${tenantName || 'my store'} on Toolbay!`,
+          url: storeUrl,
+        });
+        toast.success("Store shared successfully!");
+      } catch (error) {
+        // User cancelled or error occurred
+        if ((error as Error).name !== 'AbortError') {
+          console.error('Error sharing:', error);
+          // Fallback to dialog on error
+          setShareDialogOpen(true);
+        }
+      }
+    } else {
+      // On desktop, show custom share dialog
+      setShareDialogOpen(true);
+    }
+  };
+
   useEffect(() => {
     // Wait until session is fetched before redirecting
     if (!session.isFetched) return;
@@ -158,16 +208,42 @@ export default function MyStorePage() {
 
   return (
     <div className="container mx-auto px-4 py-4 md:py-8">
+      {/* Share Store Dialog */}
+      {tenantSlug && tenantName && (
+        <ShareStoreDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          storeName={tenantName}
+          storeUrl={generateTenantURL(tenantSlug)}
+        />
+      )}
+
       {/* Browser Notification Prompt */}
       <div className="mb-4">
         <NotificationPrompt />
       </div>
 
-      <div className="mb-4 md:mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">My Store</h1>
-        <p className="text-sm md:text-base text-gray-600">
-          Manage your account, purchases, products, and sales
-        </p>
+      <div className="mb-4 md:mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold mb-1 md:mb-2">My Store</h1>
+          <p className="text-sm md:text-base text-gray-600">
+            Manage your account, purchases, products, and sales
+          </p>
+        </div>
+        
+        {/* Share Store Button - Only show for tenants */}
+        {tenantSlug && tenantName && (
+          <Button
+            onClick={handleShare}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1.5 text-xs sm:text-sm shrink-0"
+          >
+            <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Share Store</span>
+            <span className="sm:hidden">Share</span>
+          </Button>
+        )}
       </div>
 
       {/* Tab Navigation */}

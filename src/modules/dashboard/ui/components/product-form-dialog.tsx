@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import dynamic from "next/dynamic";
 
 import { useTRPC } from "@/trpc/client";
@@ -45,7 +45,7 @@ interface ProductFormData {
   maxOrderQuantity?: number;
   lowStockThreshold: number;
   allowBackorder: boolean;
-  category: string;
+  category: string[]; // Changed to array for multiple categories
   image: string;
   cover?: string;
   gallery?: string[];
@@ -71,10 +71,11 @@ export const ProductFormDialog = ({
   const initialGalleryRef = useRef<string[]>([]);
   const hasSubmittedRef = useRef(false);
   const hasPopulatedRef = useRef(false); // Track if we've populated the form in edit mode
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   const { register, handleSubmit, setValue, watch, getValues, control, reset, formState: { errors } } = useForm<ProductFormData>({
     defaultValues: {
-      category: "", // Add empty string default for category
+      category: [], // Changed to empty array for multiple categories
       quantity: 0,
       unit: "unit",
       minOrderQuantity: 1,
@@ -104,9 +105,12 @@ export const ProductFormDialog = ({
   useEffect(() => {
     // Prevent multiple resets
     if (mode === "edit" && productData && !isLoadingCategories && categoriesData && !hasPopulatedRef.current) {
-      const categoryId = typeof productData.category === "string" 
-        ? productData.category 
-        : productData.category?.id || "";
+      // Handle multiple categories
+      const categoryIds = productData.category
+        ? Array.isArray(productData.category)
+          ? productData.category.map(cat => typeof cat === "string" ? cat : cat.id)
+          : [typeof productData.category === "string" ? productData.category : productData.category.id]
+        : [];
       
       const imageId = productData.image 
         ? (typeof productData.image === "string" ? productData.image : productData.image.id)
@@ -161,7 +165,7 @@ export const ProductFormDialog = ({
         allowBackorder: productData.allowBackorder ?? false,
         refundPolicy: (productData.refundPolicy as ProductFormData["refundPolicy"]) || "30-day",
         isPrivate: productData.isPrivate ?? false,
-        category: categoryId,
+        category: categoryIds,
         image: imageId,
         cover: coverId,
         gallery: galleryIds,
@@ -206,7 +210,7 @@ export const ProductFormDialog = ({
       
       // Reset form when dialog closes with clean state
       reset({
-        category: "", // Reset category to empty
+        category: [], // Reset category to empty array
         quantity: 0,
         unit: "unit",
         minOrderQuantity: 1,
@@ -224,7 +228,7 @@ export const ProductFormDialog = ({
       
       if (mode === "create") {
         reset({
-          category: "",
+          category: [],
           quantity: 0,
           unit: "unit",
           minOrderQuantity: 1,
@@ -328,7 +332,9 @@ export const ProductFormDialog = ({
       minOrderQuantity: data.minOrderQuantity || 1,
       lowStockThreshold: data.lowStockThreshold || 10,
       allowBackorder: data.allowBackorder || false,
-      category: typeof data.category === 'string' ? data.category : (data.category as any)?.id || data.category,
+      category: Array.isArray(data.category) 
+        ? data.category.map(cat => typeof cat === 'string' ? cat : (cat as any)?.id || cat)
+        : [typeof data.category === 'string' ? data.category : (data.category as any)?.id || data.category],
       image: data.image,
       refundPolicy: data.refundPolicy,
       isPrivate: data.isPrivate || false,
@@ -358,50 +364,60 @@ export const ProductFormDialog = ({
 
   const categories = categoriesData || [];
   
-  // Extract the current category ID once to avoid unnecessary re-renders
+  // Extract the current category IDs for edit mode
   const currentCategoryData = useMemo(() => {
     if (mode === "edit" && productData?.category) {
-      if (typeof productData.category === 'string') {
-        return { id: productData.category, name: 'Current Category' };
+      if (Array.isArray(productData.category)) {
+        return productData.category.map(cat => ({
+          id: typeof cat === 'string' ? cat : cat.id,
+          name: typeof cat === 'string' ? 'Category' : cat.name,
+        }));
+      } else if (typeof productData.category === 'string') {
+        return [{ id: productData.category, name: 'Current Category' }];
+      } else {
+        return [{ id: productData.category.id, name: productData.category.name }];
       }
-      return {
-        id: productData.category.id,
-        name: productData.category.name,
-      };
     }
-    return null;
+    return [];
   }, [mode, productData?.category]);
   
-  // Build category options including current product's category
+  // Build category options - organize with parent categories and their subcategories
   const categoryOptions = useMemo(() => {
-    const options: Array<{ id: string; name: string; isSubcategory: boolean }> = [];
-    const seenIds = new Set<string>();
+    const parentCategories: Array<{ 
+      id: string; 
+      name: string; 
+      subcategories: Array<{ id: string; name: string }> 
+    }> = [];
+    const seenParentIds = new Set<string>();
 
-    // If editing, ensure current category is available
-    if (currentCategoryData) {
-      options.push({ 
-        id: currentCategoryData.id, 
-        name: currentCategoryData.name, 
-        isSubcategory: false 
-      });
-      seenIds.add(currentCategoryData.id);
-    }
+    // If editing, ensure current categories are available
+    const currentCatIds = new Set(currentCategoryData.map(c => c.id));
 
-    // Add all loaded categories and subcategories
+    // Process all categories
     categories.forEach((cat) => {
-      if (!seenIds.has(cat.id)) {
-        options.push({ id: cat.id, name: cat.name, isSubcategory: false });
-        seenIds.add(cat.id);
+      if (!seenParentIds.has(cat.id)) {
+        const subcats = (cat.subcategories || []).map((sub: any) => ({
+          id: sub.id,
+          name: sub.name
+        }));
+        
+        parentCategories.push({ 
+          id: cat.id, 
+          name: cat.name, 
+          subcategories: subcats 
+        });
+        seenParentIds.add(cat.id);
       }
-      (cat.subcategories || []).forEach((sub: any) => {
-        if (!seenIds.has(sub.id)) {
-          options.push({ id: sub.id, name: sub.name, isSubcategory: true });
-          seenIds.add(sub.id);
-        }
-      });
     });
 
-    return options;
+    // Sort: "Others" category last, rest alphabetically
+    parentCategories.sort((a, b) => {
+      if (a.name.toLowerCase() === 'others') return 1;
+      if (b.name.toLowerCase() === 'others') return -1;
+      return a.name.localeCompare(b.name);
+    });
+
+    return parentCategories;
   }, [categories, currentCategoryData]);
 
   return (
@@ -437,74 +453,200 @@ export const ProductFormDialog = ({
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* 1. Category */}
             <div>
-              <Label htmlFor="category">Category *</Label>
+              <Label htmlFor="category">Categories *</Label>
               <Controller
                 name="category"
                 control={control}
-                rules={{ required: "Category is required" }}
-                render={({ field }) => {
-                  // Find the selected category name for display
-                  const selectedCategory = categoryOptions.find(opt => opt.id === field.value);
-                  
-                  // Safeguard: If we have a value but it's not in options, it might have been lost
-                  // during a re-render. Try to restore it from productData.
-                  if (mode === "edit" && !field.value && productData?.category) {
-                    const categoryId = typeof productData.category === 'string'
-                      ? productData.category
-                      : productData.category?.id;
-                    if (categoryId) {
-                      field.onChange(categoryId);
+                rules={{ 
+                  validate: (value) => {
+                    if (!value || value.length === 0) {
+                      return "Please select at least one category";
                     }
+                    return true;
                   }
+                }}
+                render={({ field }) => {
+                  const selectedCategories = Array.isArray(field.value) ? field.value : [];
+                  
+                  const toggleCategory = (categoryId: string, isParent: boolean, subcategoryIds?: string[]) => {
+                    if (isParent && subcategoryIds && subcategoryIds.length > 0) {
+                      // Parent category clicked - toggle parent and all subcategories
+                      const allIds = [categoryId, ...subcategoryIds];
+                      const allSelected = allIds.every(id => selectedCategories.includes(id));
+                      
+                      if (allSelected) {
+                        // Deselect parent and all subcategories
+                        const newSelection = selectedCategories.filter(id => !allIds.includes(id));
+                        field.onChange(newSelection);
+                      } else {
+                        // Select parent and all subcategories
+                        const newSelection = [...new Set([...selectedCategories, ...allIds])];
+                        field.onChange(newSelection);
+                      }
+                    } else {
+                      // Single category/subcategory toggle
+                      const newSelection = selectedCategories.includes(categoryId)
+                        ? selectedCategories.filter(id => id !== categoryId)
+                        : [...selectedCategories, categoryId];
+                      field.onChange(newSelection);
+                    }
+                  };
+                  
+                  const toggleExpanded = (categoryId: string) => {
+                    const newExpanded = new Set(expandedCategories);
+                    if (newExpanded.has(categoryId)) {
+                      newExpanded.delete(categoryId);
+                    } else {
+                      newExpanded.add(categoryId);
+                    }
+                    setExpandedCategories(newExpanded);
+                  };
+
+                  // Calculate dynamic height based on selections and screen size
+                  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+                  const baseHeight = isMobile ? 80 : 200; // 2.5x smaller on mobile (200 / 2.5 = 80)
+                  const selectedHeight = Math.min(selectedCategories.length * (isMobile ? 11 : 28), isMobile ? 48 : 120);
+                  const maxHeight = baseHeight + selectedHeight;
                   
                   return (
-                    <Select
-                      key={`category-select-${field.value || 'empty'}`}
-                      value={field.value || ""}
-                      onValueChange={field.onChange}
-                      disabled={isLoadingCategories || categoryOptions.length === 0}
+                    <div 
+                      className="border rounded-md p-3 overflow-y-auto bg-white transition-all duration-200"
+                      style={{ maxHeight: `${maxHeight}px` }}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder={
-                          isLoadingCategories 
-                            ? "Loading categories..." 
-                            : categories.length === 0
-                            ? "No categories available - contact admin"
-                            : "Select a category"
-                        }>
-                          {selectedCategory ? (
-                            selectedCategory.isSubcategory 
-                              ? `↳ ${selectedCategory.name}` 
-                              : selectedCategory.name
-                          ) : (
-                            "Select a category"
-                          )}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categoryOptions.length === 0 ? (
-                          <div className="p-2 text-sm text-gray-500 text-center">
-                            No categories available. Please contact your administrator.
+                      {isLoadingCategories ? (
+                        <div className="text-sm text-gray-500 text-center py-4">
+                          Loading categories...
+                        </div>
+                      ) : categoryOptions.length === 0 ? (
+                        <div className="text-sm text-gray-500 text-center py-4">
+                          No categories available. Please contact your administrator.
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          {categoryOptions.map((parent) => {
+                            const subcatIds = parent.subcategories.map(s => s.id);
+                            const isExpanded = expandedCategories.has(parent.id);
+                            const isParentSelected = selectedCategories.includes(parent.id);
+                            const allSubcatsSelected = subcatIds.length > 0 && subcatIds.every(id => selectedCategories.includes(id));
+                            const someSubcatsSelected = subcatIds.length > 0 && subcatIds.some(id => selectedCategories.includes(id)) && !allSubcatsSelected;
+                            
+                            return (
+                              <div key={parent.id} className="space-y-1">
+                                {/* Parent Category */}
+                                <div className="flex items-center space-x-2 hover:bg-gray-50 rounded px-1 py-1">
+                                  {parent.subcategories.length > 0 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleExpanded(parent.id)}
+                                      className="p-0.5 hover:bg-gray-200 rounded"
+                                    >
+                                      {isExpanded ? (
+                                        <ChevronDown className="h-3.5 w-3.5" />
+                                      ) : (
+                                        <ChevronRight className="h-3.5 w-3.5" />
+                                      )}
+                                    </button>
+                                  )}
+                                  {parent.subcategories.length === 0 && (
+                                    <div className="w-5" />
+                                  )}
+                                  <Checkbox
+                                    id={`category-${parent.id}`}
+                                    checked={isParentSelected || allSubcatsSelected}
+                                    className={someSubcatsSelected ? "data-[state=checked]:bg-orange-300" : ""}
+                                    onCheckedChange={() => toggleCategory(parent.id, true, subcatIds)}
+                                  />
+                                  <Label 
+                                    htmlFor={`category-${parent.id}`}
+                                    className="cursor-pointer text-sm font-medium flex-1"
+                                  >
+                                    {parent.name}
+                                    {parent.subcategories.length > 0 && (
+                                      <span className="text-xs text-gray-500 ml-1">
+                                        ({parent.subcategories.length})
+                                      </span>
+                                    )}
+                                  </Label>
+                                </div>
+                                
+                                {/* Subcategories (Collapsible) */}
+                                {isExpanded && parent.subcategories.length > 0 && (
+                                  <div className="ml-8 space-y-1 border-l-2 border-gray-200 pl-3">
+                                    {parent.subcategories.map((sub) => (
+                                      <div 
+                                        key={sub.id}
+                                        className="flex items-center space-x-2 hover:bg-gray-50 rounded px-1 py-0.5"
+                                      >
+                                        <Checkbox
+                                          id={`category-${sub.id}`}
+                                          checked={selectedCategories.includes(sub.id)}
+                                          onCheckedChange={() => toggleCategory(sub.id, false)}
+                                        />
+                                        <Label 
+                                          htmlFor={`category-${sub.id}`}
+                                          className="cursor-pointer text-sm font-normal text-gray-700"
+                                        >
+                                          {sub.name}
+                                        </Label>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {selectedCategories.length > 0 && (
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="text-xs text-gray-600 font-medium mb-2">
+                            Selected ({selectedCategories.length}):
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {selectedCategories.map(catId => {
+                              // Find the category name from parent or subcategory
+                              let catName = '';
+                              for (const parent of categoryOptions) {
+                                if (parent.id === catId) {
+                                  catName = parent.name;
+                                  break;
+                                }
+                                const subcat = parent.subcategories.find(s => s.id === catId);
+                                if (subcat) {
+                                  catName = subcat.name;
+                                  break;
+                                }
+                              }
+                              
+                              return catName ? (
+                                <span
+                                  key={catId}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded-full"
+                                >
+                                  {catName}
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleCategory(catId, false)}
+                                    className="hover:text-orange-900"
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              ) : null;
+                            })}
                           </div>
-                        ) : (
-                          categoryOptions.map((option) => (
-                            <SelectItem 
-                              key={option.id} 
-                              value={option.id}
-                              className={option.isSubcategory ? "pl-6" : ""}
-                            >
-                              {option.isSubcategory ? `↳ ${option.name}` : option.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
+                        </div>
+                      )}
+                    </div>
                   );
                 }}
               />
               {errors.category && (
                 <p className="text-sm text-red-600 mt-1">{errors.category.message}</p>
               )}
+              <p className="text-xs text-gray-500 mt-1">
+                Select categories. Clicking a parent category selects all subcategories.
+              </p>
             </div>
 
             {/* 2. Product Photos & Videos */}

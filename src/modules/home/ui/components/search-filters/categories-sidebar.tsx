@@ -30,6 +30,12 @@ export const CategoriesSidebar = ({
     gcTime: 30 * 60 * 1000, // 30 minutes
   });
 
+  const { data: categoryCounts } = useQuery({
+    ...trpc.products.getCategoryCounts.queryOptions(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+  });
+
   const router = useRouter();
 
   const [parentCategories, setParentCategories] = useState<CategoriesGetManyOutput | null>(null);
@@ -42,6 +48,29 @@ export const CategoriesSidebar = ({
 
   // If we have parent categories, show those, otherwise show root categories
   const currentCategories = parentCategories ?? data ?? [];
+
+  // Sort categories: "Others" last, rest alphabetically
+  const sortedCategories = [...currentCategories].sort((a, b) => {
+    if (a.name.toLowerCase() === 'others') return 1;
+    if (b.name.toLowerCase() === 'others') return -1;
+    return a.name.localeCompare(b.name);
+  });
+
+  // Helper to get count for a category and its subcategories
+  const getCategoryCount = (category: CategoriesGetManyOutput[1]): number => {
+    if (!categoryCounts) return 0;
+    
+    let count = categoryCounts[category.id] || 0;
+    
+    // Add counts from subcategories
+    if (category.subcategories && category.subcategories.length > 0) {
+      category.subcategories.forEach((subcat: any) => {
+        count += categoryCounts[subcat.id] || 0;
+      });
+    }
+    
+    return count;
+  };
 
   const handleOpenChange = (open: boolean) => {
     setSelectedCategory(null);
@@ -102,18 +131,23 @@ export const CategoriesSidebar = ({
               Back
             </button>
           )}
-          {currentCategories.map((category) => (
-            <button
-              key={category.slug}
-              onClick={() => handleCategoryClick(category)}
-              className="w-full text-left p-4 hover:bg-black hover:text-white flex justify-between items-center text-base font-medium cursor-pointer"
-            >
-              {category.name}
-              {category.subcategories && category.subcategories.length > 0 && (
-                <ChevronRightIcon className="size-4" />
-              )}
-            </button>
-          ))}
+          {sortedCategories.map((category) => {
+            const count = getCategoryCount(category);
+            return (
+              <button
+                key={category.slug}
+                onClick={() => handleCategoryClick(category)}
+                className="w-full text-left p-4 hover:bg-black hover:text-white flex justify-between items-center text-base font-medium cursor-pointer"
+              >
+                <span>
+                  {category.name} ({count})
+                </span>
+                {category.subcategories && category.subcategories.length > 0 && (
+                  <ChevronRightIcon className="size-4" />
+                )}
+              </button>
+            );
+          })}
         </ScrollArea>
       </SheetContent>
     </Sheet>

@@ -256,10 +256,10 @@ export const Products: CollectionConfig = {
       name: "category",
       type: "relationship",
       relationTo: "categories",
-      hasMany: false,
+      hasMany: true, // Changed to support multiple categories
       required: true,
       admin: {
-        description: "Select the most appropriate category for your product",
+        description: "Select one or more categories for your product",
       },
     },
     {

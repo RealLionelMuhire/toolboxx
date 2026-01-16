@@ -26,7 +26,7 @@ const createProductSchema = z.object({
   maxOrderQuantity: z.number().min(1).optional(),
   lowStockThreshold: z.number().min(0).default(10),
   allowBackorder: z.boolean().default(false),
-  category: z.string().min(1, "Category is required"),
+  category: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).transform(val => Array.isArray(val) ? val : [val]),
   tags: z.array(z.string()).optional(),
   image: z.string().min(1, "Product image is required"),
   cover: z.string().optional(),
@@ -70,7 +70,7 @@ const updateProductSchema = z.preprocess(
     maxOrderQuantity: z.number().min(1).optional(),
     lowStockThreshold: z.number().min(0).optional(),
     allowBackorder: z.boolean().optional(),
-    category: z.string().optional(),
+    category: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).transform(val => val ? (Array.isArray(val) ? val : [val]) : undefined).optional(),
     tags: z.array(z.string()).optional(),
     image: z.string().optional(),
     cover: z.string().optional(),
@@ -354,8 +354,24 @@ export const productsRouter = createTRPCRouter({
             ...parentCategory.subcategories.map((subcategory) => subcategory.slug)
           )
 
-          where["category.slug"] = {
-            in: [parentCategory.slug, ...subcategoriesSlugs]
+          // Query for category IDs matching the slugs
+          const matchingCategories = await ctx.db.find({
+            collection: "categories",
+            pagination: false,
+            where: {
+              slug: {
+                in: [parentCategory.slug, ...subcategoriesSlugs]
+              }
+            }
+          });
+
+          const categoryIds = matchingCategories.docs.map(cat => cat.id);
+
+          // Filter products that have any of these categories in their category array
+          if (categoryIds.length > 0) {
+            where["category"] = {
+              in: categoryIds
+            }
           }
         }
       }
@@ -704,9 +720,16 @@ export const productsRouter = createTRPCRouter({
         }));
       }
 
-      // Ensure category is a string ID (safety check)
-      if (finalUpdateData.category && typeof finalUpdateData.category !== 'string') {
-        finalUpdateData.category = (finalUpdateData.category as any).id || finalUpdateData.category;
+      // Ensure category is an array of strings (supports multiple categories)
+      if (finalUpdateData.category) {
+        if (typeof finalUpdateData.category === 'string') {
+          finalUpdateData.category = [finalUpdateData.category];
+        } else if (Array.isArray(finalUpdateData.category)) {
+          // Ensure all items are strings (extract IDs if objects)
+          finalUpdateData.category = finalUpdateData.category.map((cat: any) => 
+            typeof cat === 'string' ? cat : cat.id || cat
+          );
+        }
       }
 
       console.log('[updateProduct] Final data to update:', finalUpdateData);
@@ -1181,6 +1204,68 @@ export const productsRouter = createTRPCRouter({
         console.error('Error tracking product view:', error);
         // Don't throw error - view tracking shouldn't break the app
         return { success: false };
+      }
+    }),
+
+  // Get product counts by category
+  getCategoryCounts: baseProcedure
+    .query(async ({ ctx }) => {
+      try {
+        // Get all categories
+        const categories = await ctx.db.find({
+          collection: "categories",
+          pagination: false,
+          depth: 0,
+        });
+
+        // Get all non-archived, public products
+        const products = await ctx.db.find({
+          collection: "products",
+          pagination: false,
+          where: {
+            and: [
+              {
+                isArchived: {
+                  not_equals: true,
+                },
+              },
+              {
+                isPrivate: {
+                  not_equals: true,
+                },
+              },
+            ],
+          },
+          depth: 0,
+          select: {
+            id: true,
+            category: true,
+          },
+        });
+
+        // Count products for each category
+        const counts: Record<string, number> = {};
+        
+        categories.docs.forEach((category) => {
+          counts[category.id] = 0;
+        });
+
+        products.docs.forEach((product: any) => {
+          const categoryIds = Array.isArray(product.category) 
+            ? product.category 
+            : [product.category];
+          
+          categoryIds.forEach((catId: string) => {
+            if (catId && counts[catId] !== undefined) {
+              counts[catId]++;
+            }
+          });
+        });
+
+        return counts;
+      } catch (error) {
+        console.error('Error getting category counts:', error);
+        return {};
       }
     }),
 });
