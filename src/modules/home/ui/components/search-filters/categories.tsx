@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { CategoriesGetManyOutput } from "@/modules/categories/types";
 
 import { CategoryDropdown } from "./category-dropdown";
-import { CategoriesSidebar } from "./categories-sidebar";
+import { FiltersSidebar } from "./filters-sidebar";
 
 interface Props {
   data: CategoriesGetManyOutput
@@ -64,8 +64,8 @@ export const Categories = ({ data }: Props) => {
 
   return (
     <div className="relative w-full">
-      {/* Categories sidebar */}
-      <CategoriesSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
+      {/* Unified Filters sidebar with categories */}
+      <FiltersSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
 
       {/* Hidden div to measure all items */}
       <div
@@ -112,7 +112,7 @@ export const Categories = ({ data }: Props) => {
             )}
             onClick={() => setIsSidebarOpen(true)}
           >
-            View All
+            Filters
             <ListFilterIcon className="ml-2" />
           </Button>
         </div>

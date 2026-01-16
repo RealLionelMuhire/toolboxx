@@ -21,7 +21,7 @@ const createProductSchema = z.object({
   description: z.any().optional(), // Rich text
   price: z.number().min(0, "Price must be positive"),
   quantity: z.number().min(0, "Quantity cannot be negative").default(0),
-  unit: z.enum(["unit", "piece", "box", "pack", "bag", "kg", "gram", "meter", "cm", "liter", "sqm", "cbm", "set", "pair", "roll", "sheet", "carton", "pallet"]).default("unit"),
+  unit: z.enum(["unit", "piece", "box", "pack", "bag", "kg", "gram", "meter", "cm", "liter", "sqm", "cbm", "set", "pair", "roll", "sheet", "carton", "pallet", "hour", "day", "week", "month"]).default("unit"),
   minOrderQuantity: z.number().min(1, "Minimum order quantity must be at least 1").default(1),
   maxOrderQuantity: z.number().min(1).optional(),
   lowStockThreshold: z.number().min(0).default(10),
@@ -65,7 +65,7 @@ const updateProductSchema = z.preprocess(
     description: z.any().optional(),
     price: z.number().min(0).optional(),
     quantity: z.number().min(0).optional(),
-    unit: z.enum(["unit", "piece", "box", "pack", "bag", "kg", "gram", "meter", "cm", "liter", "sqm", "cbm", "set", "pair", "roll", "sheet", "carton", "pallet"]).optional(),
+    unit: z.enum(["unit", "piece", "box", "pack", "bag", "kg", "gram", "meter", "cm", "liter", "sqm", "cbm", "set", "pair", "roll", "sheet", "carton", "pallet", "hour", "day", "week", "month"]).optional(),
     minOrderQuantity: z.number().min(1).optional(),
     maxOrderQuantity: z.number().min(1).optional(),
     lowStockThreshold: z.number().min(0).optional(),
@@ -293,6 +293,22 @@ export const productsRouter = createTRPCRouter({
 
       if (input.sort === "trending") {
         sort = "-createdAt";
+      }
+
+      if (input.sort === "price_low_to_high") {
+        sort = "+price";
+      }
+
+      if (input.sort === "price_high_to_low") {
+        sort = "-price";
+      }
+
+      if (input.sort === "newest") {
+        sort = "-createdAt";
+      }
+
+      if (input.sort === "oldest") {
+        sort = "+createdAt";
       }
 
       if (input.minPrice && input.maxPrice) {

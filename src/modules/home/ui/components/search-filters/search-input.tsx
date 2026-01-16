@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { ListFilterIcon, SearchIcon, FilterIcon } from "lucide-react";
+import { SlidersHorizontal, SearchIcon, FilterIcon } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-import { CategoriesSidebar } from "./categories-sidebar";
 import { FiltersSidebar } from "./filters-sidebar";
 
 interface Props {
@@ -19,7 +18,6 @@ export const SearchInput = ({
   onChange,
 }: Props) => {
   const [searchValue, setSearchValue] = useState(defaultValue || "");
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
   useEffect(() => {
@@ -32,7 +30,6 @@ export const SearchInput = ({
 
   return (
     <>
-      <CategoriesSidebar open={isSidebarOpen} onOpenChange={setIsSidebarOpen} />
       <FiltersSidebar open={isFiltersOpen} onOpenChange={setIsFiltersOpen} />
       <div className="flex items-center gap-2 w-full min-w-0">
         <div className="relative w-full min-w-0 flex-1">
@@ -48,18 +45,18 @@ export const SearchInput = ({
         <Button
           variant="elevated"
           className="size-12 shrink-0 flex lg:hidden"
-          onClick={() => setIsSidebarOpen(true)}
+          onClick={() => setIsFiltersOpen(true)}
+          title="Categories & Filters"
         >
-          <ListFilterIcon />
+          <SlidersHorizontal />
         </Button>
         <Button
           variant="elevated"
-          className="shrink-0 whitespace-nowrap"
+          className="hidden lg:flex shrink-0 whitespace-nowrap"
           onClick={() => setIsFiltersOpen(!isFiltersOpen)}
         >
-          <FilterIcon className="mr-2 hidden sm:inline" />
-          <span className="hidden sm:inline">Filters</span>
-          <FilterIcon className="sm:hidden" />
+          <FilterIcon className="mr-2" />
+          <span>Filters</span>
         </Button>
       </div>
     </>

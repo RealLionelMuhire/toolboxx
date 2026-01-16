@@ -755,6 +755,10 @@ export const ProductFormDialog = ({
                     <SelectItem value="sheet">Sheet(s)</SelectItem>
                     <SelectItem value="carton">Carton(s)</SelectItem>
                     <SelectItem value="pallet">Pallet(s)</SelectItem>
+                    <SelectItem value="hour">Hour(s)</SelectItem>
+                    <SelectItem value="day">Day(s)</SelectItem>
+                    <SelectItem value="week">Week(s)</SelectItem>
+                    <SelectItem value="month">Month(s)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
