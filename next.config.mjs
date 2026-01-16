@@ -37,6 +37,15 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'public.blob.vercel-storage.com',
       },
+      // Railway deployment support - wildcard for all railway domains
+      {
+        protocol: 'https',
+        hostname: '**.railway.app',
+      },
+      {
+        protocol: 'http',
+        hostname: '**.railway.app',
+      },
       // Allow images from the current deployment domain
       ...(process.env.NEXT_PUBLIC_APP_URL
         ? [
@@ -55,6 +64,11 @@ const nextConfig = {
             },
           ]
         : []),
+      // Railway deployment support
+      {
+        protocol: 'https',
+        hostname: '**.railway.app',
+      },
       {
         protocol: 'https',
         hostname: '**.shutterstock.com',
