@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, UseFormReturn } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, ChevronDown, ChevronRight } from "lucide-react";
 import dynamic from "next/dynamic";
 
 import { useTRPC } from "@/trpc/client";
+import { LocationSelector } from "@/components/location-selector";
+import { Form } from "@/components/ui/form";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +53,11 @@ interface ProductFormData {
   gallery?: string[];
   refundPolicy: "30-day" | "14-day" | "7-day" | "3-day" | "1-day" | "no-refunds";
   isPrivate: boolean;
+  useDefaultLocation: boolean;
+  locationCountry?: string;
+  locationProvince?: string;
+  locationDistrict?: string;
+  locationCityOrArea?: string;
 }
 
 interface ProductFormDialogProps {
@@ -73,11 +80,12 @@ export const ProductFormDialog = ({
   const hasPopulatedRef = useRef(false); // Track if we've populated the form in edit mode
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
-  const { register, handleSubmit, setValue, watch, getValues, control, reset, formState: { errors } } = useForm<ProductFormData>({
+  const form = useForm<ProductFormData>({
     defaultValues: {
       category: [], // Changed to empty array for multiple categories
       quantity: 0,
       unit: "unit",
+      useDefaultLocation: true,
       minOrderQuantity: 1,
       lowStockThreshold: 10,
       allowBackorder: false,
@@ -85,6 +93,8 @@ export const ProductFormDialog = ({
       isPrivate: false,
     },
   });
+
+  const { register, handleSubmit, setValue, watch, getValues, control, reset, formState: { errors } } = form;
 
   // Fetch product data if editing
   const { data: productData, isLoading: isLoadingProduct } = useQuery({
@@ -450,7 +460,8 @@ export const ProductFormDialog = ({
             <span className="ml-2 text-gray-600">Waiting for data...</span>
           </div>
         ) : (
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <Form {...form}>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* 1. Category */}
             <div>
               <Label htmlFor="category">Categories *</Label>
@@ -849,7 +860,47 @@ export const ProductFormDialog = ({
               </Select>
             </div>
 
-            {/* 10. Privacy Setting */}
+            {/* 10. Product Location */}
+            <div className="border-t pt-4 space-y-4">
+              <h3 className="font-medium">Product Location</h3>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="useDefaultLocation"
+                  checked={watch("useDefaultLocation")}
+                  onCheckedChange={(checked) => {
+                    setValue("useDefaultLocation", checked as boolean);
+                    if (checked) {
+                      // Clear custom location fields when using default
+                      setValue("locationCountry", undefined);
+                      setValue("locationProvince", undefined);
+                      setValue("locationDistrict", undefined);
+                      setValue("locationCityOrArea", undefined);
+                    }
+                  }}
+                />
+                <Label htmlFor="useDefaultLocation" className="cursor-pointer">
+                  Use my business location (default)
+                </Label>
+              </div>
+              
+              {!watch("useDefaultLocation") && (
+                <div className="pl-6 space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Specify a different location for this product
+                  </p>
+                  <LocationSelector 
+                    form={form as UseFormReturn<any>} 
+                    countryFieldName="locationCountry"
+                    provinceFieldName="locationProvince"
+                    districtFieldName="locationDistrict"
+                    cityFieldName="locationCityOrArea"
+                    required={false}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* 11. Privacy Setting */}
             <div className="flex items-center space-x-2">
               <Checkbox
                 id="isPrivate"
@@ -880,6 +931,7 @@ export const ProductFormDialog = ({
               </Button>
             </DialogFooter>
           </form>
+          </Form>
         )}
       </DialogContent>
     </Dialog>

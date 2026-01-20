@@ -209,9 +209,25 @@ export interface Tenant {
    */
   category: 'retailer' | 'wholesale' | 'industry' | 'renter' | 'logistics';
   /**
-   * Business location/address - Required for seller registration
+   * Country where the business is located
    */
-  location: string;
+  locationCountry: 'RW' | 'UG' | 'TZ';
+  /**
+   * Province/Region code (e.g., KC for Kigali City, CR for Central Region)
+   */
+  locationProvince: string;
+  /**
+   * District code (e.g., GAS for Gasabo, KLA for Kampala)
+   */
+  locationDistrict: string;
+  /**
+   * City or area name (manual text entry)
+   */
+  locationCityOrArea: string;
+  /**
+   * Auto-generated full location string (legacy field)
+   */
+  location?: string | null;
   /**
    * Contact phone number with country code (e.g., +250788888888)
    */
@@ -458,6 +474,30 @@ export interface Product {
    * Tenant who owns this product
    */
   tenant?: (string | null) | Tenant;
+  /**
+   * Use tenant's default location for this product
+   */
+  useDefaultLocation?: boolean | null;
+  /**
+   * Country where the product is located
+   */
+  locationCountry?: ('RW' | 'UG' | 'TZ') | null;
+  /**
+   * Province/Region code
+   */
+  locationProvince?: string | null;
+  /**
+   * District code
+   */
+  locationDistrict?: string | null;
+  /**
+   * City or area name
+   */
+  locationCityOrArea?: string | null;
+  /**
+   * Auto-generated full location string (used for filtering)
+   */
+  location?: string | null;
   refundPolicy?: ('30-day' | '14-day' | '7-day' | '3-day' | '1-day' | 'no-refunds') | null;
   /**
    * Protected content only visible to customers after purchase. Add product documentation, downloadable files, getting started guides, and bonus materials. Supports Markdown formatting

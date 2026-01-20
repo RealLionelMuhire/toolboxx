@@ -34,6 +34,12 @@ const createProductSchema = z.object({
   refundPolicy: z.enum(["30-day", "14-day", "7-day", "3-day", "1-day", "no-refunds"]).default("30-day"),
   content: z.any().optional(), // Rich text
   isPrivate: z.boolean().default(false),
+  // Location fields
+  useDefaultLocation: z.boolean().default(true),
+  locationCountry: z.string().optional(),
+  locationProvince: z.string().optional(),
+  locationDistrict: z.string().optional(),
+  locationCityOrArea: z.string().optional(),
 });
 
 const updateProductSchema = z.preprocess(
@@ -79,6 +85,12 @@ const updateProductSchema = z.preprocess(
     content: z.any().optional(),
     isPrivate: z.boolean().optional(),
     isArchived: z.boolean().optional(),
+    // Location fields
+    useDefaultLocation: z.boolean().optional(),
+    locationCountry: z.string().optional(),
+    locationProvince: z.string().optional(),
+    locationDistrict: z.string().optional(),
+    locationCityOrArea: z.string().optional(),
   })
 );
 
@@ -270,6 +282,10 @@ export const productsRouter = createTRPCRouter({
         tags: z.array(z.string()).nullable().optional(),
         sort: z.enum(sortValues).nullable().optional(),
         tenantSlug: z.string().nullable().optional(),
+        // Location filtering
+        locationCountry: z.string().optional(),
+        locationProvince: z.string().optional(),
+        locationDistrict: z.string().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -338,6 +354,25 @@ export const productsRouter = createTRPCRouter({
         where["isPrivate"] = {
           not_equals: true,
         }
+      }
+      
+      // Location-based filtering
+      if (input.locationCountry && input.locationCountry.trim() !== "") {
+        where["locationCountry"] = {
+          equals: input.locationCountry,
+        };
+      }
+      
+      if (input.locationProvince && input.locationProvince.trim() !== "") {
+        where["locationProvince"] = {
+          equals: input.locationProvince,
+        };
+      }
+      
+      if (input.locationDistrict && input.locationDistrict.trim() !== "") {
+        where["locationDistrict"] = {
+          equals: input.locationDistrict,
+        };
       }
       
       if (input.category) {

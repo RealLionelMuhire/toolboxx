@@ -2,6 +2,7 @@ import type { CollectionConfig } from "payload";
 
 import { Tenant } from "@/payload-types";
 import { isSuperAdmin } from "@/lib/access";
+import { formatLocation } from "@/lib/location-data";
 
 export const Products: CollectionConfig = {
   slug: "products",
@@ -56,7 +57,7 @@ export const Products: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
-      ({ req, data }) => {
+      async ({ req, data, operation }) => {
         console.log('[Products beforeChange] User:', req.user);
         console.log('[Products beforeChange] User tenants:', req.user?.tenants);
         console.log('[Products beforeChange] Data before:', data);
@@ -68,6 +69,36 @@ export const Products: CollectionConfig = {
           const tenantId = typeof userTenant === 'string' ? userTenant : userTenant.id;
           data.tenant = tenantId;
           console.log('[Products beforeChange] Assigned tenant ID:', tenantId);
+          
+          // If location fields are not set and useDefaultLocation is true, copy from tenant
+          if (data.useDefaultLocation && operation === 'create') {
+            try {
+              const tenantData = await req.payload.findByID({
+                collection: 'tenants',
+                id: tenantId,
+              });
+              
+              if (tenantData) {
+                data.locationCountry = tenantData.locationCountry;
+                data.locationProvince = tenantData.locationProvince;
+                data.locationDistrict = tenantData.locationDistrict;
+                data.locationCityOrArea = tenantData.locationCityOrArea;
+                console.log('[Products beforeChange] Copied location from tenant');
+              }
+            } catch (error) {
+              console.error('[Products beforeChange] Error fetching tenant:', error);
+            }
+          }
+        }
+        
+        // Auto-generate location string from structured fields
+        if (data.locationCountry && data.locationProvince && data.locationDistrict) {
+          data.location = formatLocation(
+            data.locationCountry,
+            data.locationProvince,
+            data.locationDistrict,
+            data.locationCityOrArea
+          );
         }
         
         // Auto-calculate stock status based on quantity
@@ -260,6 +291,64 @@ export const Products: CollectionConfig = {
       required: true,
       admin: {
         description: "Select one or more categories for your product",
+      },
+    },
+    // Product Location Fields
+    {
+      name: "useDefaultLocation",
+      type: "checkbox",
+      defaultValue: true,
+      admin: {
+        description: "Use tenant's default location for this product",
+      },
+    },
+    {
+      name: "locationCountry",
+      type: "select",
+      options: [
+        { label: "Rwanda", value: "RW" },
+        { label: "Uganda", value: "UG" },
+        { label: "Tanzania", value: "TZ" },
+      ],
+      index: true,
+      admin: {
+        description: "Country where the product is located",
+        condition: (data) => !data.useDefaultLocation,
+      },
+    },
+    {
+      name: "locationProvince",
+      type: "text",
+      index: true,
+      admin: {
+        description: "Province/Region code",
+        condition: (data) => !data.useDefaultLocation,
+      },
+    },
+    {
+      name: "locationDistrict",
+      type: "text",
+      index: true,
+      admin: {
+        description: "District code",
+        condition: (data) => !data.useDefaultLocation,
+      },
+    },
+    {
+      name: "locationCityOrArea",
+      type: "text",
+      admin: {
+        description: "City or area name",
+        condition: (data) => !data.useDefaultLocation,
+      },
+    },
+    {
+      name: "location",
+      type: "text",
+      index: true,
+      admin: {
+        description: "Auto-generated full location string (used for filtering)",
+        readOnly: true,
       },
     },
     {

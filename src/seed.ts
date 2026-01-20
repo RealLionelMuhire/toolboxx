@@ -142,7 +142,10 @@ async function seed() {
         tinNumber: "999000001", // Sample admin TIN
         storeManagerId: "ADMIN001",
         category: "retailer" as const,
-        location: "Kigali, Rwanda",
+        locationCountry: "RW" as const,
+        locationProvince: "KC",
+        locationDistrict: "GAS",
+        locationCityOrArea: "Kigali",
         contactPhone: "+250788888888",
         currency: "RWF" as const,
         paymentMethod: "bank_transfer" as const,

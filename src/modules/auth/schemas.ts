@@ -37,7 +37,13 @@ export const registerSchema = z.object({
     .max(100, "Store name must be less than 100 characters"),
   // Rwanda-specific fields - TIN and Store Manager ID are now optional (added by super admin during verification)
   category: z.enum(["retailer", "wholesale", "industry", "renter", "logistics"]),
-  location: z.string().min(5, "Location must be at least 5 characters"),
+  // Structured location fields
+  locationCountry: z.enum(["RW", "UG", "TZ"], {
+    required_error: "Country is required",
+  }),
+  locationProvince: z.string().min(1, "Province/Region is required"),
+  locationDistrict: z.string().min(1, "District is required"),
+  locationCityOrArea: z.string().min(1, "City or area is required"),
   contactPhone: z
     .string()
     .min(1, "Contact phone number is required")

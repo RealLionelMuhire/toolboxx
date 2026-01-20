@@ -1,6 +1,7 @@
 import type { CollectionConfig } from 'payload';
 
 import { isSuperAdmin } from '@/lib/access';
+import { formatLocation } from '@/lib/location-data';
 
 export const Tenants: CollectionConfig = {
   slug: 'tenants',
@@ -59,6 +60,22 @@ export const Tenants: CollectionConfig = {
       return false;
     },
     delete: ({ req }) => isSuperAdmin(req.user),
+  },
+  hooks: {
+    beforeChange: [
+      ({ data }) => {
+        // Auto-generate legacy location field from structured location fields
+        if (data.locationCountry && data.locationProvince && data.locationDistrict) {
+          data.location = formatLocation(
+            data.locationCountry,
+            data.locationProvince,
+            data.locationDistrict,
+            data.locationCityOrArea
+          );
+        }
+        return data;
+      },
+    ],
   },
   admin: {
     useAsTitle: 'slug',
@@ -144,12 +161,55 @@ export const Tenants: CollectionConfig = {
         description: "Business category - selected during registration",
       },
     },
+    // Structured Location Fields
+    {
+      name: "locationCountry",
+      type: "select",
+      required: true,
+      options: [
+        { label: "Rwanda", value: "RW" },
+        { label: "Uganda", value: "UG" },
+        { label: "Tanzania", value: "TZ" },
+      ],
+      index: true,
+      admin: {
+        description: "Country where the business is located",
+      },
+    },
+    {
+      name: "locationProvince",
+      type: "text",
+      required: true,
+      index: true,
+      admin: {
+        description: "Province/Region code (e.g., KC for Kigali City, CR for Central Region)",
+      },
+    },
+    {
+      name: "locationDistrict",
+      type: "text",
+      required: true,
+      index: true,
+      admin: {
+        description: "District code (e.g., GAS for Gasabo, KLA for Kampala)",
+      },
+    },
+    {
+      name: "locationCityOrArea",
+      type: "text",
+      required: true,
+      admin: {
+        description: "City or area name (manual text entry)",
+      },
+    },
+    // Legacy location field - kept for backward compatibility, will be auto-populated from structured fields
     {
       name: "location",
       type: "text",
-      required: true, // Changed back to required to reproduce error
+      required: false,
       admin: {
-        description: "Business location/address - Required for seller registration",
+        description: "Auto-generated full location string (legacy field)",
+        readOnly: true,
       },
     },
     {

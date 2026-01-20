@@ -5,10 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { StarIcon, ShieldCheck, Package, TrendingUp, MapPin, Eye } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 import { formatCurrency, generateTenantPath, generateTenantURL } from "@/lib/utils";
 import { ImageCarousel } from "@/modules/dashboard/ui/components/image-carousel";
 import { StockStatusBadge } from "@/components/quantity-selector";
+import { getCountryByCode } from "@/lib/location-data";
+import { useProductFilters } from "@/modules/products/hooks/use-product-filters";
+import { useTRPC } from "@/trpc/client";
 
 interface ProductCardProps {
   id: string;
@@ -19,6 +23,10 @@ interface ProductCardProps {
   tenantName?: string;
   tenantImageUrl?: string | null;
   tenantLocation?: string | null;
+  tenantLocationCountry?: string | null;
+  tenantLocationProvince?: string | null;
+  tenantLocationDistrict?: string | null;
+  tenantLocationCityOrArea?: string | null;
   tenantIsVerified?: boolean;
   tenantSuccessfulOrders?: number;
   reviewRating: number;
@@ -42,6 +50,10 @@ export const ProductCard = ({
   tenantName,
   tenantImageUrl,
   tenantLocation,
+  tenantLocationCountry,
+  tenantLocationProvince,
+  tenantLocationDistrict,
+  tenantLocationCityOrArea,
   tenantIsVerified = false,
   tenantSuccessfulOrders = 0,
   reviewRating,
@@ -56,11 +68,66 @@ export const ProductCard = ({
   viewCount = 0,
 }: ProductCardProps) => {
   const router = useRouter();
+  const trpc = useTRPC();
   const [isAlreadyOnTenantSubdomain, setIsAlreadyOnTenantSubdomain] = useState(false);
+  const [filters] = useProductFilters();
+  const { data: session } = useQuery(trpc.auth.session.queryOptions());
   
   // Check if subdomain routing is enabled
   const isSubdomainRoutingEnabled = process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true";
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "";
+  
+  // Smart location formatting based on user context and filters
+  const formatSmartLocation = () => {
+    // If no structured location data, fallback to plain text
+    if (!tenantLocationCountry) {
+      return tenantLocation;
+    }
+
+    // Get user's country from their tenant (if they have one)
+    const userTenant = session?.user?.tenants?.[0];
+    const userTenantData = userTenant && typeof userTenant.tenant === 'object' ? userTenant.tenant : null;
+    const userCountry = userTenantData?.locationCountry;
+    
+    const filterCountry = filters.locationCountry;
+    const filterProvince = filters.locationProvince;
+    const filterDistrict = filters.locationDistrict;
+
+    const country = getCountryByCode(tenantLocationCountry);
+    const province = country?.provinces.find(p => p.code === tenantLocationProvince);
+    const district = province?.districts.find(d => d.code === tenantLocationDistrict);
+
+    const parts: string[] = [];
+
+    // User is in same country as product OR country filter is applied
+    if (userCountry === tenantLocationCountry || filterCountry) {
+      // Show sub-locations below filter level
+      if (!filterProvince && province) {
+        parts.push(province.name);
+      }
+      if (!filterDistrict && district) {
+        parts.push(district.name);
+      }
+      if (tenantLocationCityOrArea) {
+        parts.push(tenantLocationCityOrArea);
+      }
+    } else {
+      // User is in different country or not logged in - show country first
+      if (country) {
+        parts.push(country.name);
+      }
+      if (province) {
+        parts.push(province.name);
+      }
+      if (district) {
+        parts.push(district.name);
+      }
+    }
+
+    return parts.length > 0 ? parts.join(", ") : tenantLocation;
+  };
+
+  const displayLocation = formatSmartLocation();
   
   // Generate tenant URL using the utility function
   const tenantUrl = generateTenantURL(tenantSlug);
@@ -366,10 +433,10 @@ export const ProductCard = ({
             </div>
             
             {/* Tenant Location */}
-            {tenantLocation && (
+            {displayLocation && (
               <div className="flex items-center gap-1 text-gray-500">
                 <MapPin className="size-3 sm:size-3.5" />
-                <span className="text-[10px] xs:text-xs truncate">{tenantLocation}</span>
+                <span className="text-[10px] xs:text-xs truncate">{displayLocation}</span>
               </div>
             )}
           </div>
@@ -537,10 +604,10 @@ export const ProductCard = ({
           </div>
           
           {/* Tenant Location */}
-          {tenantLocation && (
-            <div className="flex items-center gap-0.5 text-gray-500">
-              <MapPin className="size-3" />
-              <span className="text-[10px] truncate">{tenantLocation}</span>
+          {displayLocation && (
+            <div className="flex items-center gap-1 text-gray-500">
+              <MapPin className="size-2.5 sm:size-3" />
+              <span className="text-[10px] truncate">{displayLocation}</span>
             </div>
           )}
         </div>

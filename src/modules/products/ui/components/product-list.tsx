@@ -115,6 +115,10 @@ export const ProductList = ({ category, tenantSlug, narrowView, viewMode = "grid
               tenantName={product.tenant?.name}
               tenantImageUrl={product.tenant?.image?.url}
               tenantLocation={product.tenant?.location || null}
+              tenantLocationCountry={product.tenant?.locationCountry || null}
+              tenantLocationProvince={product.tenant?.locationProvince || null}
+              tenantLocationDistrict={product.tenant?.locationDistrict || null}
+              tenantLocationCityOrArea={product.tenant?.locationCityOrArea || null}
               tenantIsVerified={product.tenant?.isVerified || false}
               tenantSuccessfulOrders={0} // TODO: Add successful orders count
               reviewRating={product.reviewRating}

@@ -24,6 +24,21 @@ const params = {
       clearOnDefault: true,
     })
     .withDefault([]),
+  locationCountry: parseAsString
+    .withOptions({
+      clearOnDefault: true,
+    })
+    .withDefault(""),
+  locationProvince: parseAsString
+    .withOptions({
+      clearOnDefault: true,
+    })
+    .withDefault(""),
+  locationDistrict: parseAsString
+    .withOptions({
+      clearOnDefault: true,
+    })
+    .withDefault(""),
 };
 
 export const loadProductFilters = createLoader(params);

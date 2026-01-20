@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { LocationSelector } from "@/components/location-selector";
 import {
   Select,
   SelectContent,
@@ -101,7 +102,10 @@ export const SignUpView = () => {
       storeName: "",
       // TIN and Store Manager ID removed - will be added by super admin during verification
       category: "retailer" as const,
-      location: "",
+      locationCountry: "RW" as const,
+      locationProvince: "",
+      locationDistrict: "",
+      locationCityOrArea: "",
       contactPhone: "",
       currency: "RWF" as const,
       paymentMethod: "bank_transfer" as const,
@@ -668,21 +672,11 @@ export const SignUpView = () => {
                 )}
               />
               
-              <FormField
-                name="location"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-base">Business Location *</FormLabel>
-                    <FormControl>
-                      <Input {...field} placeholder="e.g., Kigali, Nyarugenge District" />
-                    </FormControl>
-                    <FormDescription>
-                      Enter your business address or location
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Location Selector */}
+              <div className="space-y-4">
+                <h3 className="text-base font-medium">Business Location *</h3>
+                <LocationSelector form={tenantForm} required={true} />
+              </div>
 
               <FormField
                 name="contactPhone"

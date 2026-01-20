@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { ChevronDownIcon, ChevronRightIcon, ChevronLeftIcon } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -22,6 +22,14 @@ import { TagsFilter } from "@/modules/products/ui/components/tags-filter";
 import { PriceFilter } from "@/modules/products/ui/components/price-filter";
 import { CategoriesGetManyOutput } from "@/modules/categories/types";
 import { cn } from "@/lib/utils";
+import { COUNTRIES, getCountryByCode } from "@/lib/location-data";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Props {
   open: boolean;
@@ -86,13 +94,16 @@ export const FiltersSidebar = ({
     ...trpc.products.getMany.queryOptions({
       cursor: 1,
       limit: 1,
-      category: selectedCategoryIds.length > 0 ? selectedCategoryIds[0] : null,
-      minPrice: filters.minPrice || null,
-      maxPrice: filters.maxPrice || null,
-      tags: filters.tags || null,
-      search: filters.search || null,
-      sort: null,
-      tenantSlug: null,
+      category: selectedCategoryIds.length > 0 ? selectedCategoryIds[0] : undefined,
+      minPrice: filters.minPrice || undefined,
+      maxPrice: filters.maxPrice || undefined,
+      tags: filters.tags || undefined,
+      search: filters.search || undefined,
+      sort: undefined,
+      tenantSlug: undefined,
+      locationCountry: filters.locationCountry || undefined,
+      locationProvince: filters.locationProvince || undefined,
+      locationDistrict: filters.locationDistrict || undefined,
     }),
     staleTime: 0, // Always fresh for accurate count
   });
@@ -121,12 +132,30 @@ export const FiltersSidebar = ({
       minPrice: "",
       maxPrice: "",
       tags: [],
+      locationCountry: "",
+      locationProvince: "",
+      locationDistrict: "",
     });
   };
 
   const onChange = (key: keyof typeof filters, value: unknown) => {
-    setFilters({ ...filters, [key]: value });
+    console.log("onChange called:", { key, value, currentFilters: filters });
+    setFilters({ [key]: value });
   };
+
+  // Debug log for location country changes
+  useEffect(() => {
+    console.log("filters.locationCountry updated:", filters.locationCountry, "truthy:", !!filters.locationCountry);
+    if (filters.locationCountry) {
+      const country = getCountryByCode(filters.locationCountry);
+      console.log("Location Country Changed:", {
+        code: filters.locationCountry,
+        country: country?.name,
+        hasProvinces: !!country?.provinces,
+        provinceCount: country?.provinces?.length || 0,
+      });
+    }
+  }, [filters.locationCountry]);
 
   // Process categories into parent-child structure
   const categoryOptions = useMemo(() => {
@@ -395,6 +424,90 @@ export const FiltersSidebar = ({
                 onMinPriceChange={(value) => onChange("minPrice", value)}
                 onMaxPriceChange={(value) => onChange("maxPrice", value)}
               />
+            </ProductFilter>
+            
+            <ProductFilter title="Location">
+              <div className="space-y-3">
+                {/* Country Filter */}
+                <div className="space-y-2">
+                  <Label className="text-sm">Country</Label>
+                  <Select
+                    value={filters.locationCountry || undefined}
+                    onValueChange={(value) => {
+                      setFilters({
+                        locationCountry: value || "",
+                        locationProvince: "",
+                        locationDistrict: "",
+                      });
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="All countries" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((country) => (
+                        <SelectItem key={country.code} value={country.code}>
+                          {country.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Province Filter */}
+                {filters.locationCountry && filters.locationCountry.trim() !== "" && (
+                  <div className="space-y-2">
+                    <Label className="text-sm">
+                      Province/Region
+                    </Label>
+                    <Select
+                      value={filters.locationProvince || undefined}
+                      onValueChange={(value) => {
+                        setFilters({
+                          locationProvince: value || "",
+                          locationDistrict: "",
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All regions" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getCountryByCode(filters.locationCountry)?.provinces?.map((province) => (
+                          <SelectItem key={province.code} value={province.code}>
+                            {province.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* District Filter */}
+                {filters.locationCountry && filters.locationCountry.trim() !== "" && 
+                 filters.locationProvince && filters.locationProvince.trim() !== "" && (
+                  <div className="space-y-2">
+                    <Label className="text-sm">District</Label>
+                    <Select
+                      value={filters.locationDistrict || undefined}
+                      onValueChange={(value) => setFilters({ locationDistrict: value || "" })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="All districts" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getCountryByCode(filters.locationCountry)
+                          ?.provinces?.find((p) => p.code === filters.locationProvince)
+                          ?.districts?.map((district) => (
+                            <SelectItem key={district.code} value={district.code}>
+                              {district.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
             </ProductFilter>
             
             <ProductFilter title="Availability">
