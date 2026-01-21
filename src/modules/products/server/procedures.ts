@@ -277,6 +277,7 @@ export const productsRouter = createTRPCRouter({
         limit: z.number().default(DEFAULT_LIMIT),
         search: z.string().nullable().optional(),
         category: z.string().nullable().optional(),
+        categories: z.array(z.string()).nullable().optional(),
         minPrice: z.string().nullable().optional(),
         maxPrice: z.string().nullable().optional(),
         tags: z.array(z.string()).nullable().optional(),
@@ -375,7 +376,14 @@ export const productsRouter = createTRPCRouter({
         };
       }
       
-      if (input.category) {
+      // Handle multiple categories filter
+      if (input.categories && input.categories.length > 0) {
+        // Filter products that have any of the selected category IDs
+        where["category"] = {
+          in: input.categories
+        };
+      } else if (input.category) {
+        // Handle single category (backward compatibility for existing routes)
         const categoriesData = await ctx.db.find({
           collection: "categories",
           limit: 1,

@@ -9,6 +9,11 @@ const params = {
     })
     .withDefault(""),
   sort: parseAsStringLiteral(sortValues).withDefault("curated"),
+  categories: parseAsArrayOf(parseAsString)
+    .withOptions({
+      clearOnDefault: true,
+    })
+    .withDefault([]),
   minPrice: parseAsString
     .withOptions({
       clearOnDefault: true,

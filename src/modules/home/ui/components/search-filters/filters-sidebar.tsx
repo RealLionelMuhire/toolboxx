@@ -73,7 +73,15 @@ export const FiltersSidebar = ({
   const params = useParams();
   
   const [filters, setFilters] = useProductFilters();
-  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  
+  // Sync selected categories with URL state
+  useEffect(() => {
+    if (filters.categories && filters.categories.length > 0) {
+      setSelectedCategoryIds(filters.categories);
+    }
+  }, []);
+
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(filters.categories || []);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Fetch categories and counts
@@ -94,7 +102,7 @@ export const FiltersSidebar = ({
     ...trpc.products.getMany.queryOptions({
       cursor: 1,
       limit: 1,
-      category: selectedCategoryIds.length > 0 ? selectedCategoryIds[0] : undefined,
+      categories: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
       minPrice: filters.minPrice || undefined,
       maxPrice: filters.maxPrice || undefined,
       tags: filters.tags || undefined,
@@ -129,6 +137,7 @@ export const FiltersSidebar = ({
 
   const onClear = () => {
     setFilters({
+      categories: [],
       minPrice: "",
       maxPrice: "",
       tags: [],
@@ -136,6 +145,7 @@ export const FiltersSidebar = ({
       locationProvince: "",
       locationDistrict: "",
     });
+    setSelectedCategoryIds([]);
   };
 
   const onChange = (key: keyof typeof filters, value: unknown) => {
@@ -207,6 +217,8 @@ export const FiltersSidebar = ({
   };
 
   const toggleCategory = (categoryId: string, isParent: boolean, subcategoryIds?: string[]) => {
+    let newSelectedIds: string[];
+    
     if (isParent && subcategoryIds && subcategoryIds.length > 0) {
       // Parent category clicked - toggle parent and all subcategories
       const allIds = [categoryId, ...subcategoryIds];
@@ -214,19 +226,20 @@ export const FiltersSidebar = ({
       
       if (allSelected) {
         // Deselect parent and all subcategories
-        setSelectedCategoryIds(selectedCategoryIds.filter(id => !allIds.includes(id)));
+        newSelectedIds = selectedCategoryIds.filter(id => !allIds.includes(id));
       } else {
         // Select parent and all subcategories
-        setSelectedCategoryIds([...new Set([...selectedCategoryIds, ...allIds])]);
+        newSelectedIds = [...new Set([...selectedCategoryIds, ...allIds])];
       }
     } else {
       // Single category/subcategory toggle
-      setSelectedCategoryIds(
-        selectedCategoryIds.includes(categoryId)
-          ? selectedCategoryIds.filter(id => id !== categoryId)
-          : [...selectedCategoryIds, categoryId]
-      );
+      newSelectedIds = selectedCategoryIds.includes(categoryId)
+        ? selectedCategoryIds.filter(id => id !== categoryId)
+        : [...selectedCategoryIds, categoryId];
     }
+    
+    setSelectedCategoryIds(newSelectedIds);
+    setFilters({ categories: newSelectedIds });
   };
   
   const toggleExpanded = (categoryId: string) => {
@@ -240,32 +253,15 @@ export const FiltersSidebar = ({
   };
 
   const handleApplyFilters = () => {
-    // Navigate to the selected category if any
-    if (selectedCategoryIds.length > 0) {
-      // Find the first selected category in categoryOptions
-      const firstSelected = categoryOptions.find(cat => 
-        selectedCategoryIds.includes(cat.id) || 
-        cat.subcategories.some(sub => selectedCategoryIds.includes(sub.id))
-      );
-      
-      if (firstSelected) {
-        const selectedSubcategory = firstSelected.subcategories.find(sub => 
-          selectedCategoryIds.includes(sub.id)
-        );
-        
-        if (selectedSubcategory) {
-          router.push(`/${firstSelected.slug}/${selectedSubcategory.slug}`);
-        } else {
-          router.push(`/${firstSelected.slug}`);
-        }
-      }
-    }
+    // Stay on homepage and apply filters with selected categories
+    // The filters are already set in the URL via nuqs
+    // Just close the sidebar - the product list will update automatically
     onOpenChange(false);
   };
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      setSelectedCategoryIds([]);
+      // Don't clear selections on close - keep them in URL state
       setExpandedCategories(new Set());
     }
     onOpenChange(open);
@@ -292,18 +288,16 @@ export const FiltersSidebar = ({
           </div>
         </SheetHeader>
         <ScrollArea className="flex flex-col overflow-y-auto h-[calc(100vh-180px)]">
-          {/* Categories Section */}
-          <div className="border-b bg-white">
-            <div className="p-3 md:p-4 border-b bg-gray-50">
-              <p className="font-semibold text-base">Categories</p>
-            </div>
-            <div className="p-3 md:p-4">
+          {/* Filters Section */}
+          <div className="border rounded-md bg-white m-4">
+            {/* Categories Filter */}
+            <ProductFilter title="Categories">
               {categoryOptions.length === 0 ? (
                 <div className="text-sm text-gray-500 text-center py-4">
                   Loading categories...
                 </div>
               ) : (
-                <div className="space-y-1">
+                <div className="space-y-1 max-h-96 overflow-y-auto">
                   {categoryOptions.map((parent) => {
                     const subcatIds = parent.subcategories.map(s => s.id);
                     const isExpanded = expandedCategories.has(parent.id);
@@ -383,11 +377,8 @@ export const FiltersSidebar = ({
                   })}
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Filters Section */}
-          <div className="border rounded-md bg-white m-4">
+            </ProductFilter>
+            
             <ProductFilter title="Sort By">
               <div className="space-y-2">
                 {[
