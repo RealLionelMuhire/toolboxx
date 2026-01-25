@@ -40,7 +40,7 @@ export const SortSheet = ({ open, onOpenChange }: Props) => {
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent side="left" className="w-full sm:w-[400px]">
+            <SheetContent side="left" className="w-[18rem] max-w-full sm:w-[400px]">
                 <SheetHeader className="pb-4 border-b">
                     <SheetTitle>Sort By</SheetTitle>
                 </SheetHeader>
