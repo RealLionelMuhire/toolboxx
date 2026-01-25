@@ -270,17 +270,23 @@ export const ProductFormDialog = ({
   }));
 
   // Update mutation
-  const updateMutation = useMutation(trpc.products.updateProduct.mutationOptions({
-    onSuccess: () => {
-      toast.success("Product updated successfully!");
-      queryClient.invalidateQueries({ queryKey: [["products"]] });
-      hasSubmittedRef.current = true; // Mark as submitted to prevent cleanup
-      onClose();
-    },
-    onError: (error) => {
-      toast.error(error.message || "Failed to update product");
-    },
-  }));
+  const updateMutation = useMutation(
+    trpc.products.updateProduct.mutationOptions({
+      onSuccess: async (data, variables: any) => {
+        toast.success("Product updated successfully!");
+        // Refetch the updated product directly to ensure UI is fresh
+        if (variables?.id) {
+          await queryClient.refetchQueries({ queryKey: [["products", "getOne"], { id: variables.id }] });
+        }
+        queryClient.invalidateQueries({ queryKey: [["products"]] });
+        hasSubmittedRef.current = true; // Mark as submitted to prevent cleanup
+        onClose();
+      },
+      onError: (error) => {
+        toast.error(error.message || "Failed to update product");
+      },
+    })
+  );
 
   const onSubmit = (data: ProductFormData) => {
     // Automatically set the first gallery image as the main product image

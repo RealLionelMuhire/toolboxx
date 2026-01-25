@@ -270,6 +270,7 @@ export const FiltersSidebar = ({
     if (!open) {
       // Don't clear selections on close - keep them in URL state
       setExpandedCategories(new Set());
+      setOpenFilter(null); // Reset filter accordion state
     }
     onOpenChange(open);
   };
@@ -278,7 +279,7 @@ export const FiltersSidebar = ({
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="left"
-        className="p-0 transition-none w-full sm:w-[400px]"
+        className="p-0 transition-none w-[18rem] max-w-full sm:w-[400px]"
       >
         <SheetHeader className="p-4 border-b">
           <div className="flex items-center justify-between">
