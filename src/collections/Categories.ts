@@ -28,8 +28,21 @@ export const Categories: CollectionConfig = {
       index: true,
     },
     {
+      name: "icon",
+      type: "text",
+      admin: {
+        description: "Select an icon for this category",
+        components: {
+          Field: "@/components/admin/icon-field#IconField",
+        },
+      },
+    },
+    {
       name: "color",
       type: "text",
+      admin: {
+        description: "Optional: Color hex code for category badge (e.g., #FF5733)",
+      },
     },
     {
       name: "parent",
