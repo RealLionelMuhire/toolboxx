@@ -298,9 +298,8 @@ export const Navbar = () => {
         }
       }
       
-      // Navigate to home and refresh any server-side data
-      router.push("/");
-      router.refresh();
+      // Force a full page reload to ensure all state is reset
+      window.location.href = "/";
     },
     onError: (error, variables, context) => {
       // Revert to previous state on error
