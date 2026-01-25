@@ -41,11 +41,11 @@ interface ProductFilterProps {
   title: string;
   className?: string;
   children: React.ReactNode;
+  isOpen: boolean;
+  onToggle: () => void;
 }
 
-const ProductFilter = ({ title, className, children }: ProductFilterProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-
+const ProductFilter = ({ title, className, children, isOpen, onToggle }: ProductFilterProps) => {
   const Icon = isOpen ? ChevronDownIcon : ChevronRightIcon;
 
   return (
@@ -54,7 +54,7 @@ const ProductFilter = ({ title, className, children }: ProductFilterProps) => {
       className
     )}>
       <div
-        onClick={() => setIsOpen((current) => !current)}
+        onClick={onToggle}
         className="flex items-center justify-between cursor-pointer"
       >
         <p className="font-medium">{title}</p>
@@ -72,9 +72,12 @@ export const FiltersSidebar = ({
   const trpc = useTRPC();
   const router = useRouter();
   const params = useParams();
-  
+
   const [filters, setFilters] = useProductFilters();
-  
+
+  // Accordion state - track which filter is currently open
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
+
   // Sync selected categories with URL state
   useEffect(() => {
     if (filters.categories && filters.categories.length > 0) {
@@ -171,16 +174,16 @@ export const FiltersSidebar = ({
   // Process categories into parent-child structure
   const categoryOptions = useMemo(() => {
     if (!categories) return [];
-    
-    const parentCategories: Array<{ 
-      id: string; 
+
+    const parentCategories: Array<{
+      id: string;
       name: string;
       slug: string;
       icon?: string;
-      subcategories: Array<{ id: string; name: string; slug: string; icon?: string }> 
+      subcategories: Array<{ id: string; name: string; slug: string; icon?: string }>
     }> = [];
     const seenParentIds = new Set<string>();
-    
+
     categories.forEach((cat: any) => {
       if (!cat.parent && !seenParentIds.has(cat.id)) {
         const subcats = categories
@@ -194,13 +197,13 @@ export const FiltersSidebar = ({
             slug: sub.slug,
             icon: sub.icon
           }));
-        
-        parentCategories.push({ 
-          id: cat.id, 
+
+        parentCategories.push({
+          id: cat.id,
           name: cat.name,
           slug: cat.slug,
           icon: cat.icon,
-          subcategories: subcats 
+          subcategories: subcats
         });
         seenParentIds.add(cat.id);
       }
@@ -222,12 +225,12 @@ export const FiltersSidebar = ({
 
   const toggleCategory = (categoryId: string, isParent: boolean, subcategoryIds?: string[]) => {
     let newSelectedIds: string[];
-    
+
     if (isParent && subcategoryIds && subcategoryIds.length > 0) {
       // Parent category clicked - toggle parent and all subcategories
       const allIds = [categoryId, ...subcategoryIds];
       const allSelected = allIds.every(id => selectedCategoryIds.includes(id));
-      
+
       if (allSelected) {
         // Deselect parent and all subcategories
         newSelectedIds = selectedCategoryIds.filter(id => !allIds.includes(id));
@@ -241,11 +244,11 @@ export const FiltersSidebar = ({
         ? selectedCategoryIds.filter(id => id !== categoryId)
         : [...selectedCategoryIds, categoryId];
     }
-    
+
     setSelectedCategoryIds(newSelectedIds);
     setFilters({ categories: newSelectedIds });
   };
-  
+
   const toggleExpanded = (categoryId: string) => {
     const newExpanded = new Set(expandedCategories);
     if (newExpanded.has(categoryId)) {
@@ -281,9 +284,9 @@ export const FiltersSidebar = ({
           <div className="flex items-center justify-between">
             <SheetTitle>Filters</SheetTitle>
             {hasAnyFilters && (
-              <button 
-                className="underline cursor-pointer text-sm" 
-                onClick={() => onClear()} 
+              <button
+                className="underline cursor-pointer text-sm"
+                onClick={() => onClear()}
                 type="button"
               >
                 Clear
@@ -295,7 +298,11 @@ export const FiltersSidebar = ({
           {/* Filters Section */}
           <div className="border rounded-md bg-white m-4">
             {/* Categories Filter */}
-            <ProductFilter title="Categories">
+            <ProductFilter
+              title="Categories"
+              isOpen={openFilter === "categories"}
+              onToggle={() => setOpenFilter(openFilter === "categories" ? null : "categories")}
+            >
               {categoryOptions.length === 0 ? (
                 <div className="text-sm text-gray-500 text-center py-4">
                   Loading categories...
@@ -309,7 +316,7 @@ export const FiltersSidebar = ({
                     const allSubcatsSelected = subcatIds.length > 0 && subcatIds.every(id => selectedCategoryIds.includes(id));
                     const someSubcatsSelected = subcatIds.length > 0 && subcatIds.some(id => selectedCategoryIds.includes(id)) && !allSubcatsSelected;
                     const parentCount = getCategoryCount(parent.id);
-                    
+
                     return (
                       <div key={parent.id} className="space-y-1">
                         {/* Parent Category */}
@@ -336,7 +343,7 @@ export const FiltersSidebar = ({
                             className={someSubcatsSelected ? "data-[state=checked]:bg-orange-300" : ""}
                             onCheckedChange={() => toggleCategory(parent.id, true, subcatIds)}
                           />
-                          <Label 
+                          <Label
                             htmlFor={`category-${parent.id}`}
                             className="cursor-pointer text-sm font-medium flex-1 flex items-center gap-2"
                           >
@@ -350,14 +357,14 @@ export const FiltersSidebar = ({
                             </span>
                           </Label>
                         </div>
-                        
+
                         {/* Subcategories (Collapsible) */}
                         {isExpanded && parent.subcategories.length > 0 && (
                           <div className="ml-8 space-y-1 border-l-2 border-gray-200 pl-3">
                             {parent.subcategories.map((sub) => {
                               const subCount = getCategoryCount(sub.id);
                               return (
-                                <div 
+                                <div
                                   key={sub.id}
                                   className="flex items-center space-x-2 hover:bg-gray-50 rounded px-1 py-0.5"
                                 >
@@ -366,7 +373,7 @@ export const FiltersSidebar = ({
                                     checked={selectedCategoryIds.includes(sub.id)}
                                     onCheckedChange={() => toggleCategory(sub.id, false)}
                                   />
-                                  <Label 
+                                  <Label
                                     htmlFor={`category-${sub.id}`}
                                     className="cursor-pointer text-sm font-normal text-gray-700 flex-1 flex items-center gap-2"
                                   >
@@ -390,8 +397,12 @@ export const FiltersSidebar = ({
                 </div>
               )}
             </ProductFilter>
-            
-            <ProductFilter title="Sort By">
+
+            <ProductFilter
+              title="Sort By"
+              isOpen={openFilter === "sort"}
+              onToggle={() => setOpenFilter(openFilter === "sort" ? null : "sort")}
+            >
               <div className="space-y-2">
                 {[
                   { value: "curated", label: "Curated (Default)" },
@@ -419,8 +430,12 @@ export const FiltersSidebar = ({
                 ))}
               </div>
             </ProductFilter>
-            
-            <ProductFilter title="Price">
+
+            <ProductFilter
+              title="Price"
+              isOpen={openFilter === "price"}
+              onToggle={() => setOpenFilter(openFilter === "price" ? null : "price")}
+            >
               <PriceFilter
                 minPrice={filters.minPrice}
                 maxPrice={filters.maxPrice}
@@ -428,8 +443,12 @@ export const FiltersSidebar = ({
                 onMaxPriceChange={(value) => onChange("maxPrice", value)}
               />
             </ProductFilter>
-            
-            <ProductFilter title="Location">
+
+            <ProductFilter
+              title="Location"
+              isOpen={openFilter === "location"}
+              onToggle={() => setOpenFilter(openFilter === "location" ? null : "location")}
+            >
               <div className="space-y-3">
                 {/* Country Filter */}
                 <div className="space-y-2">
@@ -487,33 +506,37 @@ export const FiltersSidebar = ({
                 )}
 
                 {/* District Filter */}
-                {filters.locationCountry && filters.locationCountry.trim() !== "" && 
-                 filters.locationProvince && filters.locationProvince.trim() !== "" && (
-                  <div className="space-y-2">
-                    <Label className="text-sm">District</Label>
-                    <Select
-                      value={filters.locationDistrict || undefined}
-                      onValueChange={(value) => setFilters({ locationDistrict: value || "" })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="All districts" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getCountryByCode(filters.locationCountry)
-                          ?.provinces?.find((p) => p.code === filters.locationProvince)
-                          ?.districts?.map((district) => (
-                            <SelectItem key={district.code} value={district.code}>
-                              {district.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
+                {filters.locationCountry && filters.locationCountry.trim() !== "" &&
+                  filters.locationProvince && filters.locationProvince.trim() !== "" && (
+                    <div className="space-y-2">
+                      <Label className="text-sm">District</Label>
+                      <Select
+                        value={filters.locationDistrict || undefined}
+                        onValueChange={(value) => setFilters({ locationDistrict: value || "" })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="All districts" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getCountryByCode(filters.locationCountry)
+                            ?.provinces?.find((p) => p.code === filters.locationProvince)
+                            ?.districts?.map((district) => (
+                              <SelectItem key={district.code} value={district.code}>
+                                {district.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
               </div>
             </ProductFilter>
-            
-            <ProductFilter title="Availability">
+
+            <ProductFilter
+              title="Availability"
+              isOpen={openFilter === "availability"}
+              onToggle={() => setOpenFilter(openFilter === "availability" ? null : "availability")}
+            >
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -551,8 +574,12 @@ export const FiltersSidebar = ({
                 </div>
               </div>
             </ProductFilter>
-            
-            <ProductFilter title="Unit Type">
+
+            <ProductFilter
+              title="Unit Type"
+              isOpen={openFilter === "unitType"}
+              onToggle={() => setOpenFilter(openFilter === "unitType" ? null : "unitType")}
+            >
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {[
                   { value: "unit", label: "Unit(s)" },
@@ -598,8 +625,13 @@ export const FiltersSidebar = ({
                 ))}
               </div>
             </ProductFilter>
-            
-            <ProductFilter title="Tags" className="border-b-0">
+
+            <ProductFilter
+              title="Tags"
+              className="border-b-0"
+              isOpen={openFilter === "tags"}
+              onToggle={() => setOpenFilter(openFilter === "tags" ? null : "tags")}
+            >
               <TagsFilter
                 value={filters.tags}
                 onChange={(value) => onChange("tags", value)}
@@ -607,7 +639,7 @@ export const FiltersSidebar = ({
             </ProductFilter>
           </div>
         </ScrollArea>
-        
+
         {/* Fixed Bottom Button */}
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-white border-t shadow-lg">
           <Button
