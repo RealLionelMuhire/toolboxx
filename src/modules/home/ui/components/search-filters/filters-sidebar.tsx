@@ -75,6 +75,9 @@ export const FiltersSidebar = ({
 
   const [filters, setFilters] = useProductFilters();
 
+  // Accordion state - track which filter is currently open
+  const [openFilter, setOpenFilter] = useState<string | null>(null);
+
   // Sync selected categories with URL state
   useEffect(() => {
     if (filters.categories && filters.categories.length > 0) {
@@ -295,7 +298,11 @@ export const FiltersSidebar = ({
           {/* Filters Section */}
           <div className="border rounded-md bg-white m-4">
             {/* Categories Filter */}
-            <ProductFilter title="Categories">
+            <ProductFilter
+              title="Categories"
+              isOpen={openFilter === "categories"}
+              onToggle={() => setOpenFilter(openFilter === "categories" ? null : "categories")}
+            >
               {categoryOptions.length === 0 ? (
                 <div className="text-sm text-gray-500 text-center py-4">
                   Loading categories...
@@ -391,7 +398,11 @@ export const FiltersSidebar = ({
               )}
             </ProductFilter>
 
-            <ProductFilter title="Sort By">
+            <ProductFilter
+              title="Sort By"
+              isOpen={openFilter === "sort"}
+              onToggle={() => setOpenFilter(openFilter === "sort" ? null : "sort")}
+            >
               <div className="space-y-2">
                 {[
                   { value: "curated", label: "Curated (Default)" },
@@ -420,7 +431,11 @@ export const FiltersSidebar = ({
               </div>
             </ProductFilter>
 
-            <ProductFilter title="Price">
+            <ProductFilter
+              title="Price"
+              isOpen={openFilter === "price"}
+              onToggle={() => setOpenFilter(openFilter === "price" ? null : "price")}
+            >
               <PriceFilter
                 minPrice={filters.minPrice}
                 maxPrice={filters.maxPrice}
@@ -429,7 +444,11 @@ export const FiltersSidebar = ({
               />
             </ProductFilter>
 
-            <ProductFilter title="Location">
+            <ProductFilter
+              title="Location"
+              isOpen={openFilter === "location"}
+              onToggle={() => setOpenFilter(openFilter === "location" ? null : "location")}
+            >
               <div className="space-y-3">
                 {/* Country Filter */}
                 <div className="space-y-2">
@@ -513,7 +532,11 @@ export const FiltersSidebar = ({
               </div>
             </ProductFilter>
 
-            <ProductFilter title="Availability">
+            <ProductFilter
+              title="Availability"
+              isOpen={openFilter === "availability"}
+              onToggle={() => setOpenFilter(openFilter === "availability" ? null : "availability")}
+            >
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -552,7 +575,11 @@ export const FiltersSidebar = ({
               </div>
             </ProductFilter>
 
-            <ProductFilter title="Unit Type">
+            <ProductFilter
+              title="Unit Type"
+              isOpen={openFilter === "unitType"}
+              onToggle={() => setOpenFilter(openFilter === "unitType" ? null : "unitType")}
+            >
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {[
                   { value: "unit", label: "Unit(s)" },
@@ -599,7 +626,12 @@ export const FiltersSidebar = ({
               </div>
             </ProductFilter>
 
-            <ProductFilter title="Tags" className="border-b-0">
+            <ProductFilter
+              title="Tags"
+              className="border-b-0"
+              isOpen={openFilter === "tags"}
+              onToggle={() => setOpenFilter(openFilter === "tags" ? null : "tags")}
+            >
               <TagsFilter
                 value={filters.tags}
                 onChange={(value) => onChange("tags", value)}
