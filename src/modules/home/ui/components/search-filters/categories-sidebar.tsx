@@ -11,6 +11,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { getIconByName } from "@/components/admin/icon-picker";
 
 import { CategoriesGetManyOutput } from "@/modules/categories/types";
 
@@ -133,14 +134,16 @@ export const CategoriesSidebar = ({
           )}
           {sortedCategories.map((category) => {
             const count = getCategoryCount(category);
+            const Icon = (category as any).icon ? getIconByName((category as any).icon) : null;
             return (
               <button
                 key={category.slug}
                 onClick={() => handleCategoryClick(category)}
                 className="w-full text-left p-4 hover:bg-black hover:text-white flex justify-between items-center text-base font-medium cursor-pointer"
               >
-                <span>
-                  {category.name} ({count})
+                <span className="flex items-center gap-2">
+                  {Icon && <Icon className="h-5 w-5" />}
+                  <span>{category.name} ({count})</span>
                 </span>
                 {category.subcategories && category.subcategories.length > 0 && (
                   <ChevronRightIcon className="size-4" />

@@ -23,6 +23,7 @@ import { PriceFilter } from "@/modules/products/ui/components/price-filter";
 import { CategoriesGetManyOutput } from "@/modules/categories/types";
 import { cn } from "@/lib/utils";
 import { COUNTRIES, getCountryByCode } from "@/lib/location-data";
+import { getIconByName } from "@/components/admin/icon-picker";
 import {
   Select,
   SelectContent,
@@ -175,27 +176,30 @@ export const FiltersSidebar = ({
       id: string; 
       name: string;
       slug: string;
-      subcategories: Array<{ id: string; name: string; slug: string }> 
+      icon?: string;
+      subcategories: Array<{ id: string; name: string; slug: string; icon?: string }> 
     }> = [];
     const seenParentIds = new Set<string>();
     
-    categories.forEach((cat) => {
+    categories.forEach((cat: any) => {
       if (!cat.parent && !seenParentIds.has(cat.id)) {
         const subcats = categories
           .filter(c => {
             const parentId = typeof c.parent === 'string' ? c.parent : c.parent?.id;
             return parentId === cat.id;
           })
-          .map(sub => ({
+          .map((sub: any) => ({
             id: sub.id,
             name: sub.name,
-            slug: sub.slug
+            slug: sub.slug,
+            icon: sub.icon
           }));
         
         parentCategories.push({ 
           id: cat.id, 
           name: cat.name,
           slug: cat.slug,
+          icon: cat.icon,
           subcategories: subcats 
         });
         seenParentIds.add(cat.id);
@@ -334,10 +338,14 @@ export const FiltersSidebar = ({
                           />
                           <Label 
                             htmlFor={`category-${parent.id}`}
-                            className="cursor-pointer text-sm font-medium flex-1"
+                            className="cursor-pointer text-sm font-medium flex-1 flex items-center gap-2"
                           >
-                            {parent.name}
-                            <span className="text-xs text-gray-500 ml-1">
+                            {parent.icon && (() => {
+                              const Icon = getIconByName(parent.icon);
+                              return Icon ? <Icon className="h-4 w-4" /> : null;
+                            })()}
+                            <span>{parent.name}</span>
+                            <span className="text-xs text-gray-500">
                               ({parentCount})
                             </span>
                           </Label>
@@ -360,10 +368,14 @@ export const FiltersSidebar = ({
                                   />
                                   <Label 
                                     htmlFor={`category-${sub.id}`}
-                                    className="cursor-pointer text-sm font-normal text-gray-700 flex-1"
+                                    className="cursor-pointer text-sm font-normal text-gray-700 flex-1 flex items-center gap-2"
                                   >
-                                    {sub.name}
-                                    <span className="text-xs text-gray-500 ml-1">
+                                    {sub.icon && (() => {
+                                      const Icon = getIconByName(sub.icon);
+                                      return Icon ? <Icon className="h-4 w-4 opacity-70" /> : null;
+                                    })()}
+                                    <span>{sub.name}</span>
+                                    <span className="text-xs text-gray-500">
                                       ({subCount})
                                     </span>
                                   </Label>
