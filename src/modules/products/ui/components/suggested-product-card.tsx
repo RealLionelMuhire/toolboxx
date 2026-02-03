@@ -88,9 +88,13 @@ export const SuggestedProductCard = ({
     <div 
       onClick={handleCardClick}
       onMouseEnter={handleMouseEnter}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(e as any); }}
       className="hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all duration-200 border-2 border-black rounded-lg bg-white overflow-hidden flex flex-col cursor-pointer h-full relative touch-manipulation"
       style={{
         WebkitTapHighlightColor: 'transparent',
+        cursor: 'pointer',
       }}
     >
       {/* Product Image */}
