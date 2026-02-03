@@ -298,7 +298,8 @@ export const productsRouter = createTRPCRouter({
       let sort: Sort = "-createdAt";
       let shouldRandomize = false;
 
-      if (input.sort === "curated") {
+      // Default to "curated" if no sort specified or if explicitly set to "curated"
+      if (!input.sort || input.sort === "curated") {
         // Default - use randomization for fair product visibility
         shouldRandomize = true;
         sort = "-createdAt"; // Initial sort, will be randomized
@@ -549,35 +550,61 @@ export const productsRouter = createTRPCRouter({
         };
       });
 
-      // Randomize product order for fair visibility (Seeded Fisher-Yates shuffle)
-      // Using a time-based seed ensures different products appear on top during different time periods
+      // Randomize product order for fair STORE/TENANT visibility (Tenant-based shuffle)
+      // Group products by tenant, shuffle tenant order, then interleave products
       let finalDocs = dataWithSummarizedReviews;
       if (shouldRandomize) {
-        // Create a seed based on the current minute - this rotates the shuffle every minute
-        // This ensures all stores get fair visibility across different page loads within the minute
+        // Create a seed based on current time with 10-second intervals
         const now = new Date();
-        const seed = now.getFullYear() * 525600 + // Year contribution (minutes in year)
-                     now.getMonth() * 43200 +      // Month contribution (minutes in 30 days)
-                     now.getDate() * 1440 +        // Day contribution (minutes in day)
-                     now.getHours() * 60 +         // Hour contribution (minutes in hour)
-                     now.getMinutes();             // Minute contribution (rotates every minute)
+        const timeInSeconds = Math.floor(now.getTime() / 1000);
+        const rotationInterval = Math.floor(timeInSeconds / 10); // Changes every 10 seconds
+        const seed = rotationInterval * 31 + dataWithSummarizedReviews.length;
         
-        // Seeded random number generator using a simple LCG (Linear Congruential Generator)
+        // Seeded random number generator
         const seededRandom = (seedValue: number) => {
           seedValue = (seedValue * 9301 + 49297) % 233280;
           return seedValue / 233280;
         };
         
-        finalDocs = [...dataWithSummarizedReviews];
+        // Group products by tenant
+        const productsByTenant = dataWithSummarizedReviews.reduce((acc, product) => {
+          const tenantId = typeof product.tenant === 'string' 
+            ? product.tenant 
+            : product.tenant?.id || 'unknown';
+          
+          if (!acc[tenantId]) {
+            acc[tenantId] = [];
+          }
+          acc[tenantId].push(product);
+          return acc;
+        }, {} as Record<string, typeof dataWithSummarizedReviews>);
+        
+        // Get array of tenant IDs and shuffle them
+        const tenantIds = Object.keys(productsByTenant);
         let currentSeed = seed;
-        for (let i = finalDocs.length - 1; i > 0; i--) {
+        
+        // Shuffle tenant order using Fisher-Yates
+        for (let i = tenantIds.length - 1; i > 0; i--) {
           const randomValue = seededRandom(currentSeed);
-          currentSeed = (currentSeed * 9301 + 49297) % 233280; // Update seed for next iteration
+          currentSeed = (currentSeed * 9301 + 49297) % 233280;
           const j = Math.floor(randomValue * (i + 1));
-          const temp = finalDocs[i];
-          if (temp && finalDocs[j]) {
-            finalDocs[i] = finalDocs[j];
-            finalDocs[j] = temp;
+          const temp = tenantIds[i];
+          if (temp && tenantIds[j]) {
+            tenantIds[i] = tenantIds[j];
+            tenantIds[j] = temp;
+          }
+        }
+        
+        // Interleave products from different tenants for better distribution
+        finalDocs = [];
+        let maxProductsPerTenant = Math.max(...Object.values(productsByTenant).map(p => p.length));
+        
+        for (let i = 0; i < maxProductsPerTenant; i++) {
+          for (const tenantId of tenantIds) {
+            const tenantProducts = productsByTenant[tenantId];
+            if (tenantProducts && tenantProducts[i]) {
+              finalDocs.push(tenantProducts[i]);
+            }
           }
         }
       }
