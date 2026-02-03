@@ -145,8 +145,8 @@ export const SignUpView = () => {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-5">
         <div className="bg-[#F4F4F0] min-h-screen w-full lg:col-span-3 overflow-y-auto">
-          <div className="flex flex-col gap-8 p-4 lg:p-16">
-            <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col gap-4 p-4 lg:p-16">
+            <div className="flex items-center justify-between mb-4">
               <Link href="/">
                 <span className={cn("text-2xl font-semibold", poppins.className)}>
                   Toolbay
@@ -165,37 +165,30 @@ export const SignUpView = () => {
             </div>
 
             <div className="max-w-2xl mx-auto w-full">
-              <h1 className="text-2xl md:text-4xl font-medium mb-2 md:mb-4">
-                Join Toolbay
-              </h1>
-              <p className="text-sm md:text-lg text-muted-foreground mb-6 md:mb-12">
-                Choose how you want to use our platform
-              </p>
-
               <div className="grid gap-4 md:gap-6 md:grid-cols-2">
                 {/* Client (Buyer) Card */}
                 <Card 
                   className="cursor-pointer hover:border-primary transition-all hover:shadow-lg"
                   onClick={() => setAccountType("client")}
                 >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-3 mb-1">
-                      <div className="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full bg-blue-100 shrink-0">
-                        <ShoppingBag className="h-6 w-6 md:h-8 md:w-8 text-blue-600" />
+                  <CardHeader className="pb-0">
+                    <div className="flex items-center gap-2 mb-0">
+                      <div className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-blue-100 shrink-0">
+                        <ShoppingBag className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
                       </div>
-                      <CardTitle className="text-xl md:text-2xl">I want to buy</CardTitle>
+                      <CardTitle className="text-lg md:text-xl">I want to buy</CardTitle>
                     </div>
                     <CardDescription className="text-sm md:text-base hidden md:block">
                       Browse and purchase construction materials
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0">
-                    <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-muted-foreground">
+                  <CardContent className="pt-2 pb-4">
+                    <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-muted-foreground hidden md:block">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-0.5">✓</span>
                         <span>Quick registration</span>
                       </li>
-                      <li className="flex items-start gap-2 hidden md:flex">
+                      <li className="flex items-start gap-2">
                         <span className="text-primary mt-0.5">✓</span>
                         <span>Browse thousands of products</span>
                       </li>
@@ -203,12 +196,12 @@ export const SignUpView = () => {
                         <span className="text-primary mt-0.5">✓</span>
                         <span>Track your orders</span>
                       </li>
-                      <li className="flex items-start gap-2 hidden md:flex">
+                      <li className="flex items-start gap-2">
                         <span className="text-primary mt-0.5">✓</span>
                         <span>No business verification needed</span>
                       </li>
                     </ul>
-                    <Button className="w-full mt-4 md:mt-6" size="lg">
+                    <Button className="w-full mt-3 md:mt-4">
                       Continue as Buyer
                     </Button>
                   </CardContent>
@@ -219,24 +212,24 @@ export const SignUpView = () => {
                   className="cursor-pointer hover:border-primary transition-all hover:shadow-lg border-2"
                   onClick={() => setAccountType("tenant")}
                 >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center gap-3 mb-1">
-                      <div className="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-full bg-orange-100 shrink-0">
-                        <Store className="h-6 w-6 md:h-8 md:w-8 text-orange-600" />
+                  <CardHeader className="pb-0">
+                    <div className="flex items-center gap-2 mb-0">
+                      <div className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-orange-100 shrink-0">
+                        <Store className="h-5 w-5 md:h-6 md:w-6 text-orange-600" />
                       </div>
-                      <CardTitle className="text-xl md:text-2xl">I want to sell</CardTitle>
+                      <CardTitle className="text-lg md:text-xl">I want to sell</CardTitle>
                     </div>
                     <CardDescription className="text-sm md:text-base hidden md:block">
                       Start supplying construction materials
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="pt-0">
-                    <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-muted-foreground">
+                  <CardContent className="pt-2 pb-4">
+                    <ul className="space-y-1.5 md:space-y-2 text-xs md:text-sm text-muted-foreground hidden md:block">
                       <li className="flex items-start gap-2">
                         <span className="text-primary mt-0.5">✓</span>
                         <span>Get your own store</span>
                       </li>
-                      <li className="flex items-start gap-2 hidden md:flex">
+                      <li className="flex items-start gap-2">
                         <span className="text-primary mt-0.5">✓</span>
                         <span>Manage products and inventory</span>
                       </li>
@@ -244,12 +237,12 @@ export const SignUpView = () => {
                         <span className="text-primary mt-0.5">✓</span>
                         <span>Track sales and revenue</span>
                       </li>
-                      <li className="flex items-start gap-2 hidden md:flex">
+                      <li className="flex items-start gap-2">
                         <span className="text-primary mt-0.5">✓</span>
                         <span>Requires business verification</span>
                       </li>
                     </ul>
-                    <Button className="w-full mt-4 md:mt-6" size="lg" variant="default">
+                    <Button className="w-full mt-3 md:mt-4" variant="default">
                       Start Supplying
                     </Button>
                   </CardContent>
