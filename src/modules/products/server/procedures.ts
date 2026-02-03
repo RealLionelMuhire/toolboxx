@@ -549,12 +549,31 @@ export const productsRouter = createTRPCRouter({
         };
       });
 
-      // Randomize product order for fair visibility (Fisher-Yates shuffle)
+      // Randomize product order for fair visibility (Seeded Fisher-Yates shuffle)
+      // Using a time-based seed ensures different products appear on top during different time periods
       let finalDocs = dataWithSummarizedReviews;
       if (shouldRandomize) {
+        // Create a seed based on the current minute - this rotates the shuffle every minute
+        // This ensures all stores get fair visibility across different page loads within the minute
+        const now = new Date();
+        const seed = now.getFullYear() * 525600 + // Year contribution (minutes in year)
+                     now.getMonth() * 43200 +      // Month contribution (minutes in 30 days)
+                     now.getDate() * 1440 +        // Day contribution (minutes in day)
+                     now.getHours() * 60 +         // Hour contribution (minutes in hour)
+                     now.getMinutes();             // Minute contribution (rotates every minute)
+        
+        // Seeded random number generator using a simple LCG (Linear Congruential Generator)
+        const seededRandom = (seedValue: number) => {
+          seedValue = (seedValue * 9301 + 49297) % 233280;
+          return seedValue / 233280;
+        };
+        
         finalDocs = [...dataWithSummarizedReviews];
+        let currentSeed = seed;
         for (let i = finalDocs.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
+          const randomValue = seededRandom(currentSeed);
+          currentSeed = (currentSeed * 9301 + 49297) % 233280; // Update seed for next iteration
+          const j = Math.floor(randomValue * (i + 1));
           const temp = finalDocs[i];
           if (temp && finalDocs[j]) {
             finalDocs[i] = finalDocs[j];

@@ -193,8 +193,8 @@ export const ProductCard = ({
     
     // Navigate to product using Next.js router for smooth client-side navigation
     console.log('[ProductCard] Same-origin navigation to:', productUrl);
-    e.preventDefault();
     console.log('[ProductCard] Using router.push for smooth navigation');
+    // Don't prevent default - let the click bubble naturally for better mobile experience
     router.push(productUrl);
   };
 
