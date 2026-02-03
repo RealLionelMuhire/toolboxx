@@ -603,7 +603,10 @@ export const productsRouter = createTRPCRouter({
           for (const tenantId of tenantIds) {
             const tenantProducts = productsByTenant[tenantId];
             if (tenantProducts && tenantProducts[i]) {
-              finalDocs.push(tenantProducts[i]);
+              const product = tenantProducts[i];
+              if (product) {
+                finalDocs.push(product);
+              }
             }
           }
         }
