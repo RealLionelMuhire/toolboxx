@@ -558,7 +558,11 @@ export const productsRouter = createTRPCRouter({
         const now = new Date();
         const timeInSeconds = Math.floor(now.getTime() / 1000);
         const rotationInterval = Math.floor(timeInSeconds / 10); // Changes every 10 seconds
-        const seed = rotationInterval * 31 + dataWithSummarizedReviews.length;
+        
+        // Add true random component on each request for better distribution
+        // Combine time-based seed with random component for fairness
+        const randomComponent = Math.floor(Math.random() * 1000);
+        const seed = rotationInterval * 31 + dataWithSummarizedReviews.length + randomComponent;
         
         // Seeded random number generator
         const seededRandom = (seedValue: number) => {

@@ -276,16 +276,12 @@ export const ProductCard = ({
   // List view layout
   if (viewMode === "list") {
     return (
-      <div 
-        onClick={handleCardClick}
+      <a 
+        href={productUrl}
         onMouseEnter={handleMouseEnter}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(e as any); }}
-        className="group hover:shadow-xl active:shadow-md transition-all duration-200 border border-gray-200 rounded-2xl bg-white overflow-hidden flex flex-row cursor-pointer max-w-full hover:-translate-y-1 active:translate-y-0 relative touch-manipulation"
+        className="group hover:shadow-xl active:shadow-md transition-all duration-200 border border-gray-200 rounded-2xl bg-white overflow-hidden flex flex-row cursor-pointer max-w-full hover:-translate-y-1 active:translate-y-0 relative touch-manipulation no-underline"
         style={{
           WebkitTapHighlightColor: 'transparent',
-          cursor: 'pointer',
         }}
       >
         {/* Image on the left - takes full height of card */}
@@ -445,22 +441,18 @@ export const ProductCard = ({
             )}
           </div>
         </div>
-      </div>
+      </a>
     );
   }
 
   // Grid view layout (default)
   return (
-    <div 
-      onClick={handleCardClick}
+    <a 
+      href={productUrl}
       onMouseEnter={handleMouseEnter}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleCardClick(e as any); }}
-      className="group hover:shadow-xl active:shadow-md transition-all duration-200 border border-gray-200 rounded-2xl bg-white overflow-hidden h-full flex flex-col cursor-pointer hover:-translate-y-1 active:translate-y-0 relative touch-manipulation"
+      className="group hover:shadow-xl active:shadow-md transition-all duration-200 border border-gray-200 rounded-2xl bg-white overflow-hidden h-full flex flex-col cursor-pointer hover:-translate-y-1 active:translate-y-0 relative touch-manipulation no-underline"
       style={{
         WebkitTapHighlightColor: 'transparent',
-        cursor: 'pointer',
       }}
     >
       {/* Product Image */}
@@ -620,7 +612,7 @@ export const ProductCard = ({
           )}
         </div>
       </div>
-    </div>
+    </a>
   )
 };
 
