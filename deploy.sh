@@ -39,6 +39,19 @@ if [ ! -f "package.json" ] || [ ! -f "docker-compose.yml" ]; then
     exit 1
 fi
 
+# Check if Docker is running
+if ! docker info >/dev/null 2>&1; then
+    echo -e "${RED}❌ Error: Docker is not running or not accessible${NC}"
+    echo -e "${YELLOW}💡 Try: sudo systemctl start docker${NC}"
+    exit 1
+fi
+
+# Check if docker compose is available
+if ! docker compose version >/dev/null 2>&1; then
+    echo -e "${RED}❌ Error: Docker Compose is not installed or not accessible${NC}"
+    exit 1
+fi
+
 # Check if .env.production exists
 if [ ! -f ".env.production" ]; then
     echo -e "${RED}❌ Error: .env.production file not found${NC}"
@@ -61,12 +74,32 @@ echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}📊 Step 2/6: Checking current container status${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-OLD_CONTAINERS=$(docker compose ps -q)
+
+# Check Docker daemon is responsive
+echo -e "${YELLOW}⏳ Verifying Docker daemon...${NC}"
+if ! timeout 5 docker info >/dev/null 2>&1; then
+    echo -e "${RED}❌ Docker daemon not responding. Please check Docker service.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✓ Docker daemon is responsive${NC}"
+
+# Validate docker-compose.yml
+echo -e "${YELLOW}⏳ Validating docker-compose.yml...${NC}"
+if ! timeout 10 docker compose --env-file .env.production config >/dev/null 2>&1; then
+    echo -e "${RED}❌ docker-compose.yml validation failed${NC}"
+    docker compose --env-file .env.production config 2>&1 | tail -20
+    exit 1
+fi
+echo -e "${GREEN}✓ Docker Compose configuration is valid${NC}"
+
+# Get container status with timeout
+echo -e "${YELLOW}⏳ Checking for existing containers...${NC}"
+OLD_CONTAINERS=$(timeout 10 docker compose ps -q 2>/dev/null || echo "")
 if [ -n "$OLD_CONTAINERS" ]; then
     echo -e "${GREEN}✓ Found running containers (keeping them alive during build)${NC}"
-    docker compose ps
+    timeout 10 docker compose ps || echo -e "${YELLOW}⚠️  Could not display container status${NC}"
 else
-    echo -e "${YELLOW}⚠️  No running containers found${NC}"
+    echo -e "${YELLOW}⚠️  No running containers found (first deployment or all stopped)${NC}"
 fi
 
 echo ""
@@ -76,8 +109,8 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${MAGENTA}⚡ Old containers are still running and serving traffic${NC}"
 echo ""
 
-# Build new images without stopping old containers
-docker compose --env-file .env.production build --no-cache
+# Build new images without stopping old containers (with timeout monitoring)
+timeout 1800 docker compose --env-file .env.production build --no-cache
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Build failed! Old containers are still running.${NC}"
@@ -132,7 +165,7 @@ fi
 # Display container status
 echo ""
 echo -e "${BLUE}📊 Current container status:${NC}"
-docker compose ps
+timeout 10 docker compose ps || echo -e "${YELLOW}⚠️  Could not display container status${NC}"
 
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
