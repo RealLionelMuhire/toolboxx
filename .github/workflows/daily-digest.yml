@@ -1,0 +1,31 @@
+name: Daily Notification Digest
+
+on:
+  schedule:
+    # Runs daily at 9 AM UTC
+    - cron: '0 9 * * *'
+  # Allow manual trigger for testing
+  workflow_dispatch:
+
+jobs:
+  send-digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Daily Notification Digest
+        run: |
+          response=$(curl -X POST \
+            ${{ secrets.APP_URL }}/api/notifications/daily-digest \
+            -H 'Authorization: Bearer ${{ secrets.CRON_SECRET }}' \
+            -w "\n%{http_code}" \
+            -s)
+          
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+          
+          if [ "$http_code" != "200" ]; then
+            echo "Error: Daily digest failed with status $http_code"
+            exit 1
+          fi

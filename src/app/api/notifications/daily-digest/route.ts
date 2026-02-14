@@ -13,7 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPayload } from 'payload';
 import config from '@/payload.config';
-import { createNotification, notifyWeeklySummary } from '@/lib/notifications/notification-manager';
+import { createNotification, notifyWeeklySummary, notifyInactiveUser } from '@/lib/notifications/notification-manager';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Allow up to 60 seconds for execution
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       collection: 'push-subscriptions',
       limit: 1000,
       where: {
-        active: {
+        isActive: {
           equals: true,
         },
       },
@@ -74,6 +74,9 @@ export async function POST(req: NextRequest) {
 
         const isTenant = user.roles?.includes('tenant');
         const isCustomer = user.roles?.includes('client');
+        
+        console.log(`[Daily Digest] Processing user ${userId}: Tenant=${isTenant}, Customer=${isCustomer}`);
+
 
         // For tenants: Check for pending transactions and send daily summary
         if (isTenant && user.tenants && user.tenants.length > 0) {
@@ -86,10 +89,12 @@ export async function POST(req: NextRequest) {
             collection: 'transactions',
             where: {
               tenant: { equals: tenantId },
-              verified: { equals: false },
+              status: { in: ['pending', 'awaiting_verification'] },
             },
             limit: 10,
           });
+          
+          console.log(`[Daily Digest] User ${userId}: Found ${unverifiedTransactions.totalDocs} unverified transactions`);
 
           if (unverifiedTransactions.totalDocs > 0) {
             const success = await createNotification({
@@ -174,6 +179,8 @@ export async function POST(req: NextRequest) {
             },
             limit: 10,
           });
+          
+          console.log(`[Daily Digest] User ${userId}: Found ${pendingOrders.totalDocs} pending orders`);
 
           if (pendingOrders.totalDocs > 0) {
             const success = await createNotification({
@@ -196,11 +203,13 @@ export async function POST(req: NextRequest) {
         const unreadMessages = await payload.find({
           collection: 'messages',
           where: {
-            to: { equals: userId },
+            receiver: { equals: userId },
             read: { equals: false },
           },
           limit: 100,
         });
+        
+        console.log(`[Daily Digest] User ${userId}: Found ${unreadMessages.totalDocs} unread messages`);
 
         if (unreadMessages.totalDocs > 0) {
           const success = await createNotification({
@@ -217,6 +226,64 @@ export async function POST(req: NextRequest) {
           results.push({ userId, type: 'unread-messages', success });
           if (success) notificationsSent++;
         }
+
+        // Send daily engagement notification to ALL users with notifications enabled
+        // This keeps users engaged and reminds them to check the app
+        const dailyNotifications = [
+          {
+            title: "Good Morning!",
+            message: "Check out today's featured products and trending deals!",
+            url: "/",
+          },
+          {
+            title: "New Arrivals Today",
+            message: "Fresh products just added! Be the first to check them out.",
+            url: "/products",
+          },
+          {
+            title: "Hot Deals Alert",
+            message: "Don't miss out on today's special offers and discounts!",
+            url: "/",
+          },
+          {
+            title: "Discover Something New",
+            message: "Explore trending products and top-rated stores today!",
+            url: "/",
+          },
+          {
+            title: "Daily Update",
+            message: "See what's popular and what your favorite stores are offering!",
+            url: "/",
+          },
+          {
+            title: "Your Daily Picks",
+            message: "Handpicked products and deals just for you!",
+            url: "/",
+          },
+          {
+            title: "Start Your Day Right",
+            message: "Browse new products and connect with sellers today!",
+            url: "/",
+          },
+        ];
+
+        // Select a different notification based on day of week
+        const notificationIndex = dayOfWeek % dailyNotifications.length;
+        const dailyNotification = dailyNotifications[notificationIndex]!;
+        
+        const success = await createNotification({
+          userId,
+          type: 'engagement',
+          title: dailyNotification.title,
+          message: dailyNotification.message,
+          url: dailyNotification.url,
+          priority: 'low',
+          sendPush: true,
+        });
+        
+        results.push({ userId, type: 'daily-engagement', success });
+        if (success) notificationsSent++;
+        console.log(`[Daily Digest] Sent daily engagement notification to ${userId}`);
 
       } catch (userError) {
         console.error(`[Daily Digest] Error processing user ${userId}:`, userError);
