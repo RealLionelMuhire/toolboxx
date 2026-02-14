@@ -4,7 +4,8 @@ import { useTRPC } from '@/trpc/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
+import Link from 'next/link';
+import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp, Share2, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { OrderStats } from '@/components/dashboard/OrderStats';
@@ -502,44 +503,56 @@ function AccountSection() {
               <CardDescription>Manage your profile</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
-              {session.data?.user?.roles?.includes('tenant') || session.data?.user?.roles?.includes('super-admin') ? (
-                <div className="space-y-3 p-4 bg-muted rounded-md">
-                  <div className="flex items-start gap-2">
-                    <User className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Profile Information</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {session.data?.user?.email || 'Not available'}
+              {/* Profile Information */}
+              <div className="space-y-3 p-4 bg-muted rounded-md">
+                <div className="flex items-start gap-2">
+                  <User className="h-5 w-5 text-muted-foreground mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Profile Information</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {session.data?.user?.email || 'Not available'}
+                    </p>
+                    {session.data?.user?.username && (
+                      <p className="text-xs text-muted-foreground">
+                        Username: {session.data.user.username}
                       </p>
-                      {session.data?.user?.username && (
-                        <p className="text-xs text-muted-foreground">
-                          Username: {session.data.user.username}
-                        </p>
-                      )}
-                    </div>
+                    )}
+                    {session.data?.user?.roles && (
+                      <p className="text-xs text-muted-foreground">
+                        Role: {session.data.user.roles.includes('tenant') ? 'Seller' : session.data.user.roles.includes('super-admin') ? 'Admin' : 'Buyer'}
+                      </p>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div className="space-y-3 p-4 bg-muted rounded-md">
-                  <div className="flex items-start gap-2">
-                    <User className="h-5 w-5 text-muted-foreground mt-0.5" />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium">Profile Information</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {session.data?.user?.email || 'Not available'}
-                      </p>
-                      {session.data?.user?.username && (
-                        <p className="text-xs text-muted-foreground">
-                          Username: {session.data.user.username}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Your account is set up as a buyer. Contact support to update your profile.
-                  </p>
-                </div>
+              </div>
+
+              {/* Dashboard Link for Tenants Only */}
+              {(session.data?.user?.roles?.includes('tenant') || session.data?.user?.roles?.includes('super-admin')) && (
+                <Button className="w-full" variant="default" asChild>
+                  <Link href="/admin">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Dashboard
+                  </Link>
+                </Button>
               )}
+
+              {/* Edit Profile */}
+              <Button className="w-full" variant="outline" asChild>
+                <Link href="/admin/account">
+                  <User className="h-4 w-4 mr-2" />
+                  Edit Profile
+                </Link>
+              </Button>
+
+              {/* Logout */}
+              <form action="/api/users/logout" method="POST" className="w-full">
+                <Button type="submit" className="w-full" variant="outline">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Log Out
+                </Button>
+              </form>
             </CardContent>
           </Card>
 

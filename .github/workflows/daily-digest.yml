@@ -13,9 +13,14 @@ jobs:
     steps:
       - name: Send Daily Notification Digest
         run: |
+          set +e  # Disable exit on error
+          
+          echo "Sending daily digest to ${{ secrets.APP_URL }}/api/notifications/daily-digest"
+          
           response=$(curl -X POST \
-            ${{ secrets.APP_URL }}/api/notifications/daily-digest \
-            -H 'Authorization: Bearer ${{ secrets.CRON_SECRET }}' \
+            "${{ secrets.APP_URL }}/api/notifications/daily-digest" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json" \
             -w "\n%{http_code}" \
             -s)
           
@@ -23,9 +28,13 @@ jobs:
           body=$(echo "$response" | sed '$d')
           
           echo "HTTP Status: $http_code"
-          echo "Response: $body"
+          echo "Response Body: $body"
           
-          if [ "$http_code" != "200" ]; then
-            echo "Error: Daily digest failed with status $http_code"
+          if [ "$http_code" = "200" ]; then
+            echo "✅ Daily digest sent successfully!"
+            exit 0
+          else
+            echo "❌ Daily digest failed with status $http_code"
+            echo "Response: $body"
             exit 1
           fi
