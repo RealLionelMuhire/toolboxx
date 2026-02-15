@@ -1,17 +1,9 @@
-"use client";
+import ProfilePageClient from './profile-client';
 
-import dynamic from 'next/dynamic';
-import { Loader2 } from 'lucide-react';
-
-// Dynamically import the client component to avoid SSR issues
-const ProfilePageClient = dynamic(() => import('./profile-client'), {
-  ssr: false,
-  loading: () => (
-    <div className="container mx-auto py-8 flex items-center justify-center min-h-[400px]">
-      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-    </div>
-  ),
-});
+// Force dynamic rendering - disable static generation
+export const dynamic = 'force-dynamic';
+export const dynamicParams = true;
+export const revalidate = 0;
 
 export default function ProfilePage() {
   return <ProfilePageClient />;
