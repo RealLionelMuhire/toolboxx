@@ -228,7 +228,7 @@ export function DashboardView() {
 
               {/* Edit Profile */}
               <Button className="w-full" variant="outline" asChild>
-                <Link href="/admin/account">
+                <Link href="/profile">
                   <User className="h-4 w-4 mr-2" />
                   Edit Profile
                 </Link>
