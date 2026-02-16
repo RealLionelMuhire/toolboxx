@@ -28,7 +28,7 @@ echo -e "${GREEN}✓ Project directory OK${NC}"
 
 echo -e "${BLUE}Checking Docker daemon...${NC}"
 # Check if Docker is running (with timeout)
-if ! timeout 5 docker info >/dev/null 2>&1; then
+if ! timeout 5 sudo docker info >/dev/null 2>&1; then
     echo -e "${RED}❌ Error: Docker is not running or not accessible${NC}"
     echo -e "${YELLOW}💡 Try: sudo systemctl start docker${NC}"
     exit 1
@@ -37,7 +37,7 @@ echo -e "${GREEN}✓ Docker is running${NC}"
 
 echo -e "${BLUE}Checking Docker Compose...${NC}"
 # Check if docker compose is available
-if ! docker compose version >/dev/null 2>&1; then
+if ! sudo docker compose version >/dev/null 2>&1; then
     echo -e "${RED}❌ Error: Docker Compose is not installed or not accessible${NC}"
     exit 1
 fi
