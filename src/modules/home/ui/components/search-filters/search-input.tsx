@@ -39,7 +39,7 @@ export const SearchInput = ({
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-neutral-500" />
           <Input
             className="pl-8 w-full min-w-0"
-            placeholder="Search products"
+            placeholder="Search products, stores, or locations..."
             disabled={disabled}
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}

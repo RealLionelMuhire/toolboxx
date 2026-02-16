@@ -442,10 +442,37 @@ export const productsRouter = createTRPCRouter({
         };
       }
 
+      // Multi-field search: search across product name, store/tenant name, and location
       if (input.search) {
-        where["name"] = {
-          like: input.search,
-        };
+        const searchConditions: any[] = [
+          {
+            name: {
+              like: input.search,
+            },
+          },
+          {
+            "tenant.name": {
+              like: input.search,
+            },
+          },
+          {
+            locationCityOrArea: {
+              like: input.search,
+            },
+          },
+        ];
+
+        // If there's already an 'or' condition (e.g., for stock status), we need to combine them
+        if (where.or) {
+          // Combine existing OR with new search OR using AND
+          where.and = [
+            { or: where.or as any },
+            { or: searchConditions as any },
+          ] as any;
+          delete where.or;
+        } else {
+          where.or = searchConditions as any;
+        }
       }
 
       // Filter out out-of-stock products from public lists (unless allowBackorder/pre-order is enabled)
