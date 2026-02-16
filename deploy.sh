@@ -28,12 +28,20 @@ echo -e "${GREEN}✓ Project directory OK${NC}"
 
 echo -e "${BLUE}Checking Docker daemon...${NC}"
 # Check if Docker is running (with timeout)
-if ! timeout 5 sudo docker info >/dev/null 2>&1; then
+# Try with sudo first, then without
+if timeout 5 sudo docker info >/dev/null 2>&1; then
+    DOCKER_CMD="sudo docker"
+    COMPOSE_CMD="sudo docker compose"
+    echo -e "${GREEN}✓ Docker is running (using sudo)${NC}"
+elif timeout 5 docker info >/dev/null 2>&1; then
+    DOCKER_CMD="docker"
+    COMPOSE_CMD="docker compose"
+    echo -e "${GREEN}✓ Docker is running${NC}"
+else
     echo -e "${RED}❌ Error: Docker is not running or not accessible${NC}"
     echo -e "${YELLOW}💡 Try: sudo systemctl start docker${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓ Docker is running${NC}"
 
 echo -e "${BLUE}Checking Docker Compose...${NC}"
 # Check if docker compose is available
@@ -53,15 +61,10 @@ echo -e "${GREEN}✓ .env.production found${NC}"
 
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${BLUE}📥 Step 1/6: Pulling latest code from GitHub${NC}"
+echo -e "${BLUE}📥 Step 1/6: Checking Git status${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-git pull origin main
-
-if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Git pull failed. Please resolve conflicts manually.${NC}"
-    exit 1
-fi
-echo -e "${GREEN}✓ Code updated successfully${NC}"
+echo -e "${YELLOW}⚠️  Please run 'git pull origin main' BEFORE running this script${NC}"
+echo -e "${GREEN}✓ Skipping git pull (run manually as your user)${NC}"
 
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
