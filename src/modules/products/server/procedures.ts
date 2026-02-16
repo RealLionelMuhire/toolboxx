@@ -442,7 +442,8 @@ export const productsRouter = createTRPCRouter({
         };
       }
 
-      // Multi-field search: search across product name, store/tenant name, and location
+      // Multi-field search: searches across product name, description, location, tenant name, and tags
+      // MongoDB text indexes improve performance for large datasets
       if (input.search) {
         const searchConditions: any[] = [
           {
@@ -456,15 +457,19 @@ export const productsRouter = createTRPCRouter({
             },
           },
           {
+            "tags.name": {
+              like: input.search,
+            },
+          },
+          {
             locationCityOrArea: {
               like: input.search,
             },
           },
         ];
 
-        // If there's already an 'or' condition (e.g., for stock status), we need to combine them
+        // If there's already an 'or' condition (e.g., for stock status), combine them
         if (where.or) {
-          // Combine existing OR with new search OR using AND
           where.and = [
             { or: where.or as any },
             { or: searchConditions as any },
@@ -482,7 +487,7 @@ export const productsRouter = createTRPCRouter({
         // For public product lists, exclude products where:
         // - quantity is 0 AND allowBackorder is false
         // Show products that have quantity > 0 OR (quantity = 0 AND allowBackorder = true)
-        where.or = [
+        const stockConditions = [
           {
             quantity: {
               greater_than: 0,
@@ -503,6 +508,20 @@ export const productsRouter = createTRPCRouter({
             ],
           },
         ];
+
+        // Combine stock filter with existing search conditions if they exist
+        if (where.or || where.and) {
+          // Search conditions already exist, combine them
+          const existingConditions = where.and ? where.and : [{ or: where.or }];
+          where.and = [
+            ...existingConditions,
+            { or: stockConditions as any },
+          ] as any;
+          delete where.or;
+        } else {
+          // No search conditions, just apply stock filter
+          where.or = stockConditions as any;
+        }
       }
 
       const data = await ctx.db.find({
