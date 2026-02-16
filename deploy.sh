@@ -18,45 +18,38 @@ CYAN='\033[0;36m'
 MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 
-# Progress indicator
-spinner() {
-    local pid=$1
-    local delay=0.1
-    local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " [%c]  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
-}
-
+echo -e "${BLUE}Checking project directory...${NC}"
 # Check if we're in the correct directory
 if [ ! -f "package.json" ] || [ ! -f "docker-compose.yml" ]; then
     echo -e "${RED}❌ Error: Must be run from the toolboxx project directory${NC}"
     exit 1
 fi
+echo -e "${GREEN}✓ Project directory OK${NC}"
 
-# Check if Docker is running
-if ! docker info >/dev/null 2>&1; then
+echo -e "${BLUE}Checking Docker daemon...${NC}"
+# Check if Docker is running (with timeout)
+if ! timeout 5 docker info >/dev/null 2>&1; then
     echo -e "${RED}❌ Error: Docker is not running or not accessible${NC}"
     echo -e "${YELLOW}💡 Try: sudo systemctl start docker${NC}"
     exit 1
 fi
+echo -e "${GREEN}✓ Docker is running${NC}"
 
+echo -e "${BLUE}Checking Docker Compose...${NC}"
 # Check if docker compose is available
 if ! docker compose version >/dev/null 2>&1; then
     echo -e "${RED}❌ Error: Docker Compose is not installed or not accessible${NC}"
     exit 1
 fi
+echo -e "${GREEN}✓ Docker Compose is available${NC}"
 
+echo -e "${BLUE}Checking .env.production file...${NC}"
 # Check if .env.production exists
 if [ ! -f ".env.production" ]; then
     echo -e "${RED}❌ Error: .env.production file not found${NC}"
     exit 1
 fi
+echo -e "${GREEN}✓ .env.production found${NC}"
 
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
