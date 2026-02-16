@@ -2,9 +2,8 @@ name: Daily Notification Digest
 
 on:
   schedule:
-    # TEST MODE: Runs every 5 minutes for testing
-    # Production: '0 9 * * *' (daily at 9 AM UTC)
-    - cron: '*/5 * * * *'
+    # Runs twice daily: 7 AM and 7 PM UTC (9 AM and 9 PM Rwanda time)
+    - cron: '0 7,19 * * *'
   # Allow manual trigger for testing
   workflow_dispatch:
 
