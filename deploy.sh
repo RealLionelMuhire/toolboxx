@@ -109,8 +109,8 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "${MAGENTA}⚡ Old containers are still running and serving traffic${NC}"
 echo ""
 
-# Build new images without stopping old containers (with timeout monitoring)
-timeout 1800 docker compose --env-file .env.production build --no-cache
+# Build new images without stopping old containers (no timeout, show live output)
+docker compose --env-file .env.production build --no-cache --progress=plain
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Build failed! Old containers are still running.${NC}"
@@ -140,20 +140,38 @@ echo -e "${BLUE}🏥 Step 5/6: Running health checks${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
 # Wait for containers to be healthy
-sleep 3
-echo -e "${YELLOW}⏳ Waiting for services to stabilize...${NC}"
-sleep 2
+echo -e "${YELLOW}⏳ Waiting for services to initialize (5 seconds)...${NC}"
+sleep 5
 
-# Check if containers are running
-RUNNING_CONTAINERS=$(docker compose ps -q)
-if [ -z "$RUNNING_CONTAINERS" ]; then
-    echo -e "${RED}❌ No containers are running!${NC}"
+# Health check with retries
+MAX_ATTEMPTS=30
+ATTEMPT=1
+health_check_passed=false
+
+while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
+    # Check if all containers are running
+    running_containers=$(docker compose ps --services --filter "status=running" | wc -l)
+    total_containers=$(docker compose ps --services | wc -l)
+    
+    if [ "$running_containers" -eq "$total_containers" ] && [ "$total_containers" -gt 0 ]; then
+        echo -e "${GREEN}✓ All containers are running ($running_containers/$total_containers)${NC}"
+        health_check_passed=true
+        break
+    else
+        echo -e "${YELLOW}⏳ Attempt $ATTEMPT/$MAX_ATTEMPTS: Waiting for containers ($running_containers/$total_containers running)...${NC}"
+        ATTEMPT=$((ATTEMPT + 1))
+        sleep 2
+    fi
+done
+
+if [ "$health_check_passed" = false ]; then
+    echo -e "${RED}❌ Health checks failed after $MAX_ATTEMPTS attempts${NC}"
     echo -e "${YELLOW}📋 Recent logs:${NC}"
     docker compose logs --tail=50
     exit 1
 fi
 
-# Check container health
+# Check container health status
 UNHEALTHY=$(docker compose ps | grep -i "unhealthy\|restarting" || true)
 if [ -n "$UNHEALTHY" ]; then
     echo -e "${RED}⚠️  Warning: Some containers may be unhealthy:${NC}"
@@ -165,7 +183,7 @@ fi
 # Display container status
 echo ""
 echo -e "${BLUE}📊 Current container status:${NC}"
-timeout 10 docker compose ps || echo -e "${YELLOW}⚠️  Could not display container status${NC}"
+docker compose ps
 
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
