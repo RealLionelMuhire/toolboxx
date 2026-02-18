@@ -131,7 +131,6 @@ export const NavbarSidebar = ({
                 {!isSubscribed ? (
                   <Button
                     onClick={async () => {
-                      console.log('[Sidebar] Enable notifications clicked');
                       await subscribe();
                     }}
                     disabled={isLoading}
@@ -144,7 +143,6 @@ export const NavbarSidebar = ({
                 ) : (
                   <Button
                     onClick={async () => {
-                      console.log('[Sidebar] Disable notifications clicked');
                       await unsubscribe();
                     }}
                     disabled={isLoading}

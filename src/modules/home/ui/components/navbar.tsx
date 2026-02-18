@@ -496,9 +496,6 @@ export const Navbar = () => {
                session.data.user.username || 
                'User').trim();
             
-            // Debug: Log the actual value
-            console.log('Mobile Display Name:', displayName, 'Length:', displayName.length);
-            
             return (
               <div className="flex items-center gap-2 lg:hidden -mt-1">
                 <span className="text-xs text-gray-600 whitespace-nowrap">

@@ -153,21 +153,14 @@ export const FiltersSidebar = ({
   };
 
   const onChange = (key: keyof typeof filters, value: unknown) => {
-    console.log("onChange called:", { key, value, currentFilters: filters });
     setFilters({ [key]: value });
   };
 
   // Debug log for location country changes
   useEffect(() => {
-    console.log("filters.locationCountry updated:", filters.locationCountry, "truthy:", !!filters.locationCountry);
     if (filters.locationCountry) {
       const country = getCountryByCode(filters.locationCountry);
-      console.log("Location Country Changed:", {
-        code: filters.locationCountry,
-        country: country?.name,
-        hasProvinces: !!country?.provinces,
-        provinceCount: country?.provinces?.length || 0,
-      });
+      // Location country changed, provinces/districts will update
     }
   }, [filters.locationCountry]);
 
