@@ -383,12 +383,12 @@ export const productsRouter = createTRPCRouter({
         where["category"] = {
           in: input.categories
         };
-      } else if (input.category) {
+      } else if (input.category && input.category !== "all") {
         // Handle single category (backward compatibility for existing routes)
+        // Optimized: Single query to get category and subcategories by slug
         const categoriesData = await ctx.db.find({
           collection: "categories",
-          limit: 1,
-          depth: 1, // Populate subcategories, subcategores.[0] will be a type of "Category"
+          depth: 1, // Populate subcategories
           pagination: false,
           where: {
             slug: {
@@ -397,44 +397,27 @@ export const productsRouter = createTRPCRouter({
           }
         });
 
-        const formattedData = categoriesData.docs.map((doc) => ({
-          ...doc,
-          subcategories: (doc.subcategories?.docs ?? []).map((doc) => ({
-            // Because of "depth: 1" we are confident "doc" will be a type of "Category"
-            ...(doc as Category),
-            subcategories: undefined,
-          }))
-        }));
-
-        const subcategoriesSlugs = [];
-        const parentCategory = formattedData[0];
+        const parentCategory = categoriesData.docs[0];
 
         if (parentCategory) {
-          subcategoriesSlugs.push(
-            ...parentCategory.subcategories.map((subcategory) => subcategory.slug)
-          )
-
-          // Query for category IDs matching the slugs
-          const matchingCategories = await ctx.db.find({
-            collection: "categories",
-            pagination: false,
-            where: {
-              slug: {
-                in: [parentCategory.slug, ...subcategoriesSlugs]
+          // Collect parent ID and all subcategory IDs in one go
+          const categoryIds = [parentCategory.id];
+          
+          if (parentCategory.subcategories?.docs) {
+            parentCategory.subcategories.docs.forEach((subcat) => {
+              if (typeof subcat !== 'string') {
+                categoryIds.push(subcat.id);
               }
-            }
-          });
-
-          const categoryIds = matchingCategories.docs.map(cat => cat.id);
+            });
+          }
 
           // Filter products that have any of these categories in their category array
-          if (categoryIds.length > 0) {
-            where["category"] = {
-              in: categoryIds
-            }
-          }
+          where["category"] = {
+            in: categoryIds
+          };
         }
       }
+      // Note: If category is "all" or undefined, no category filter is applied (show all products)
 
       if (input.tags && input.tags.length > 0) {
         where["tags.name"] = {

@@ -79,26 +79,24 @@ export const CategoriesSidebar = ({
     onOpenChange(open);
   };
 
-  const handleCategoryClick = (category: CategoriesGetManyOutput[1]) => {
-    if (category.subcategories && category.subcategories.length > 0) {
+  const handleCategoryClick = (category: CategoriesGetManyOutput[1], expandOnly = false) => {
+    // If expandOnly is true, only drill into subcategories (don't navigate)
+    if (expandOnly && category.subcategories && category.subcategories.length > 0) {
       setParentCategories(category.subcategories as CategoriesGetManyOutput);
       setSelectedCategory(category);
-    } else {
-      // This is a leaf category (no subcategories)
-      if (parentCategories && selectedCategory) {
-        //  This is a subcategory - navigate to /category/subcategory
-        router.push(`/${selectedCategory.slug}/${category.slug}`);
-      } else {
-        // This is a main category - navigat to /category
-        if (category.slug === "all") {
-          router.push("/");
-        } else {
-          router.push(`/${category.slug}`);
-        }
-      }
-
-      handleOpenChange(false);
+      return;
     }
+
+    // Navigate to the category page
+    if (parentCategories && selectedCategory) {
+      // This is a subcategory - navigate to /category/subcategory
+      router.push(`/${selectedCategory.slug}/${category.slug}`);
+    } else {
+      // This is a main category - navigate to /category
+      router.push(`/${category.slug}`);
+    }
+
+    handleOpenChange(false);
   }
 
   const handleBackClick = () => {
@@ -135,20 +133,36 @@ export const CategoriesSidebar = ({
           {sortedCategories.map((category) => {
             const count = getCategoryCount(category);
             const Icon = (category as any).icon ? getIconByName((category as any).icon) : null;
+            const hasSubcategories = category.subcategories && category.subcategories.length > 0;
+            
             return (
-              <button
+              <div
                 key={category.slug}
-                onClick={() => handleCategoryClick(category)}
-                className="w-full text-left p-4 hover:bg-black hover:text-white flex justify-between items-center text-base font-medium cursor-pointer"
+                className="w-full flex items-center hover:bg-black hover:text-white"
               >
-                <span className="flex items-center gap-2">
+                {/* Main tap target - Navigate to category */}
+                <button
+                  onClick={() => handleCategoryClick(category, false)}
+                  className="flex-1 text-left p-4 flex items-center gap-2 text-base font-medium cursor-pointer"
+                >
                   {Icon && <Icon className="h-5 w-5" />}
                   <span>{category.name} ({count})</span>
-                </span>
-                {category.subcategories && category.subcategories.length > 0 && (
-                  <ChevronRightIcon className="size-4" />
+                </button>
+                
+                {/* Separate tap target - Expand subcategories */}
+                {hasSubcategories && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCategoryClick(category, true);
+                    }}
+                    className="p-4 cursor-pointer hover:bg-gray-800 hover:bg-opacity-30"
+                    aria-label="View subcategories"
+                  >
+                    <ChevronRightIcon className="size-4" />
+                  </button>
                 )}
-              </button>
+              </div>
             );
           })}
         </ScrollArea>

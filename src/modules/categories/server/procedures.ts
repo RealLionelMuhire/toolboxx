@@ -40,11 +40,23 @@ export const categoriesRouter = createTRPCRouter({
         }))
       }));
 
+      // Add virtual "All" category at the beginning (not stored in DB)
+      const allCategory: FormattedCategory = {
+        id: "all",
+        name: "All",
+        slug: "all",
+        subcategories: [],
+        updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+
+      const categoriesWithAll = [allCategory, ...formattedData];
+
       // Cache the result
-      categoriesCache = formattedData;
+      categoriesCache = categoriesWithAll;
       cacheTimestamp = now;
 
-      return formattedData;
+      return categoriesWithAll;
     } catch (error) {
       console.error('Error fetching categories:', error);
       // Return cached data if available, even if stale

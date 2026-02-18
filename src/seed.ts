@@ -1,10 +1,7 @@
 import { getPayloadSingleton } from "./lib/payload-singleton";
 
 const categories = [
-  {
-    name: "All",
-    slug: "all",
-  },
+  // Note: "All" category is handled in code, not stored in database
   {
     name: "Building Materials",
     color: "#FF6B35",
