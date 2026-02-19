@@ -106,7 +106,7 @@ echo -e "${MAGENTA}⚡ Old containers are still running and serving traffic${NC}
 echo ""
 
 # Build new images without stopping old containers (no timeout, show live output)
-$COMPOSE_CMD --env-file .env.production build --no-cache --progress=plain
+$COMPOSE_CMD --env-file .env.production build --progress=plain
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Build failed! Old containers are still running.${NC}"
