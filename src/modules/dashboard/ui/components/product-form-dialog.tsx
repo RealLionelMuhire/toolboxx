@@ -486,55 +486,64 @@ export const ProductFormDialog = ({
                     const selectedCategories = Array.isArray(field.value) ? field.value : [];
 
                     const toggleCategory = (categoryId: string, isParent: boolean, subcategoryIds?: string[]) => {
-                      if (isParent && subcategoryIds && subcategoryIds.length > 0) {
-                        // Parent category clicked - toggle parent and all subcategories
-                        const allIds = [categoryId, ...subcategoryIds];
-                        const allSelected = allIds.every(id => selectedCategories.includes(id));
+                      if (isParent) {
+                        // ── Parent clicked ──────────────────────────────────────────────
+                        if (subcategoryIds && subcategoryIds.length > 0) {
+                          const allIds = [categoryId, ...subcategoryIds];
+                          const allSelected = allIds.every(id => selectedCategories.includes(id));
 
-                        if (allSelected) {
-                          // Deselect parent and all subcategories
-                          const newSelection = selectedCategories.filter(id => !allIds.includes(id));
-                          field.onChange(newSelection);
+                          if (allSelected) {
+                            // Deselect parent + all subcategories (full toggle off)
+                            field.onChange(selectedCategories.filter(id => !allIds.includes(id)));
+                          } else {
+                            // Select parent + ALL subcategories (broad / cumulative)
+                            field.onChange([...new Set([...selectedCategories, ...allIds])]);
+                            setExpandedCategories(prev => new Set([...prev, categoryId]));
+                          }
                         } else {
-                          // Select parent and all subcategories
-                          const newSelection = [...new Set([...selectedCategories, ...allIds])];
-                          field.onChange(newSelection);
-                          // Auto-expand this parent so subcategories are visible
-                          setExpandedCategories(prev => new Set([...prev, categoryId]));
+                          // Parent with no subcategories — simple toggle
+                          field.onChange(
+                            selectedCategories.includes(categoryId)
+                              ? selectedCategories.filter(id => id !== categoryId)
+                              : [...selectedCategories, categoryId]
+                          );
                         }
                       } else {
-                        // Single subcategory toggle — find its parent
+                        // ── Subcategory clicked ─────────────────────────────────────────
                         const parentOption = categoryOptions.find(p =>
                           p.subcategories.some(s => s.id === categoryId)
                         );
 
-                        if (selectedCategories.includes(categoryId)) {
-                          // Deselecting a subcategory
-                          let newSelection = selectedCategories.filter(id => id !== categoryId);
+                        if (parentOption) {
+                          const allSubcatIds = parentOption.subcategories.map(s => s.id);
+                          const allSubcatsSelected = allSubcatIds.every(id => selectedCategories.includes(id));
 
-                          // If this was the last selected subcategory of the parent, also deselect the parent
-                          if (parentOption) {
-                            const remainingSubcats = parentOption.subcategories.filter(s =>
-                              newSelection.includes(s.id)
-                            );
-                            if (remainingSubcats.length === 0) {
+                          if (allSubcatsSelected) {
+                            // ALL subcats are selected (broad state) → narrow to JUST this one
+                            // Remove all sibling subcats, keep parent + only this subcat
+                            const withoutSiblings = selectedCategories.filter(id => !allSubcatIds.includes(id));
+                            field.onChange([...new Set([...withoutSiblings, parentOption.id, categoryId])]);
+                          } else if (selectedCategories.includes(categoryId)) {
+                            // Normal deselect: remove this subcat
+                            let newSelection = selectedCategories.filter(id => id !== categoryId);
+                            // If it was the last subcat selected, also remove parent
+                            const remaining = allSubcatIds.filter(id => newSelection.includes(id));
+                            if (remaining.length === 0) {
                               newSelection = newSelection.filter(id => id !== parentOption.id);
                             }
-                          }
-                          field.onChange(newSelection);
-                        } else {
-                          // Selecting a subcategory — also auto-select its parent
-                          const idsToAdd = [categoryId];
-                          if (parentOption && !selectedCategories.includes(parentOption.id)) {
-                            idsToAdd.push(parentOption.id);
-                          }
-                          const newSelection = [...new Set([...selectedCategories, ...idsToAdd])];
-                          field.onChange(newSelection);
-
-                          // Auto-expand the parent accordion so the user sees the subcategory checked
-                          if (parentOption) {
+                            field.onChange(newSelection);
+                          } else {
+                            // Normal select: add this subcat + ensure parent is selected
+                            field.onChange([...new Set([...selectedCategories, parentOption.id, categoryId])]);
                             setExpandedCategories(prev => new Set([...prev, parentOption.id]));
                           }
+                        } else {
+                          // Top-level category without a parent (simple toggle)
+                          field.onChange(
+                            selectedCategories.includes(categoryId)
+                              ? selectedCategories.filter(id => id !== categoryId)
+                              : [...selectedCategories, categoryId]
+                          );
                         }
                       }
                     };

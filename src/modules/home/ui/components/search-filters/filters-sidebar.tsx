@@ -221,23 +221,59 @@ export const FiltersSidebar = ({
   const toggleCategory = (categoryId: string, isParent: boolean, subcategoryIds?: string[]) => {
     let newSelectedIds: string[];
 
-    if (isParent && subcategoryIds && subcategoryIds.length > 0) {
-      // Parent category clicked - toggle parent and all subcategories
-      const allIds = [categoryId, ...subcategoryIds];
-      const allSelected = allIds.every(id => selectedCategoryIds.includes(id));
+    if (isParent) {
+      // ── Parent clicked ───────────────────────────────────────────────
+      if (subcategoryIds && subcategoryIds.length > 0) {
+        const allIds = [categoryId, ...subcategoryIds];
+        const allSelected = allIds.every(id => selectedCategoryIds.includes(id));
 
-      if (allSelected) {
-        // Deselect parent and all subcategories
-        newSelectedIds = selectedCategoryIds.filter(id => !allIds.includes(id));
+        if (allSelected) {
+          // Deselect parent + all subcategories
+          newSelectedIds = selectedCategoryIds.filter(id => !allIds.includes(id));
+        } else {
+          // Select parent + ALL subcategories (broad / cumulative)
+          newSelectedIds = [...new Set([...selectedCategoryIds, ...allIds])];
+          setExpandedCategories(prev => new Set([...prev, categoryId]));
+        }
       } else {
-        // Select parent and all subcategories
-        newSelectedIds = [...new Set([...selectedCategoryIds, ...allIds])];
+        // Parent with no subcategories – simple toggle
+        newSelectedIds = selectedCategoryIds.includes(categoryId)
+          ? selectedCategoryIds.filter(id => id !== categoryId)
+          : [...selectedCategoryIds, categoryId];
       }
     } else {
-      // Single category/subcategory toggle
-      newSelectedIds = selectedCategoryIds.includes(categoryId)
-        ? selectedCategoryIds.filter(id => id !== categoryId)
-        : [...selectedCategoryIds, categoryId];
+      // ── Subcategory clicked ──────────────────────────────────────────
+      const parentOption = categoryOptions.find(p =>
+        p.subcategories.some(s => s.id === categoryId)
+      );
+
+      if (parentOption) {
+        const allSubcatIds = parentOption.subcategories.map(s => s.id);
+        const allSubcatsSelected = allSubcatIds.every(id => selectedCategoryIds.includes(id));
+
+        if (allSubcatsSelected) {
+          // ALL subcats selected (broad state) → narrow to JUST this one
+          const withoutSiblings = selectedCategoryIds.filter(id => !allSubcatIds.includes(id));
+          newSelectedIds = [...new Set([...withoutSiblings, parentOption.id, categoryId])];
+        } else if (selectedCategoryIds.includes(categoryId)) {
+          // Normal deselect
+          newSelectedIds = selectedCategoryIds.filter(id => id !== categoryId);
+          // If last subcat removed, also remove parent
+          const remaining = allSubcatIds.filter(id => newSelectedIds.includes(id));
+          if (remaining.length === 0) {
+            newSelectedIds = newSelectedIds.filter(id => id !== parentOption.id);
+          }
+        } else {
+          // Normal select — also ensure parent is selected
+          newSelectedIds = [...new Set([...selectedCategoryIds, parentOption.id, categoryId])];
+          setExpandedCategories(prev => new Set([...prev, parentOption.id]));
+        }
+      } else {
+        // Simple toggle (no parent)
+        newSelectedIds = selectedCategoryIds.includes(categoryId)
+          ? selectedCategoryIds.filter(id => id !== categoryId)
+          : [...selectedCategoryIds, categoryId];
+      }
     }
 
     setSelectedCategoryIds(newSelectedIds);
