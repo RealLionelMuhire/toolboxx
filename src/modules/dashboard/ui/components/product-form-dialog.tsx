@@ -121,27 +121,27 @@ export const ProductFormDialog = ({
           ? productData.category.map(cat => typeof cat === "string" ? cat : cat.id)
           : [typeof productData.category === "string" ? productData.category : productData.category.id]
         : [];
-      
-      const imageId = productData.image 
+
+      const imageId = productData.image
         ? (typeof productData.image === "string" ? productData.image : productData.image.id)
         : undefined;
-      
-      const coverId = productData.cover 
+
+      const coverId = productData.cover
         ? (typeof productData.cover === "string" ? productData.cover : productData.cover.id)
         : undefined;
 
       const productDataWithGallery = productData as any;
       const galleryIds = productDataWithGallery.gallery && Array.isArray(productDataWithGallery.gallery)
         ? productDataWithGallery.gallery.map((item: any) => {
-            if (typeof item === "string") return item;
-            if (item.media) {
-              if (typeof item.media === "string") return item.media;
-              if (item.media.id) return item.media.id;
-            }
-            return null;
-          }).filter(Boolean)
+          if (typeof item === "string") return item;
+          if (item.media) {
+            if (typeof item.media === "string") return item.media;
+            if (item.media.id) return item.media.id;
+          }
+          return null;
+        }).filter(Boolean)
         : [];
-      
+
       // Extract plain text from Lexical description if it exists
       let descriptionText = "";
       if (productData.description && typeof productData.description === 'object') {
@@ -162,7 +162,7 @@ export const ProductFormDialog = ({
       } else if (typeof productData.description === 'string') {
         descriptionText = productData.description;
       }
-      
+
       reset({
         name: productData.name || "",
         description: descriptionText,
@@ -180,7 +180,7 @@ export const ProductFormDialog = ({
         cover: coverId,
         gallery: galleryIds,
       }, { keepDefaultValues: false });
-      
+
       hasPopulatedRef.current = true;
       initialGalleryRef.current = [...galleryIds];
     } else if (mode === "create") {
@@ -188,7 +188,7 @@ export const ProductFormDialog = ({
       hasPopulatedRef.current = false;
     }
   }, [productData, mode, isLoadingCategories, categoriesData]);
-  
+
   // Reset the hasPopulated flag when dialog opens/closes or mode changes
   useEffect(() => {
     if (!open || mode === "create") {
@@ -201,14 +201,14 @@ export const ProductFormDialog = ({
     if (!open && !hasSubmittedRef.current) {
       const currentGallery = watch("gallery") || [];
       const initialGallery = initialGalleryRef.current;
-      
+
       // Find images that were added but not saved (orphaned)
       const orphanedImages = currentGallery.filter(id => !initialGallery.includes(id));
-      
+
       if (orphanedImages.length > 0) {
         orphanedImages.forEach(async (id) => {
           try {
-            await fetch(`/api/media?id=${id}&t=${Date.now()}`, { 
+            await fetch(`/api/media?id=${id}&t=${Date.now()}`, {
               method: 'DELETE',
               cache: 'no-store',
             });
@@ -217,7 +217,7 @@ export const ProductFormDialog = ({
           }
         });
       }
-      
+
       // Reset form when dialog closes with clean state
       reset({
         category: [], // Reset category to empty array
@@ -231,11 +231,11 @@ export const ProductFormDialog = ({
         gallery: [], // Clear gallery
       });
     }
-    
+
     // Reset submit flag when dialog opens
     if (open) {
       hasSubmittedRef.current = false;
-      
+
       if (mode === "create") {
         reset({
           category: [],
@@ -348,7 +348,7 @@ export const ProductFormDialog = ({
       minOrderQuantity: data.minOrderQuantity || 1,
       lowStockThreshold: data.lowStockThreshold || 10,
       allowBackorder: data.allowBackorder || false,
-      category: Array.isArray(data.category) 
+      category: Array.isArray(data.category)
         ? data.category.map(cat => typeof cat === 'string' ? cat : (cat as any)?.id || cat)
         : [typeof data.category === 'string' ? data.category : (data.category as any)?.id || data.category],
       image: data.image,
@@ -379,7 +379,7 @@ export const ProductFormDialog = ({
   };
 
   const categories = categoriesData || [];
-  
+
   // Extract the current category IDs for edit mode
   const currentCategoryData = useMemo(() => {
     if (mode === "edit" && productData?.category) {
@@ -396,13 +396,13 @@ export const ProductFormDialog = ({
     }
     return [];
   }, [mode, productData?.category]);
-  
+
   // Build category options - organize with parent categories and their subcategories
   const categoryOptions = useMemo(() => {
-    const parentCategories: Array<{ 
-      id: string; 
-      name: string; 
-      subcategories: Array<{ id: string; name: string }> 
+    const parentCategories: Array<{
+      id: string;
+      name: string;
+      subcategories: Array<{ id: string; name: string }>
     }> = [];
     const seenParentIds = new Set<string>();
 
@@ -416,11 +416,11 @@ export const ProductFormDialog = ({
           id: sub.id,
           name: sub.name
         }));
-        
-        parentCategories.push({ 
-          id: cat.id, 
-          name: cat.name, 
-          subcategories: subcats 
+
+        parentCategories.push({
+          id: cat.id,
+          name: cat.name,
+          subcategories: subcats
         });
         seenParentIds.add(cat.id);
       }
@@ -468,475 +468,505 @@ export const ProductFormDialog = ({
         ) : (
           <Form {...form}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* 1. Category */}
-            <div>
-              <Label htmlFor="category">Categories *</Label>
-              <Controller
-                name="category"
-                control={control}
-                rules={{ 
-                  validate: (value) => {
-                    if (!value || value.length === 0) {
-                      return "Please select at least one category";
-                    }
-                    return true;
-                  }
-                }}
-                render={({ field }) => {
-                  const selectedCategories = Array.isArray(field.value) ? field.value : [];
-                  
-                  const toggleCategory = (categoryId: string, isParent: boolean, subcategoryIds?: string[]) => {
-                    if (isParent && subcategoryIds && subcategoryIds.length > 0) {
-                      // Parent category clicked - toggle parent and all subcategories
-                      const allIds = [categoryId, ...subcategoryIds];
-                      const allSelected = allIds.every(id => selectedCategories.includes(id));
-                      
-                      if (allSelected) {
-                        // Deselect parent and all subcategories
-                        const newSelection = selectedCategories.filter(id => !allIds.includes(id));
-                        field.onChange(newSelection);
-                      } else {
-                        // Select parent and all subcategories
-                        const newSelection = [...new Set([...selectedCategories, ...allIds])];
-                        field.onChange(newSelection);
+              {/* 1. Category */}
+              <div>
+                <Label htmlFor="category">Categories *</Label>
+                <Controller
+                  name="category"
+                  control={control}
+                  rules={{
+                    validate: (value) => {
+                      if (!value || value.length === 0) {
+                        return "Please select at least one category";
                       }
-                    } else {
-                      // Single category/subcategory toggle
-                      const newSelection = selectedCategories.includes(categoryId)
-                        ? selectedCategories.filter(id => id !== categoryId)
-                        : [...selectedCategories, categoryId];
-                      field.onChange(newSelection);
+                      return true;
                     }
-                  };
-                  
-                  const toggleExpanded = (categoryId: string) => {
-                    const newExpanded = new Set(expandedCategories);
-                    if (newExpanded.has(categoryId)) {
-                      newExpanded.delete(categoryId);
-                    } else {
-                      newExpanded.add(categoryId);
-                    }
-                    setExpandedCategories(newExpanded);
-                  };
+                  }}
+                  render={({ field }) => {
+                    const selectedCategories = Array.isArray(field.value) ? field.value : [];
 
-                  // Calculate dynamic height based on selections and screen size
-                  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-                  const baseHeight = isMobile ? 80 : 200; // 2.5x smaller on mobile (200 / 2.5 = 80)
-                  const selectedHeight = Math.min(selectedCategories.length * (isMobile ? 11 : 28), isMobile ? 48 : 120);
-                  const maxHeight = baseHeight + selectedHeight;
-                  
-                  return (
-                    <div 
-                      className="border rounded-md p-3 overflow-y-auto bg-white transition-all duration-200"
-                      style={{ maxHeight: `${maxHeight}px` }}
-                    >
-                      {isLoadingCategories ? (
-                        <div className="text-sm text-gray-500 text-center py-4">
-                          Loading categories...
-                        </div>
-                      ) : categoryOptions.length === 0 ? (
-                        <div className="text-sm text-gray-500 text-center py-4">
-                          No categories available. Please contact your administrator.
-                        </div>
-                      ) : (
-                        <div className="space-y-1">
-                          {categoryOptions.map((parent) => {
-                            const subcatIds = parent.subcategories.map(s => s.id);
-                            const isExpanded = expandedCategories.has(parent.id);
-                            const isParentSelected = selectedCategories.includes(parent.id);
-                            const allSubcatsSelected = subcatIds.length > 0 && subcatIds.every(id => selectedCategories.includes(id));
-                            const someSubcatsSelected = subcatIds.length > 0 && subcatIds.some(id => selectedCategories.includes(id)) && !allSubcatsSelected;
-                            
-                            return (
-                              <div key={parent.id} className="space-y-1">
-                                {/* Parent Category */}
-                                <div className="flex items-center space-x-2 hover:bg-gray-50 rounded px-1 py-1">
-                                  {parent.subcategories.length > 0 && (
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleExpanded(parent.id)}
-                                      className="p-0.5 hover:bg-gray-200 rounded"
-                                    >
-                                      {isExpanded ? (
-                                        <ChevronDown className="h-3.5 w-3.5" />
-                                      ) : (
-                                        <ChevronRight className="h-3.5 w-3.5" />
-                                      )}
-                                    </button>
-                                  )}
-                                  {parent.subcategories.length === 0 && (
-                                    <div className="w-5" />
-                                  )}
-                                  <Checkbox
-                                    id={`category-${parent.id}`}
-                                    checked={isParentSelected || allSubcatsSelected}
-                                    className={someSubcatsSelected ? "data-[state=checked]:bg-orange-300" : ""}
-                                    onCheckedChange={() => toggleCategory(parent.id, true, subcatIds)}
-                                  />
-                                  <Label 
-                                    htmlFor={`category-${parent.id}`}
-                                    className="cursor-pointer text-sm font-medium flex-1"
-                                  >
-                                    {parent.name}
-                                    {parent.subcategories.length > 0 && (
-                                      <span className="text-xs text-gray-500 ml-1">
-                                        ({parent.subcategories.length})
-                                      </span>
-                                    )}
-                                  </Label>
-                                </div>
-                                
-                                {/* Subcategories (Collapsible) */}
-                                {isExpanded && parent.subcategories.length > 0 && (
-                                  <div className="ml-8 space-y-1 border-l-2 border-gray-200 pl-3">
-                                    {parent.subcategories.map((sub) => (
-                                      <div 
-                                        key={sub.id}
-                                        className="flex items-center space-x-2 hover:bg-gray-50 rounded px-1 py-0.5"
-                                      >
-                                        <Checkbox
-                                          id={`category-${sub.id}`}
-                                          checked={selectedCategories.includes(sub.id)}
-                                          onCheckedChange={() => toggleCategory(sub.id, false)}
-                                        />
-                                        <Label 
-                                          htmlFor={`category-${sub.id}`}
-                                          className="cursor-pointer text-sm font-normal text-gray-700"
-                                        >
-                                          {sub.name}
-                                        </Label>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
+                    const toggleCategory = (categoryId: string, isParent: boolean, subcategoryIds?: string[]) => {
+                      if (isParent && subcategoryIds && subcategoryIds.length > 0) {
+                        // Parent category clicked - toggle parent and all subcategories
+                        const allIds = [categoryId, ...subcategoryIds];
+                        const allSelected = allIds.every(id => selectedCategories.includes(id));
+
+                        if (allSelected) {
+                          // Deselect parent and all subcategories
+                          const newSelection = selectedCategories.filter(id => !allIds.includes(id));
+                          field.onChange(newSelection);
+                        } else {
+                          // Select parent and all subcategories
+                          const newSelection = [...new Set([...selectedCategories, ...allIds])];
+                          field.onChange(newSelection);
+                          // Auto-expand this parent so subcategories are visible
+                          setExpandedCategories(prev => new Set([...prev, categoryId]));
+                        }
+                      } else {
+                        // Single subcategory toggle — find its parent
+                        const parentOption = categoryOptions.find(p =>
+                          p.subcategories.some(s => s.id === categoryId)
+                        );
+
+                        if (selectedCategories.includes(categoryId)) {
+                          // Deselecting a subcategory
+                          let newSelection = selectedCategories.filter(id => id !== categoryId);
+
+                          // If this was the last selected subcategory of the parent, also deselect the parent
+                          if (parentOption) {
+                            const remainingSubcats = parentOption.subcategories.filter(s =>
+                              newSelection.includes(s.id)
                             );
-                          })}
-                        </div>
-                      )}
-                      {selectedCategories.length > 0 && (
-                        <div className="mt-3 pt-3 border-t">
-                          <p className="text-xs text-gray-600 font-medium mb-2">
-                            Selected ({selectedCategories.length}):
-                          </p>
-                          <div className="flex flex-wrap gap-1">
-                            {selectedCategories.map(catId => {
-                              // Find the category name from parent or subcategory
-                              let catName = '';
-                              for (const parent of categoryOptions) {
-                                if (parent.id === catId) {
-                                  catName = parent.name;
-                                  break;
-                                }
-                                const subcat = parent.subcategories.find(s => s.id === catId);
-                                if (subcat) {
-                                  catName = subcat.name;
-                                  break;
-                                }
-                              }
-                              
-                              return catName ? (
-                                <span
-                                  key={catId}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded-full"
-                                >
-                                  {catName}
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleCategory(catId, false)}
-                                    className="hover:text-orange-900"
-                                  >
-                                    ×
-                                  </button>
-                                </span>
-                              ) : null;
+                            if (remainingSubcats.length === 0) {
+                              newSelection = newSelection.filter(id => id !== parentOption.id);
+                            }
+                          }
+                          field.onChange(newSelection);
+                        } else {
+                          // Selecting a subcategory — also auto-select its parent
+                          const idsToAdd = [categoryId];
+                          if (parentOption && !selectedCategories.includes(parentOption.id)) {
+                            idsToAdd.push(parentOption.id);
+                          }
+                          const newSelection = [...new Set([...selectedCategories, ...idsToAdd])];
+                          field.onChange(newSelection);
+
+                          // Auto-expand the parent accordion so the user sees the subcategory checked
+                          if (parentOption) {
+                            setExpandedCategories(prev => new Set([...prev, parentOption.id]));
+                          }
+                        }
+                      }
+                    };
+
+                    const toggleExpanded = (categoryId: string) => {
+                      const newExpanded = new Set(expandedCategories);
+                      if (newExpanded.has(categoryId)) {
+                        newExpanded.delete(categoryId);
+                      } else {
+                        newExpanded.add(categoryId);
+                      }
+                      setExpandedCategories(newExpanded);
+                    };
+
+                    // Calculate dynamic height based on selections and screen size
+                    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+                    const baseHeight = isMobile ? 80 : 200; // 2.5x smaller on mobile (200 / 2.5 = 80)
+                    const selectedHeight = Math.min(selectedCategories.length * (isMobile ? 11 : 28), isMobile ? 48 : 120);
+                    const maxHeight = baseHeight + selectedHeight;
+
+                    return (
+                      <div
+                        className="border rounded-md p-3 overflow-y-auto bg-white transition-all duration-200"
+                        style={{ maxHeight: `${maxHeight}px` }}
+                      >
+                        {isLoadingCategories ? (
+                          <div className="text-sm text-gray-500 text-center py-4">
+                            Loading categories...
+                          </div>
+                        ) : categoryOptions.length === 0 ? (
+                          <div className="text-sm text-gray-500 text-center py-4">
+                            No categories available. Please contact your administrator.
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            {categoryOptions.map((parent) => {
+                              const subcatIds = parent.subcategories.map(s => s.id);
+                              const isExpanded = expandedCategories.has(parent.id);
+                              const isParentSelected = selectedCategories.includes(parent.id);
+                              const allSubcatsSelected = subcatIds.length > 0 && subcatIds.every(id => selectedCategories.includes(id));
+                              const someSubcatsSelected = subcatIds.length > 0 && subcatIds.some(id => selectedCategories.includes(id)) && !allSubcatsSelected;
+
+                              return (
+                                <div key={parent.id} className="space-y-1">
+                                  {/* Parent Category */}
+                                  <div className="flex items-center space-x-2 hover:bg-gray-50 rounded px-1 py-1">
+                                    {parent.subcategories.length > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => toggleExpanded(parent.id)}
+                                        className="p-0.5 hover:bg-gray-200 rounded"
+                                      >
+                                        {isExpanded ? (
+                                          <ChevronDown className="h-3.5 w-3.5" />
+                                        ) : (
+                                          <ChevronRight className="h-3.5 w-3.5" />
+                                        )}
+                                      </button>
+                                    )}
+                                    {parent.subcategories.length === 0 && (
+                                      <div className="w-5" />
+                                    )}
+                                    <Checkbox
+                                      id={`category-${parent.id}`}
+                                      checked={isParentSelected || allSubcatsSelected}
+                                      className={someSubcatsSelected ? "data-[state=checked]:bg-orange-300" : ""}
+                                      onCheckedChange={() => toggleCategory(parent.id, true, subcatIds)}
+                                    />
+                                    <Label
+                                      htmlFor={`category-${parent.id}`}
+                                      className="cursor-pointer text-sm font-medium flex-1"
+                                    >
+                                      {parent.name}
+                                      {parent.subcategories.length > 0 && (
+                                        <span className="text-xs text-gray-500 ml-1">
+                                          ({parent.subcategories.length})
+                                        </span>
+                                      )}
+                                    </Label>
+                                  </div>
+
+                                  {/* Subcategories (Collapsible) */}
+                                  {isExpanded && parent.subcategories.length > 0 && (
+                                    <div className="ml-8 space-y-1 border-l-2 border-gray-200 pl-3">
+                                      {parent.subcategories.map((sub) => (
+                                        <div
+                                          key={sub.id}
+                                          className="flex items-center space-x-2 hover:bg-gray-50 rounded px-1 py-0.5"
+                                        >
+                                          <Checkbox
+                                            id={`category-${sub.id}`}
+                                            checked={selectedCategories.includes(sub.id)}
+                                            onCheckedChange={() => toggleCategory(sub.id, false)}
+                                          />
+                                          <Label
+                                            htmlFor={`category-${sub.id}`}
+                                            className="cursor-pointer text-sm font-normal text-gray-700"
+                                          >
+                                            {sub.name}
+                                          </Label>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
                             })}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                }}
-              />
-              {errors.category && (
-                <p className="text-sm text-red-600 mt-1">{errors.category.message}</p>
-              )}
-              <p className="text-xs text-gray-500 mt-1">
-                Select categories. Clicking a parent category selects all subcategories.
-              </p>
-            </div>
+                        )}
+                        {selectedCategories.length > 0 && (
+                          <div className="mt-3 pt-3 border-t">
+                            <p className="text-xs text-gray-600 font-medium mb-2">
+                              Selected ({selectedCategories.length}):
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {selectedCategories.map(catId => {
+                                // Find the category name from parent or subcategory
+                                let catName = '';
+                                for (const parent of categoryOptions) {
+                                  if (parent.id === catId) {
+                                    catName = parent.name;
+                                    break;
+                                  }
+                                  const subcat = parent.subcategories.find(s => s.id === catId);
+                                  if (subcat) {
+                                    catName = subcat.name;
+                                    break;
+                                  }
+                                }
 
-            {/* 2. Product Photos & Videos */}
-            <div>
-              <Label>Product Photos & Videos *</Label>
-              <ImageUpload
-                value={watch("gallery") || []}
-                onChange={(value) => setValue("gallery", value)}
-                maxImages={24}
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Upload up to 24 images. First image will be used as the main product image.
-              </p>
-              {errors.gallery && (
-                <p className="text-sm text-red-600 mt-1">{errors.gallery.message as string}</p>
-              )}
-            </div>
-
-            {/* 3. Product Name */}
-            <div>
-              <Label htmlFor="name">Product Name *</Label>
-              <Input
-                id="name"
-                {...register("name", { required: "Product name is required" })}
-                placeholder="Enter product name"
-              />
-              {errors.name && (
-                <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
-              )}
-            </div>
-
-            {/* 4. Description */}
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                {...register("description")}
-                placeholder="Describe your product"
-                rows={4}
-              />
-            </div>
-
-            {/* 5. Price */}
-            <div>
-              <Label htmlFor="price">Price (RWF) *</Label>
-              <Input
-                id="price"
-                type="number"
-                step="1"
-                {...register("price", { 
-                  required: "Price is required",
-                  valueAsNumber: true,
-                  min: { value: 0, message: "Price must be positive" }
-                })}
-                placeholder="0"
-              />
-              {errors.price && (
-                <p className="text-sm text-red-600 mt-1">{errors.price.message}</p>
-              )}
-            </div>
-
-            {/* 6. Quantity & Unit */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="quantity">Quantity Available *</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  {...register("quantity", { 
-                    required: "Quantity is required",
-                    valueAsNumber: true,
-                    min: { value: 0, message: "Quantity cannot be negative" }
-                  })}
-                  placeholder="0"
+                                return catName ? (
+                                  <span
+                                    key={catId}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded-full"
+                                  >
+                                    {catName}
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleCategory(catId, false)}
+                                      className="hover:text-orange-900"
+                                    >
+                                      ×
+                                    </button>
+                                  </span>
+                                ) : null;
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }}
                 />
-                {errors.quantity && (
-                  <p className="text-sm text-red-600 mt-1">{errors.quantity.message}</p>
+                {errors.category && (
+                  <p className="text-sm text-red-600 mt-1">{errors.category.message}</p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Select categories. Clicking a parent category selects all subcategories.
+                </p>
+              </div>
+
+              {/* 2. Product Photos & Videos */}
+              <div>
+                <Label>Product Photos & Videos *</Label>
+                <ImageUpload
+                  value={watch("gallery") || []}
+                  onChange={(value) => setValue("gallery", value)}
+                  maxImages={24}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Upload up to 24 images. First image will be used as the main product image.
+                </p>
+                {errors.gallery && (
+                  <p className="text-sm text-red-600 mt-1">{errors.gallery.message as string}</p>
                 )}
               </div>
 
+              {/* 3. Product Name */}
               <div>
-                <Label htmlFor="unit">Unit of Measurement *</Label>
+                <Label htmlFor="name">Product Name *</Label>
+                <Input
+                  id="name"
+                  {...register("name", { required: "Product name is required" })}
+                  placeholder="Enter product name"
+                />
+                {errors.name && (
+                  <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
+                )}
+              </div>
+
+              {/* 4. Description */}
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  {...register("description")}
+                  placeholder="Describe your product"
+                  rows={4}
+                />
+              </div>
+
+              {/* 5. Price */}
+              <div>
+                <Label htmlFor="price">Price (RWF) *</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="1"
+                  {...register("price", {
+                    required: "Price is required",
+                    valueAsNumber: true,
+                    min: { value: 0, message: "Price must be positive" }
+                  })}
+                  placeholder="0"
+                />
+                {errors.price && (
+                  <p className="text-sm text-red-600 mt-1">{errors.price.message}</p>
+                )}
+              </div>
+
+              {/* 6. Quantity & Unit */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="quantity">Quantity Available *</Label>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    {...register("quantity", {
+                      required: "Quantity is required",
+                      valueAsNumber: true,
+                      min: { value: 0, message: "Quantity cannot be negative" }
+                    })}
+                    placeholder="0"
+                  />
+                  {errors.quantity && (
+                    <p className="text-sm text-red-600 mt-1">{errors.quantity.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="unit">Unit of Measurement *</Label>
+                  <Select
+                    value={watch("unit")}
+                    onValueChange={(value) => setValue("unit", value as ProductFormData["unit"])}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unit">Unit(s)</SelectItem>
+                      <SelectItem value="piece">Piece(s)</SelectItem>
+                      <SelectItem value="box">Box(es)</SelectItem>
+                      <SelectItem value="pack">Pack(s)</SelectItem>
+                      <SelectItem value="bag">Bag(s)</SelectItem>
+                      <SelectItem value="kg">Kilogram(s)</SelectItem>
+                      <SelectItem value="gram">Gram(s)</SelectItem>
+                      <SelectItem value="meter">Meter(s)</SelectItem>
+                      <SelectItem value="cm">Centimeter(s)</SelectItem>
+                      <SelectItem value="liter">Liter(s)</SelectItem>
+                      <SelectItem value="sqm">Square Meter(s)</SelectItem>
+                      <SelectItem value="cbm">Cubic Meter(s)</SelectItem>
+                      <SelectItem value="set">Set(s)</SelectItem>
+                      <SelectItem value="pair">Pair(s)</SelectItem>
+                      <SelectItem value="roll">Roll(s)</SelectItem>
+                      <SelectItem value="sheet">Sheet(s)</SelectItem>
+                      <SelectItem value="carton">Carton(s)</SelectItem>
+                      <SelectItem value="pallet">Pallet(s)</SelectItem>
+                      <SelectItem value="hour">Hour(s)</SelectItem>
+                      <SelectItem value="day">Day(s)</SelectItem>
+                      <SelectItem value="week">Week(s)</SelectItem>
+                      <SelectItem value="month">Month(s)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* 7. Min/Max Order Quantities */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="minOrderQuantity">Minimum Order Quantity</Label>
+                  <Input
+                    id="minOrderQuantity"
+                    type="number"
+                    {...register("minOrderQuantity", { valueAsNumber: true })}
+                    placeholder="1"
+                    defaultValue={1}
+                  />
+                  {errors.minOrderQuantity && (
+                    <p className="text-sm text-red-600 mt-1">{errors.minOrderQuantity.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="maxOrderQuantity">Maximum Order Quantity (Optional)</Label>
+                  <Input
+                    id="maxOrderQuantity"
+                    type="number"
+                    {...register("maxOrderQuantity", { valueAsNumber: true })}
+                    placeholder="No limit"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Leave empty for no limit
+                  </p>
+                  {errors.maxOrderQuantity && (
+                    <p className="text-sm text-red-600 mt-1">{errors.maxOrderQuantity.message}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* 8. Stock Settings */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="lowStockThreshold">Low Stock Alert Threshold</Label>
+                  <Input
+                    id="lowStockThreshold"
+                    type="number"
+                    {...register("lowStockThreshold", { valueAsNumber: true })}
+                    placeholder="10"
+                    defaultValue={10}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Alert when stock falls below this number
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="allowBackorder" className="block mb-2">Pre-Order Settings</Label>
+                  <div className="flex items-center space-x-2 h-10">
+                    <Checkbox
+                      id="allowBackorder"
+                      checked={watch("allowBackorder")}
+                      onCheckedChange={(checked) => setValue("allowBackorder", checked as boolean)}
+                    />
+                    <Label htmlFor="allowBackorder" className="cursor-pointer">
+                      Allow pre-orders when out of stock
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              {/* 9. Refund Policy */}
+              <div>
+                <Label htmlFor="refundPolicy">Refund Policy</Label>
                 <Select
-                  value={watch("unit")}
-                  onValueChange={(value) => setValue("unit", value as ProductFormData["unit"])}
+                  value={watch("refundPolicy")}
+                  onValueChange={(value) => setValue("refundPolicy", value as ProductFormData["refundPolicy"])}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="unit">Unit(s)</SelectItem>
-                    <SelectItem value="piece">Piece(s)</SelectItem>
-                    <SelectItem value="box">Box(es)</SelectItem>
-                    <SelectItem value="pack">Pack(s)</SelectItem>
-                    <SelectItem value="bag">Bag(s)</SelectItem>
-                    <SelectItem value="kg">Kilogram(s)</SelectItem>
-                    <SelectItem value="gram">Gram(s)</SelectItem>
-                    <SelectItem value="meter">Meter(s)</SelectItem>
-                    <SelectItem value="cm">Centimeter(s)</SelectItem>
-                    <SelectItem value="liter">Liter(s)</SelectItem>
-                    <SelectItem value="sqm">Square Meter(s)</SelectItem>
-                    <SelectItem value="cbm">Cubic Meter(s)</SelectItem>
-                    <SelectItem value="set">Set(s)</SelectItem>
-                    <SelectItem value="pair">Pair(s)</SelectItem>
-                    <SelectItem value="roll">Roll(s)</SelectItem>
-                    <SelectItem value="sheet">Sheet(s)</SelectItem>
-                    <SelectItem value="carton">Carton(s)</SelectItem>
-                    <SelectItem value="pallet">Pallet(s)</SelectItem>
-                    <SelectItem value="hour">Hour(s)</SelectItem>
-                    <SelectItem value="day">Day(s)</SelectItem>
-                    <SelectItem value="week">Week(s)</SelectItem>
-                    <SelectItem value="month">Month(s)</SelectItem>
+                    <SelectItem value="30-day">30-day refund</SelectItem>
+                    <SelectItem value="14-day">14-day refund</SelectItem>
+                    <SelectItem value="7-day">7-day refund</SelectItem>
+                    <SelectItem value="3-day">3-day refund</SelectItem>
+                    <SelectItem value="1-day">1-day refund</SelectItem>
+                    <SelectItem value="no-refunds">No refunds</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            {/* 7. Min/Max Order Quantities */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="minOrderQuantity">Minimum Order Quantity</Label>
-                <Input
-                  id="minOrderQuantity"
-                  type="number"
-                  {...register("minOrderQuantity", { valueAsNumber: true })}
-                  placeholder="1"
-                  defaultValue={1}
-                />
-                {errors.minOrderQuantity && (
-                  <p className="text-sm text-red-600 mt-1">{errors.minOrderQuantity.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="maxOrderQuantity">Maximum Order Quantity (Optional)</Label>
-                <Input
-                  id="maxOrderQuantity"
-                  type="number"
-                  {...register("maxOrderQuantity", { valueAsNumber: true })}
-                  placeholder="No limit"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Leave empty for no limit
-                </p>
-                {errors.maxOrderQuantity && (
-                  <p className="text-sm text-red-600 mt-1">{errors.maxOrderQuantity.message}</p>
-                )}
-              </div>
-            </div>
-
-            {/* 8. Stock Settings */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="lowStockThreshold">Low Stock Alert Threshold</Label>
-                <Input
-                  id="lowStockThreshold"
-                  type="number"
-                  {...register("lowStockThreshold", { valueAsNumber: true })}
-                  placeholder="10"
-                  defaultValue={10}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Alert when stock falls below this number
-                </p>
-              </div>
-
-              <div>
-                <Label htmlFor="allowBackorder" className="block mb-2">Pre-Order Settings</Label>
-                <div className="flex items-center space-x-2 h-10">
+              {/* 10. Product Location */}
+              <div className="border-t pt-4 space-y-4">
+                <h3 className="font-medium">Product Location</h3>
+                <div className="flex items-center space-x-2">
                   <Checkbox
-                    id="allowBackorder"
-                    checked={watch("allowBackorder")}
-                    onCheckedChange={(checked) => setValue("allowBackorder", checked as boolean)}
+                    id="useDefaultLocation"
+                    checked={watch("useDefaultLocation")}
+                    onCheckedChange={(checked) => {
+                      setValue("useDefaultLocation", checked as boolean);
+                      if (checked) {
+                        // Clear custom location fields when using default
+                        setValue("locationCountry", undefined);
+                        setValue("locationProvince", undefined);
+                        setValue("locationDistrict", undefined);
+                        setValue("locationCityOrArea", undefined);
+                      }
+                    }}
                   />
-                  <Label htmlFor="allowBackorder" className="cursor-pointer">
-                    Allow pre-orders when out of stock
+                  <Label htmlFor="useDefaultLocation" className="cursor-pointer">
+                    Use my business location (default)
                   </Label>
                 </div>
+
+                {!watch("useDefaultLocation") && (
+                  <div className="pl-6 space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Specify a different location for this product
+                    </p>
+                    <LocationSelector
+                      form={form as UseFormReturn<any>}
+                      countryFieldName="locationCountry"
+                      provinceFieldName="locationProvince"
+                      districtFieldName="locationDistrict"
+                      cityFieldName="locationCityOrArea"
+                      required={false}
+                    />
+                  </div>
+                )}
               </div>
-            </div>
 
-            {/* 9. Refund Policy */}
-            <div>
-              <Label htmlFor="refundPolicy">Refund Policy</Label>
-              <Select
-                value={watch("refundPolicy")}
-                onValueChange={(value) => setValue("refundPolicy", value as ProductFormData["refundPolicy"])}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="30-day">30-day refund</SelectItem>
-                  <SelectItem value="14-day">14-day refund</SelectItem>
-                  <SelectItem value="7-day">7-day refund</SelectItem>
-                  <SelectItem value="3-day">3-day refund</SelectItem>
-                  <SelectItem value="1-day">1-day refund</SelectItem>
-                  <SelectItem value="no-refunds">No refunds</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* 10. Product Location */}
-            <div className="border-t pt-4 space-y-4">
-              <h3 className="font-medium">Product Location</h3>
+              {/* 11. Privacy Setting */}
               <div className="flex items-center space-x-2">
                 <Checkbox
-                  id="useDefaultLocation"
-                  checked={watch("useDefaultLocation")}
-                  onCheckedChange={(checked) => {
-                    setValue("useDefaultLocation", checked as boolean);
-                    if (checked) {
-                      // Clear custom location fields when using default
-                      setValue("locationCountry", undefined);
-                      setValue("locationProvince", undefined);
-                      setValue("locationDistrict", undefined);
-                      setValue("locationCityOrArea", undefined);
-                    }
-                  }}
+                  id="isPrivate"
+                  checked={watch("isPrivate")}
+                  onCheckedChange={(checked) => setValue("isPrivate", checked as boolean)}
                 />
-                <Label htmlFor="useDefaultLocation" className="cursor-pointer">
-                  Use my business location (default)
+                <Label htmlFor="isPrivate" className="cursor-pointer">
+                  Make this product private (only visible on your store)
                 </Label>
               </div>
-              
-              {!watch("useDefaultLocation") && (
-                <div className="pl-6 space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Specify a different location for this product
-                  </p>
-                  <LocationSelector 
-                    form={form as UseFormReturn<any>} 
-                    countryFieldName="locationCountry"
-                    provinceFieldName="locationProvince"
-                    districtFieldName="locationDistrict"
-                    cityFieldName="locationCityOrArea"
-                    required={false}
-                  />
-                </div>
-              )}
-            </div>
 
-            {/* 11. Privacy Setting */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="isPrivate"
-                checked={watch("isPrivate")}
-                onCheckedChange={(checked) => setValue("isPrivate", checked as boolean)}
-              />
-              <Label htmlFor="isPrivate" className="cursor-pointer">
-                Make this product private (only visible on your store)
-              </Label>
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onClose}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
-              >
-                {(createMutation.isPending || updateMutation.isPending) && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                {mode === "create" ? "Create Product" : "Update Product"}
-              </Button>
-            </DialogFooter>
-          </form>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={onClose}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                >
+                  {(createMutation.isPending || updateMutation.isPending) && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  {mode === "create" ? "Create Product" : "Update Product"}
+                </Button>
+              </DialogFooter>
+            </form>
           </Form>
         )}
       </DialogContent>

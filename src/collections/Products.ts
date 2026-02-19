@@ -61,7 +61,7 @@ export const Products: CollectionConfig = {
         console.log('[Products beforeChange] User:', req.user);
         console.log('[Products beforeChange] User tenants:', req.user?.tenants);
         console.log('[Products beforeChange] Data before:', data);
-        
+
         // Auto-assign tenant for non-super-admin users
         if (!isSuperAdmin(req.user) && req.user?.tenants?.[0]?.tenant) {
           const userTenant = req.user.tenants[0].tenant;
@@ -69,7 +69,7 @@ export const Products: CollectionConfig = {
           const tenantId = typeof userTenant === 'string' ? userTenant : userTenant.id;
           data.tenant = tenantId;
           console.log('[Products beforeChange] Assigned tenant ID:', tenantId);
-          
+
           // If location fields are not set and useDefaultLocation is true, copy from tenant
           if (data.useDefaultLocation && operation === 'create') {
             try {
@@ -77,7 +77,7 @@ export const Products: CollectionConfig = {
                 collection: 'tenants',
                 id: tenantId,
               });
-              
+
               if (tenantData) {
                 data.locationCountry = tenantData.locationCountry;
                 data.locationProvince = tenantData.locationProvince;
@@ -90,7 +90,7 @@ export const Products: CollectionConfig = {
             }
           }
         }
-        
+
         // Auto-generate location string from structured fields
         if (data.locationCountry && data.locationProvince && data.locationDistrict) {
           data.location = formatLocation(
@@ -100,12 +100,12 @@ export const Products: CollectionConfig = {
             data.locationCityOrArea
           );
         }
-        
+
         // Auto-calculate stock status based on quantity
         const quantity = data.quantity ?? 0;
         const lowStockThreshold = data.lowStockThreshold ?? 10;
         const allowBackorder = data.allowBackorder ?? false;
-        
+
         if (quantity === 0) {
           data.stockStatus = allowBackorder ? 'pre_order' : 'out_of_stock';
         } else if (quantity <= lowStockThreshold) {
@@ -113,7 +113,7 @@ export const Products: CollectionConfig = {
         } else {
           data.stockStatus = 'in_stock';
         }
-        
+
         console.log('[Products beforeChange] Stock status:', data.stockStatus, 'Quantity:', quantity);
         console.log('[Products beforeChange] Data after:', data);
         return data;
@@ -217,6 +217,10 @@ export const Products: CollectionConfig = {
         { label: "Sheet(s)", value: "sheet" },
         { label: "Carton(s)", value: "carton" },
         { label: "Pallet(s)", value: "pallet" },
+        { label: "Hour(s)", value: "hour" },
+        { label: "Day(s)", value: "day" },
+        { label: "Week(s)", value: "week" },
+        { label: "Month(s)", value: "month" },
       ],
       admin: {
         description: "Unit of measurement for this product",

@@ -165,6 +165,8 @@ export const FiltersSidebar = ({
   }, [filters.locationCountry]);
 
   // Process categories into parent-child structure
+  // Note: categories.getMany returns TOP-LEVEL categories only, but with subcategories
+  // already embedded (depth: 1). Use cat.subcategories directly instead of re-filtering.
   const categoryOptions = useMemo(() => {
     if (!categories) return [];
 
@@ -175,42 +177,42 @@ export const FiltersSidebar = ({
       icon?: string;
       subcategories: Array<{ id: string; name: string; slug: string; icon?: string }>
     }> = [];
-    const seenParentIds = new Set<string>();
 
     categories.forEach((cat: any) => {
-      if (!cat.parent && !seenParentIds.has(cat.id)) {
-        const subcats = categories
-          .filter(c => {
-            const parentId = typeof c.parent === 'string' ? c.parent : c.parent?.id;
-            return parentId === cat.id;
-          })
-          .map((sub: any) => ({
-            id: sub.id,
-            name: sub.name,
-            slug: sub.slug,
-            icon: sub.icon
-          }));
+      // Skip the virtual "All" entry
+      if (cat.slug === "all") return;
 
-        parentCategories.push({
-          id: cat.id,
-          name: cat.name,
-          slug: cat.slug,
-          icon: cat.icon,
-          subcategories: subcats
-        });
-        seenParentIds.add(cat.id);
-      }
+      // Subcategories are already embedded from the router (flat array shape)
+      const rawSubs = Array.isArray(cat.subcategories)
+        ? cat.subcategories
+        : (cat.subcategories?.docs ?? []);
+
+      const subcats = rawSubs.map((sub: any) => ({
+        id: sub.id,
+        name: sub.name,
+        slug: sub.slug,
+        icon: sub.icon,
+      }));
+
+      parentCategories.push({
+        id: cat.id,
+        name: cat.name,
+        slug: cat.slug,
+        icon: cat.icon,
+        subcategories: subcats,
+      });
     });
 
-    // Sort: "Others" category last, rest alphabetically
+    // Sort: "Others" / "Other" category last, rest alphabetically
     parentCategories.sort((a, b) => {
-      if (a.name.toLowerCase() === 'others') return 1;
-      if (b.name.toLowerCase() === 'others') return -1;
+      if (a.name.toLowerCase() === 'others' || a.name.toLowerCase() === 'other') return 1;
+      if (b.name.toLowerCase() === 'others' || b.name.toLowerCase() === 'other') return -1;
       return a.name.localeCompare(b.name);
     });
 
     return parentCategories;
   }, [categories]);
+
 
   const getCategoryCount = (categoryId: string): number => {
     return categoryCounts?.[categoryId] || 0;
