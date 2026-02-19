@@ -45,7 +45,7 @@ fi
 
 echo -e "${BLUE}Checking Docker Compose...${NC}"
 # Check if docker compose is available
-if ! sudo docker compose version >/dev/null 2>&1; then
+if ! $COMPOSE_CMD version >/dev/null 2>&1; then
     echo -e "${RED}❌ Error: Docker Compose is not installed or not accessible${NC}"
     exit 1
 fi
@@ -73,7 +73,7 @@ echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━�
 
 # Check Docker daemon is responsive
 echo -e "${YELLOW}⏳ Verifying Docker daemon...${NC}"
-if ! timeout 5 docker info >/dev/null 2>&1; then
+if ! timeout 5 $DOCKER_CMD info >/dev/null 2>&1; then
     echo -e "${RED}❌ Docker daemon not responding. Please check Docker service.${NC}"
     exit 1
 fi
@@ -81,19 +81,19 @@ echo -e "${GREEN}✓ Docker daemon is responsive${NC}"
 
 # Validate docker-compose.yml
 echo -e "${YELLOW}⏳ Validating docker-compose.yml...${NC}"
-if ! timeout 10 docker compose --env-file .env.production config >/dev/null 2>&1; then
+if ! timeout 10 $COMPOSE_CMD --env-file .env.production config >/dev/null 2>&1; then
     echo -e "${RED}❌ docker-compose.yml validation failed${NC}"
-    docker compose --env-file .env.production config 2>&1 | tail -20
+    $COMPOSE_CMD --env-file .env.production config 2>&1 | tail -20
     exit 1
 fi
 echo -e "${GREEN}✓ Docker Compose configuration is valid${NC}"
 
 # Get container status with timeout
 echo -e "${YELLOW}⏳ Checking for existing containers...${NC}"
-OLD_CONTAINERS=$(timeout 10 docker compose ps -q 2>/dev/null || echo "")
+OLD_CONTAINERS=$(timeout 10 $COMPOSE_CMD ps -q 2>/dev/null || echo "")
 if [ -n "$OLD_CONTAINERS" ]; then
     echo -e "${GREEN}✓ Found running containers (keeping them alive during build)${NC}"
-    timeout 10 docker compose ps || echo -e "${YELLOW}⚠️  Could not display container status${NC}"
+    timeout 10 $COMPOSE_CMD ps || echo -e "${YELLOW}⚠️  Could not display container status${NC}"
 else
     echo -e "${YELLOW}⚠️  No running containers found (first deployment or all stopped)${NC}"
 fi
@@ -106,7 +106,7 @@ echo -e "${MAGENTA}⚡ Old containers are still running and serving traffic${NC}
 echo ""
 
 # Build new images without stopping old containers (no timeout, show live output)
-docker compose --env-file .env.production build --no-cache --progress=plain
+$COMPOSE_CMD --env-file .env.production build --no-cache --progress=plain
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Build failed! Old containers are still running.${NC}"
@@ -122,7 +122,7 @@ echo -e "${MAGENTA}⚡ Using --force-recreate for zero-downtime swap${NC}"
 echo ""
 
 # Deploy new containers with force-recreate for minimal downtime
-docker compose --env-file .env.production up -d --force-recreate --remove-orphans
+$COMPOSE_CMD --env-file .env.production up -d --force-recreate --remove-orphans
 
 if [ $? -ne 0 ]; then
     echo -e "${RED}❌ Deployment failed during container startup${NC}"
@@ -146,8 +146,8 @@ health_check_passed=false
 
 while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
     # Check if all containers are running
-    running_containers=$(docker compose ps --services --filter "status=running" | wc -l)
-    total_containers=$(docker compose ps --services | wc -l)
+    running_containers=$($COMPOSE_CMD ps --services --filter "status=running" | wc -l)
+    total_containers=$($COMPOSE_CMD ps --services | wc -l)
     
     if [ "$running_containers" -eq "$total_containers" ] && [ "$total_containers" -gt 0 ]; then
         echo -e "${GREEN}✓ All containers are running ($running_containers/$total_containers)${NC}"
@@ -163,12 +163,12 @@ done
 if [ "$health_check_passed" = false ]; then
     echo -e "${RED}❌ Health checks failed after $MAX_ATTEMPTS attempts${NC}"
     echo -e "${YELLOW}📋 Recent logs:${NC}"
-    docker compose logs --tail=50
+    $COMPOSE_CMD logs --tail=50
     exit 1
 fi
 
 # Check container health status
-UNHEALTHY=$(docker compose ps | grep -i "unhealthy\|restarting" || true)
+UNHEALTHY=$($COMPOSE_CMD ps | grep -i "unhealthy\|restarting" || true)
 if [ -n "$UNHEALTHY" ]; then
     echo -e "${RED}⚠️  Warning: Some containers may be unhealthy:${NC}"
     echo "$UNHEALTHY"
@@ -179,7 +179,7 @@ fi
 # Display container status
 echo ""
 echo -e "${BLUE}📊 Current container status:${NC}"
-docker compose ps
+$COMPOSE_CMD ps
 
 echo ""
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -187,10 +187,10 @@ echo -e "${BLUE}🧹 Step 6/6: Cleaning up old images${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
 # Remove dangling images to free up space
-DANGLING=$(docker images -f "dangling=true" -q)
+DANGLING=$($DOCKER_CMD images -f "dangling=true" -q)
 if [ -n "$DANGLING" ]; then
     echo -e "${YELLOW}🗑️  Removing dangling images...${NC}"
-    docker rmi $DANGLING 2>/dev/null || true
+    $DOCKER_CMD rmi $DANGLING 2>/dev/null || true
     echo -e "${GREEN}✓ Old images cleaned up${NC}"
 else
     echo -e "${GREEN}✓ No dangling images to clean${NC}"
@@ -202,7 +202,7 @@ echo -e "${GREEN}✅ DEPLOYMENT SUCCESSFUL!${NC}"
 echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "${BLUE}📋 Recent logs from new containers:${NC}"
-docker compose logs --tail=20
+$COMPOSE_CMD logs --tail=20
 echo ""
 echo -e "${GREEN}═══════════════════════════════════════════════${NC}"
 echo -e "${GREEN}🎉 Zero-Downtime Deployment Complete!${NC}"
