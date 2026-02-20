@@ -72,15 +72,15 @@ print_success "Project directory OK"
 
 print_working "Checking Docker daemon..."
 # Check if Docker is running (with timeout)
-# Try with sudo first, then without
-if timeout 5 sudo docker info >/dev/null 2>&1; then
-    DOCKER_CMD="sudo docker"
-    COMPOSE_CMD="sudo docker compose"
-    print_success "Docker is running (using sudo)"
-elif timeout 5 docker info >/dev/null 2>&1; then
+# Try without sudo first, then with sudo if needed
+if timeout 5 docker info >/dev/null 2>&1; then
     DOCKER_CMD="docker"
     COMPOSE_CMD="docker compose"
     print_success "Docker is running"
+elif timeout 5 sudo docker info >/dev/null 2>&1; then
+    DOCKER_CMD="sudo docker"
+    COMPOSE_CMD="sudo docker compose"
+    print_success "Docker is running (using sudo)"
 else
     print_error "Docker is not running or not accessible"
     print_warning "Try: sudo systemctl start docker"
