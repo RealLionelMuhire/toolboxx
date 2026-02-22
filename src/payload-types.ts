@@ -81,6 +81,8 @@ export interface Config {
     messages: Message;
     'push-subscriptions': PushSubscription;
     notifications: Notification;
+    tenders: Tender;
+    'tender-bids': TenderBid;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -105,6 +107,8 @@ export interface Config {
     messages: MessagesSelect<false> | MessagesSelect<true>;
     'push-subscriptions': PushSubscriptionsSelect<false> | PushSubscriptionsSelect<true>;
     notifications: NotificationsSelect<false> | NotificationsSelect<true>;
+    tenders: TendersSelect<false> | TendersSelect<true>;
+    'tender-bids': TenderBidsSelect<false> | TenderBidsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -980,7 +984,7 @@ export interface Notification {
   /**
    * The type of notification
    */
-  type: 'payment' | 'order' | 'message' | 'product' | 'transaction' | 'system' | 'engagement' | 'promotion';
+  type: 'payment' | 'order' | 'message' | 'product' | 'transaction' | 'system' | 'engagement' | 'promotion' | 'tender';
   /**
    * Notification title (shown in bold)
    */
@@ -1029,6 +1033,54 @@ export interface Notification {
    * Optional expiration date for time-sensitive notifications
    */
   expiresAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tenders".
+ */
+export interface Tender {
+  id: string;
+  tenderNumber?: string | null;
+  title: string;
+  description: any;
+  type: 'rfq' | 'rfp';
+  status: 'draft' | 'open' | 'closed' | 'cancelled';
+  createdBy: string | User;
+  tenant?: (string | null) | Tenant;
+  category?: (string | Category)[] | null;
+  documents?:
+    | {
+        file: string | Media;
+        id?: string | null;
+      }[]
+    | null;
+  responseDeadline?: string | null;
+  contactPreference?: ('email' | 'phone' | 'chat') | null;
+  bidCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tender-bids".
+ */
+export interface TenderBid {
+  id: string;
+  tender: string | Tender;
+  submittedBy: string | User;
+  status: 'submitted' | 'shortlisted' | 'rejected' | 'withdrawn';
+  message?: any;
+  documents?:
+    | {
+        file: string | Media;
+        id?: string | null;
+      }[]
+    | null;
+  amount?: number | null;
+  currency?: string | null;
+  validUntil?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1094,6 +1146,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'notifications';
         value: string | Notification;
+      } | null)
+    | ({
+        relationTo: 'tenders';
+        value: string | Tender;
+      } | null)
+    | ({
+        relationTo: 'tender-bids';
+        value: string | TenderBid;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1480,6 +1540,52 @@ export interface NotificationsSelect<T extends boolean = true> {
   data?: T;
   sentViaPush?: T;
   expiresAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tenders_select".
+ */
+export interface TendersSelect<T extends boolean = true> {
+  tenderNumber?: T;
+  title?: T;
+  description?: T;
+  type?: T;
+  status?: T;
+  createdBy?: T;
+  tenant?: T;
+  category?: T;
+  documents?:
+    | T
+    | {
+        file?: T;
+        id?: T;
+      };
+  responseDeadline?: T;
+  contactPreference?: T;
+  bidCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tender-bids_select".
+ */
+export interface TenderBidsSelect<T extends boolean = true> {
+  tender?: T;
+  submittedBy?: T;
+  status?: T;
+  message?: T;
+  documents?:
+    | T
+    | {
+        file?: T;
+        id?: T;
+      };
+  amount?: T;
+  currency?: T;
+  validUntil?: T;
   updatedAt?: T;
   createdAt?: T;
 }

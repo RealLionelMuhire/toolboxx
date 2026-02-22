@@ -84,6 +84,7 @@ const publicNavbarItems: NavbarItem[] = [
 
 const customerNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
+  { href: "/tenders", children: "Tenders" },
   { href: "/orders", children: "My Purchases" },
   { href: "/library", children: (
     <>
@@ -103,6 +104,7 @@ const myStoreBaseItems: NavbarItem[] = [
 
 const tenantNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
+  { href: "/tenders", children: "Tenders" },
   { href: "/verify-payments", children: "Transactions" },
   { href: "/my-store", children: (
     <>

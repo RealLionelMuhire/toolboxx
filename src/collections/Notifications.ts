@@ -60,6 +60,7 @@ export const Notifications: CollectionConfig = {
         { label: 'System', value: 'system' },
         { label: 'Engagement', value: 'engagement' },
         { label: 'Promotion', value: 'promotion' },
+        { label: 'Tender', value: 'tender' },
       ],
       admin: {
         description: 'The type of notification',
