@@ -10,7 +10,7 @@ export const notificationsRouter = createTRPCRouter({
       z.object({
         limit: z.number().min(1).max(100).default(20),
         page: z.number().min(1).default(1),
-        type: z.enum(['payment', 'order', 'message', 'product', 'transaction', 'system', 'engagement', 'promotion']).optional(),
+        type: z.enum(['payment', 'order', 'message', 'product', 'transaction', 'system', 'engagement', 'promotion', 'tender']).optional(),
         unreadOnly: z.boolean().optional(),
       })
     )

@@ -27,6 +27,8 @@ import { Messages } from './collections/Messages'
 import { Conversations } from './collections/Conversations'
 import { PushSubscriptions } from './collections/PushSubscriptions'
 import { Notifications } from './collections/Notifications'
+import { Tenders } from './collections/Tenders'
+import { TenderBids } from './collections/TenderBids'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -62,7 +64,7 @@ export default buildConfig({
       },
     },
   }),
-  collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions, Notifications],
+  collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions, Notifications, Tenders, TenderBids],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
