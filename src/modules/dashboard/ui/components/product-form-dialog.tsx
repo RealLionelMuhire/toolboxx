@@ -397,7 +397,8 @@ export const ProductFormDialog = ({
     return [];
   }, [mode, productData?.category]);
 
-  // Build category options - organize with parent categories and their subcategories
+  // Build category options - organize with parent categories and their subcategories.
+  // Skip the virtual "All" category (only for storefront) so it does not appear in the product form.
   const categoryOptions = useMemo(() => {
     const parentCategories: Array<{
       id: string;
@@ -409,10 +410,12 @@ export const ProductFormDialog = ({
     // If editing, ensure current categories are available
     const currentCatIds = new Set(currentCategoryData.map(c => c.id));
 
-    // Process all categories
-    categories.forEach((cat) => {
+    // Process all categories except the virtual "All" (slug "all" / id "all")
+    categories.forEach((cat: any) => {
+      if (cat.slug === "all" || cat.id === "all") return;
       if (!seenParentIds.has(cat.id)) {
-        const subcats = (cat.subcategories || []).map((sub: any) => ({
+        const rawSubs = Array.isArray(cat.subcategories) ? cat.subcategories : (cat.subcategories?.docs ?? []);
+        const subcats = rawSubs.map((sub: any) => ({
           id: sub.id,
           name: sub.name
         }));

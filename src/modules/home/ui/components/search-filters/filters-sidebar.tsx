@@ -95,12 +95,6 @@ export const FiltersSidebar = ({
     gcTime: 30 * 60 * 1000,
   });
 
-  const { data: categoryCounts } = useQuery({
-    ...trpc.products.getCategoryCounts.queryOptions(),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 15 * 60 * 1000,
-  });
-
   // Count products matching current filters
   const { data: productsCount } = useQuery({
     ...trpc.products.getMany.queryOptions({
@@ -110,6 +104,7 @@ export const FiltersSidebar = ({
       minPrice: filters.minPrice || undefined,
       maxPrice: filters.maxPrice || undefined,
       tags: filters.tags || undefined,
+      unit: filters.unit || undefined,
       search: filters.search || undefined,
       sort: undefined,
       tenantSlug: undefined,
@@ -145,6 +140,7 @@ export const FiltersSidebar = ({
       minPrice: "",
       maxPrice: "",
       tags: [],
+      unit: [],
       locationCountry: "",
       locationProvince: "",
       locationDistrict: "",
@@ -214,10 +210,6 @@ export const FiltersSidebar = ({
   }, [categories]);
 
 
-  const getCategoryCount = (categoryId: string): number => {
-    return categoryCounts?.[categoryId] || 0;
-  };
-
   const toggleCategory = (categoryId: string, isParent: boolean, subcategoryIds?: string[]) => {
     let newSelectedIds: string[];
 
@@ -226,12 +218,17 @@ export const FiltersSidebar = ({
       if (subcategoryIds && subcategoryIds.length > 0) {
         const allIds = [categoryId, ...subcategoryIds];
         const allSelected = allIds.every(id => selectedCategoryIds.includes(id));
+        const someSubcatsSelected = subcategoryIds.some(id => selectedCategoryIds.includes(id));
 
-        if (allSelected) {
+        // If any subcategory is selected, parent cannot be unselected (keep parent + current subcats)
+        if (someSubcatsSelected && !allSelected) {
+          // User clicked parent to "uncheck" but we keep parent when any subcat is selected
+          newSelectedIds = [...new Set([...selectedCategoryIds, categoryId])];
+        } else if (allSelected) {
           // Deselect parent + all subcategories
           newSelectedIds = selectedCategoryIds.filter(id => !allIds.includes(id));
         } else {
-          // Select parent + ALL subcategories (broad / cumulative)
+          // Select parent + ALL subcategories (selecting category only = all subcategories selected)
           newSelectedIds = [...new Set([...selectedCategoryIds, ...allIds])];
           setExpandedCategories(prev => new Set([...prev, categoryId]));
         }
@@ -264,7 +261,7 @@ export const FiltersSidebar = ({
             newSelectedIds = newSelectedIds.filter(id => id !== parentOption.id);
           }
         } else {
-          // Normal select — also ensure parent is selected
+          // Select subcategory: always ensure parent is selected (and cannot be unselected while any subcat is selected)
           newSelectedIds = [...new Set([...selectedCategoryIds, parentOption.id, categoryId])];
           setExpandedCategories(prev => new Set([...prev, parentOption.id]));
         }
@@ -347,7 +344,7 @@ export const FiltersSidebar = ({
                     const isParentSelected = selectedCategoryIds.includes(parent.id);
                     const allSubcatsSelected = subcatIds.length > 0 && subcatIds.every(id => selectedCategoryIds.includes(id));
                     const someSubcatsSelected = subcatIds.length > 0 && subcatIds.some(id => selectedCategoryIds.includes(id)) && !allSubcatsSelected;
-                    const parentCount = getCategoryCount(parent.id);
+                    const isParentDisabled = someSubcatsSelected; // Parent cannot be unselected when any subcategory is selected
 
                     return (
                       <div key={parent.id} className="space-y-1">
@@ -372,6 +369,7 @@ export const FiltersSidebar = ({
                           <Checkbox
                             id={`category-${parent.id}`}
                             checked={isParentSelected || allSubcatsSelected}
+                            disabled={isParentDisabled}
                             className={someSubcatsSelected ? "data-[state=checked]:bg-orange-300" : ""}
                             onCheckedChange={() => toggleCategory(parent.id, true, subcatIds)}
                           />
@@ -384,43 +382,34 @@ export const FiltersSidebar = ({
                               return Icon ? <Icon className="h-4 w-4" /> : null;
                             })()}
                             <span>{parent.name}</span>
-                            <span className="text-xs text-gray-500">
-                              ({parentCount})
-                            </span>
                           </Label>
                         </div>
 
                         {/* Subcategories (Collapsible) */}
                         {isExpanded && parent.subcategories.length > 0 && (
                           <div className="ml-8 space-y-1 border-l-2 border-gray-200 pl-3">
-                            {parent.subcategories.map((sub) => {
-                              const subCount = getCategoryCount(sub.id);
-                              return (
-                                <div
-                                  key={sub.id}
-                                  className="flex items-center space-x-2 hover:bg-gray-50 rounded px-1 py-0.5"
+                            {parent.subcategories.map((sub) => (
+                              <div
+                                key={sub.id}
+                                className="flex items-center space-x-2 hover:bg-gray-50 rounded px-1 py-0.5"
+                              >
+                                <Checkbox
+                                  id={`category-${sub.id}`}
+                                  checked={selectedCategoryIds.includes(sub.id)}
+                                  onCheckedChange={() => toggleCategory(sub.id, false)}
+                                />
+                                <Label
+                                  htmlFor={`category-${sub.id}`}
+                                  className="cursor-pointer text-sm font-normal text-gray-700 flex-1 flex items-center gap-2"
                                 >
-                                  <Checkbox
-                                    id={`category-${sub.id}`}
-                                    checked={selectedCategoryIds.includes(sub.id)}
-                                    onCheckedChange={() => toggleCategory(sub.id, false)}
-                                  />
-                                  <Label
-                                    htmlFor={`category-${sub.id}`}
-                                    className="cursor-pointer text-sm font-normal text-gray-700 flex-1 flex items-center gap-2"
-                                  >
-                                    {sub.icon && (() => {
-                                      const Icon = getIconByName(sub.icon);
-                                      return Icon ? <Icon className="h-4 w-4 opacity-70" /> : null;
-                                    })()}
-                                    <span>{sub.name}</span>
-                                    <span className="text-xs text-gray-500">
-                                      ({subCount})
-                                    </span>
-                                  </Label>
-                                </div>
-                              );
-                            })}
+                                  {sub.icon && (() => {
+                                    const Icon = getIconByName(sub.icon);
+                                    return Icon ? <Icon className="h-4 w-4 opacity-70" /> : null;
+                                  })()}
+                                  <span>{sub.name}</span>
+                                </Label>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
@@ -640,13 +629,13 @@ export const FiltersSidebar = ({
                   <div key={unit.value} className="flex items-center space-x-2">
                     <Checkbox
                       id={`unit-${unit.value}`}
-                      checked={filters.tags?.includes(`unit-${unit.value}`) || false}
+                      checked={filters.unit?.includes(unit.value) || false}
                       onCheckedChange={(checked) => {
-                        const currentTags = filters.tags || [];
+                        const current = filters.unit || [];
                         if (checked) {
-                          onChange("tags", [...currentTags, `unit-${unit.value}`]);
+                          onChange("unit", [...current, unit.value]);
                         } else {
-                          onChange("tags", currentTags.filter(t => t !== `unit-${unit.value}`));
+                          onChange("unit", current.filter((u) => u !== unit.value));
                         }
                       }}
                     />

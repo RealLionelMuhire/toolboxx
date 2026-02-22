@@ -29,6 +29,11 @@ const params = {
       clearOnDefault: true,
     })
     .withDefault([]),
+  unit: parseAsArrayOf(parseAsString)
+    .withOptions({
+      clearOnDefault: true,
+    })
+    .withDefault([]),
   locationCountry: parseAsString
     .withOptions({
       clearOnDefault: true,

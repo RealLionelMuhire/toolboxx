@@ -16,8 +16,9 @@ export const tagsRouter = createTRPCRouter({
         collection: "tags",
         page: input.cursor,
         limit: input.limit,
+        sort: "name",
       });
 
-      return data
+      return data;
     }),
 });

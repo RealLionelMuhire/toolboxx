@@ -4,6 +4,7 @@ import type { Sort, Where } from "payload";
 import { headers as getHeaders } from "next/headers";
 
 import { DEFAULT_LIMIT } from "@/constants";
+import { getProvinceByCode, getDistrictByCode } from "@/lib/location-data";
 import { Category, Media, Tenant, Product } from "@/payload-types";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
@@ -281,6 +282,7 @@ export const productsRouter = createTRPCRouter({
         minPrice: z.string().nullable().optional(),
         maxPrice: z.string().nullable().optional(),
         tags: z.array(z.string()).nullable().optional(),
+        unit: z.array(z.string()).nullable().optional(),
         sort: z.enum(sortValues).nullable().optional(),
         tenantSlug: z.string().nullable().optional(),
         // Location filtering
@@ -358,23 +360,35 @@ export const productsRouter = createTRPCRouter({
         }
       }
       
-      // Location-based filtering
+      // Location-based filtering (match by code or name so UI codes match DB whether stored as code or name)
       if (input.locationCountry && input.locationCountry.trim() !== "") {
         where["locationCountry"] = {
           equals: input.locationCountry,
         };
       }
-      
+
       if (input.locationProvince && input.locationProvince.trim() !== "") {
-        where["locationProvince"] = {
-          equals: input.locationProvince,
-        };
+        const provinceMeta = input.locationCountry
+          ? getProvinceByCode(input.locationCountry, input.locationProvince)
+          : undefined;
+        const provinceValues = provinceMeta
+          ? [input.locationProvince, provinceMeta.name]
+          : [input.locationProvince];
+        where["locationProvince"] = provinceValues.length === 1
+          ? { equals: provinceValues[0] }
+          : { in: provinceValues };
       }
-      
+
       if (input.locationDistrict && input.locationDistrict.trim() !== "") {
-        where["locationDistrict"] = {
-          equals: input.locationDistrict,
-        };
+        const districtMeta = input.locationCountry && input.locationProvince
+          ? getDistrictByCode(input.locationCountry, input.locationProvince, input.locationDistrict)
+          : undefined;
+        const districtValues = districtMeta
+          ? [input.locationDistrict, districtMeta.name]
+          : [input.locationDistrict];
+        where["locationDistrict"] = districtValues.length === 1
+          ? { equals: districtValues[0] }
+          : { in: districtValues };
       }
       
       // Handle multiple categories filter
@@ -422,6 +436,12 @@ export const productsRouter = createTRPCRouter({
       if (input.tags && input.tags.length > 0) {
         where["tags.name"] = {
           in: input.tags,
+        };
+      }
+
+      if (input.unit && input.unit.length > 0) {
+        where["unit"] = {
+          in: input.unit,
         };
       }
 
@@ -579,68 +599,78 @@ export const productsRouter = createTRPCRouter({
         };
       });
 
-      // Randomize product order for fair STORE/TENANT visibility (Tenant-based shuffle)
-      // Group products by tenant, shuffle tenant order, then interleave products
+      // Randomize only when sort is "curated" (default): fair rotation for stores and products per request.
+      // When user chooses a sort (price, newest, etc.), order is deterministic and not randomized.
       let finalDocs = dataWithSummarizedReviews;
       if (shouldRandomize) {
-        // Create a seed based on current time with 10-second intervals
-        const now = new Date();
-        const timeInSeconds = Math.floor(now.getTime() / 1000);
-        const rotationInterval = Math.floor(timeInSeconds / 10); // Changes every 10 seconds
-        
-        // Add true random component on each request for better distribution
-        // Combine time-based seed with random component for fairness
-        const randomComponent = Math.floor(Math.random() * 1000);
-        const seed = rotationInterval * 31 + dataWithSummarizedReviews.length + randomComponent;
-        
-        // Seeded random number generator
+        // Per-request seed so each refresh gives a different order (not tied to registration time)
+        const seed =
+          Date.now() * 1000 + Math.floor(Math.random() * 1000);
+
         const seededRandom = (seedValue: number) => {
-          seedValue = (seedValue * 9301 + 49297) % 233280;
-          return seedValue / 233280;
+          const next = (seedValue * 9301 + 49297) % 233280;
+          return { value: next / 233280, next };
         };
-        
+
+        let state = seed;
+
+        const nextRand = () => {
+          const out = seededRandom(state);
+          state = out.next;
+          return out.value;
+        };
+
         // Group products by tenant
-        const productsByTenant = dataWithSummarizedReviews.reduce((acc, product) => {
-          const tenantId = typeof product.tenant === 'string' 
-            ? product.tenant 
-            : product.tenant?.id || 'unknown';
-          
-          if (!acc[tenantId]) {
-            acc[tenantId] = [];
-          }
-          acc[tenantId].push(product);
-          return acc;
-        }, {} as Record<string, typeof dataWithSummarizedReviews>);
-        
-        // Get array of tenant IDs and shuffle them
-        const tenantIds = Object.keys(productsByTenant);
-        let currentSeed = seed;
-        
-        // Shuffle tenant order using Fisher-Yates
-        for (let i = tenantIds.length - 1; i > 0; i--) {
-          const randomValue = seededRandom(currentSeed);
-          currentSeed = (currentSeed * 9301 + 49297) % 233280;
-          const j = Math.floor(randomValue * (i + 1));
-          const temp = tenantIds[i];
-          if (temp && tenantIds[j]) {
-            tenantIds[i] = tenantIds[j];
-            tenantIds[j] = temp;
+        const productsByTenant = dataWithSummarizedReviews.reduce(
+          (acc, product) => {
+            const tenantId =
+              typeof product.tenant === "string"
+                ? product.tenant
+                : product.tenant?.id ?? "unknown";
+            if (!acc[tenantId]) acc[tenantId] = [];
+            acc[tenantId].push(product);
+            return acc;
+          },
+          {} as Record<string, typeof dataWithSummarizedReviews>,
+        );
+
+        // Shuffle products within each tenant so which product leads also rotates
+        for (const tenantId of Object.keys(productsByTenant)) {
+          const arr = productsByTenant[tenantId];
+          if (!arr || arr.length <= 1) continue;
+          for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(nextRand() * (i + 1));
+            const a = arr[i];
+            const b = arr[j];
+            if (a != null && b != null) {
+              arr[i] = b;
+              arr[j] = a;
+            }
           }
         }
-        
-        // Interleave products from different tenants for better distribution
+
+        // Shuffle tenant order (Fisher–Yates) so which store appears first changes each request
+        const tenantIds = Object.keys(productsByTenant);
+        for (let i = tenantIds.length - 1; i > 0; i--) {
+          const j = Math.floor(nextRand() * (i + 1));
+          const a = tenantIds[i];
+          const b = tenantIds[j];
+          if (a !== undefined && b !== undefined) {
+            tenantIds[i] = b;
+            tenantIds[j] = a;
+          }
+        }
+
+        // Interleave by tenant so multiple stores get visibility in the first rows
         finalDocs = [];
-        let maxProductsPerTenant = Math.max(...Object.values(productsByTenant).map(p => p.length));
-        
-        for (let i = 0; i < maxProductsPerTenant; i++) {
+        const maxPerTenant = Math.max(
+          ...Object.values(productsByTenant).map((p) => p.length),
+        );
+        for (let i = 0; i < maxPerTenant; i++) {
           for (const tenantId of tenantIds) {
-            const tenantProducts = productsByTenant[tenantId];
-            if (tenantProducts && tenantProducts[i]) {
-              const product = tenantProducts[i];
-              if (product) {
-                finalDocs.push(product);
-              }
-            }
+            const list = productsByTenant[tenantId];
+            const doc = list?.[i];
+            if (doc) finalDocs.push(doc);
           }
         }
       }
@@ -1352,17 +1382,19 @@ export const productsRouter = createTRPCRouter({
   getCategoryCounts: baseProcedure
     .query(async ({ ctx }) => {
       try {
-        // Get all categories
+        // Get all categories (explicit limit so we don't hit Payload's default page size)
         const categories = await ctx.db.find({
           collection: "categories",
           pagination: false,
+          limit: 10000,
           depth: 0,
         });
 
-        // Get all non-archived, public products
+        // Get all non-archived, public products (explicit limit to count every product)
         const products = await ctx.db.find({
           collection: "products",
           pagination: false,
+          limit: 10000,
           where: {
             and: [
               {
@@ -1392,10 +1424,14 @@ export const productsRouter = createTRPCRouter({
         });
 
         products.docs.forEach((product: any) => {
-          const categoryIds = Array.isArray(product.category) 
-            ? product.category 
-            : [product.category];
-          
+          const rawCategories = Array.isArray(product.category)
+            ? product.category
+            : product.category != null ? [product.category] : [];
+          const categoryIds = rawCategories.map((cat: unknown) =>
+            typeof cat === "object" && cat !== null && "id" in (cat as object)
+              ? (cat as { id: string }).id
+              : String(cat)
+          );
           categoryIds.forEach((catId: string) => {
             if (catId && counts[catId] !== undefined) {
               counts[catId]++;
