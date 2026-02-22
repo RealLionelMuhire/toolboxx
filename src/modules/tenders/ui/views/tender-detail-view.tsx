@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { Loader2, ArrowLeft, Calendar, Mail, Phone, MessageCircle, FileText, Send } from 'lucide-react'
+import { Loader2, ArrowLeft, Calendar, Mail, Phone, MessageCircle, FileText, Send, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/trpc/client'
 import { Button } from '@/components/ui/button'
@@ -31,6 +31,16 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
     enabled: !!session.data?.user,
   })
 
+  // Fetch current user's bid on this tender (if any)
+  const { data: myBidsData } = useQuery({
+    ...trpc.tenders.getMyBids.queryOptions({ limit: 100 }),
+    enabled: !!session.data?.user,
+    select: (data) => data.bids.find((b: any) => {
+      const tid = typeof b.tender === 'object' ? b.tender?.id : b.tender
+      return tid === tenderId
+    }),
+  })
+
   const updateStatusMutation = useMutation(
     trpc.tenders.updateStatus.mutationOptions({
       onSuccess: () => {
@@ -39,6 +49,16 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
         queryClient.invalidateQueries(trpc.tenders.list.queryFilter())
       },
       onError: (err) => toast.error(err.message),
+    }),
+  )
+
+  // Start chat mutation
+  const startChatMutation = useMutation(
+    trpc.chat.startConversation.mutationOptions({
+      onSuccess: (data) => {
+        router.push(`/chat/${data.id}`)
+      },
+      onError: (err) => toast.error(err.message || 'Failed to start chat'),
     }),
   )
 
@@ -68,13 +88,23 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
   const tenantName =
     typeof tender.tenant === 'object' && tender.tenant ? tender.tenant.name : null
 
+  // Owner's tenant phone (for bidders to call)
+  const ownerTenantPhone =
+    typeof tender.tenant === 'object' && tender.tenant
+      ? (tender.tenant as any).contactPhone
+      : null
+  // Owner's email
+  const ownerEmail =
+    typeof tender.createdBy === 'object' ? tender.createdBy?.email : null
+
   const isDeadlinePassed = tender.responseDeadline
     ? new Date(tender.responseDeadline) < new Date()
     : false
 
-  const canBid = tender.status === 'open' && !isOwner && !isDeadlinePassed
+  const myBid = myBidsData
+  const hasSubmittedBid = !!myBid
+  const canBid = tender.status === 'open' && !isOwner && !isDeadlinePassed && !hasSubmittedBid
 
-  // Extract plain text from Lexical richtext for display
   function richTextToPlain(root: any): string {
     if (!root) return ''
     if (typeof root === 'string') return root
@@ -85,6 +115,11 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
     }
     if (root.root) return extract(root.root)
     return extract(root)
+  }
+
+  const handleChatWithOwner = () => {
+    if (!ownerId) return
+    startChatMutation.mutate({ participantId: ownerId as string })
   }
 
   return (
@@ -166,6 +201,70 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
         )}
       </div>
 
+      {/* Bidder's bid status banner */}
+      {hasSubmittedBid && !isOwner && (
+        <div className={`rounded-xl border p-4 flex items-center gap-3 ${
+          myBid.status === 'shortlisted' ? 'bg-green-50 border-green-200' :
+          myBid.status === 'rejected' ? 'bg-red-50 border-red-200' :
+          myBid.status === 'withdrawn' ? 'bg-gray-50 border-gray-200' :
+          'bg-blue-50 border-blue-200'
+        }`}>
+          <CheckCircle className={`size-5 shrink-0 ${
+            myBid.status === 'shortlisted' ? 'text-green-600' :
+            myBid.status === 'rejected' ? 'text-red-500' :
+            myBid.status === 'withdrawn' ? 'text-gray-400' :
+            'text-blue-600'
+          }`} />
+          <div className="flex-1">
+            <p className="text-sm font-medium">
+              {myBid.status === 'submitted' && 'Your bid has been submitted'}
+              {myBid.status === 'shortlisted' && 'Your bid has been shortlisted!'}
+              {myBid.status === 'rejected' && 'Your bid was not selected'}
+              {myBid.status === 'withdrawn' && 'You withdrew your bid'}
+            </p>
+            {myBid.amount != null && (
+              <p className="text-xs text-gray-500 mt-0.5">Quoted amount: {myBid.amount?.toLocaleString()} {myBid.currency || 'RWF'}</p>
+            )}
+          </div>
+          <TenderStatusBadge status={myBid.status} />
+        </div>
+      )}
+
+      {/* Contact actions for shortlisted bidders */}
+      {hasSubmittedBid && myBid.status === 'shortlisted' && !isOwner && (
+        <div className="rounded-xl border border-green-200 bg-green-50 p-4 space-y-2">
+          <p className="text-sm font-medium text-green-800">Contact the tender owner to proceed</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={handleChatWithOwner}
+              disabled={startChatMutation.isPending}
+            >
+              <MessageCircle className="size-3.5" />
+              Chat
+            </Button>
+            {ownerTenantPhone && (
+              <Button size="sm" variant="outline" className="gap-1.5" asChild>
+                <a href={`tel:${ownerTenantPhone}`}>
+                  <Phone className="size-3.5" />
+                  Call {ownerTenantPhone}
+                </a>
+              </Button>
+            )}
+            {ownerEmail && (
+              <Button size="sm" variant="outline" className="gap-1.5" asChild>
+                <a href={`mailto:${ownerEmail}`}>
+                  <Mail className="size-3.5" />
+                  Email
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
         {/* Owner actions */}
@@ -200,11 +299,6 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
         {isOwner && (
           <Button variant="outline" onClick={() => router.push(`/tenders/${tenderId}/bids`)}>
             View Bids ({tender.bidCount || 0})
-          </Button>
-        )}
-        {isOwner && ['draft', 'open'].includes(tender.status) && (
-          <Button variant="ghost" onClick={() => router.push(`/tenders/${tenderId}`)}>
-            Edit
           </Button>
         )}
 

@@ -3,13 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
+import { Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/trpc/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -24,6 +25,7 @@ export function CreateTenderView() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [type, setType] = useState<'rfq' | 'rfp'>('rfq')
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [responseDeadline, setResponseDeadline] = useState('')
   const [contactPreference, setContactPreference] = useState<'email' | 'phone' | 'chat'>('email')
 
@@ -32,6 +34,8 @@ export function CreateTenderView() {
     staleTime: 0,
     refetchOnMount: 'always',
   })
+
+  const { data: categories } = useQuery(trpc.categories.getMany.queryOptions())
 
   const isLoggedIn = !!session.data?.user
 
@@ -52,6 +56,22 @@ export function CreateTenderView() {
     return null
   }
 
+  const handleToggleCategory = (catId: string) => {
+    setSelectedCategories((prev) =>
+      prev.includes(catId) ? prev.filter((c) => c !== catId) : [...prev, catId],
+    )
+  }
+
+  // Flatten categories + subcategories for the picker, skip the virtual "All"
+  const allCategories = (categories || []).flatMap((cat: any) => {
+    if (cat.id === 'all') return []
+    const subs = (cat.subcategories || []).map((sub: any) => ({
+      id: sub.id,
+      name: `${cat.name} / ${sub.name}`,
+    }))
+    return [{ id: cat.id, name: cat.name }, ...subs]
+  })
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -60,10 +80,16 @@ export function CreateTenderView() {
       return
     }
 
+    if (selectedCategories.length === 0) {
+      toast.error('Select at least one category so relevant vendors are notified')
+      return
+    }
+
     createMutation.mutate({
       title: title.trim(),
       description: { root: { children: [{ children: [{ text: description }], type: 'paragraph', version: 1 }], direction: null, format: '', indent: 0, type: 'root', version: 1 } },
       type,
+      category: selectedCategories,
       responseDeadline: responseDeadline || undefined,
       contactPreference,
     })
@@ -100,6 +126,35 @@ export function CreateTenderView() {
             required
             rows={6}
           />
+        </div>
+
+        {/* Category picker */}
+        <div className="space-y-1.5">
+          <Label>Category *</Label>
+          <p className="text-xs text-gray-400">Only vendors with products in these categories will be notified</p>
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {allCategories.map((cat: any) => {
+              const selected = selectedCategories.includes(cat.id)
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => handleToggleCategory(cat.id)}
+                  className={`px-2.5 py-1 rounded-full border text-xs transition-colors ${
+                    selected
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white text-gray-600 border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  {cat.name}
+                  {selected && <X className="size-3 ml-1 inline" />}
+                </button>
+              )
+            })}
+          </div>
+          {selectedCategories.length > 0 && (
+            <p className="text-xs text-gray-500 mt-1">{selectedCategories.length} selected</p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

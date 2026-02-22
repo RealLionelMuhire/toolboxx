@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { Loader2, ArrowLeft, ThumbsUp, ThumbsDown, User } from 'lucide-react'
+import { Loader2, ArrowLeft, ThumbsUp, ThumbsDown, User, MessageCircle, Phone, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/trpc/client'
 import { Button } from '@/components/ui/button'
@@ -37,6 +37,15 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
         queryClient.invalidateQueries(trpc.tenders.listBids.queryFilter({ tenderId }))
       },
       onError: (err) => toast.error(err.message),
+    }),
+  )
+
+  const startChatMutation = useMutation(
+    trpc.chat.startConversation.mutationOptions({
+      onSuccess: (data) => {
+        router.push(`/chat/${data.id}`)
+      },
+      onError: (err) => toast.error(err.message || 'Failed to start chat'),
     }),
   )
 
@@ -88,6 +97,8 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
                 ? bid.submittedBy
                 : null
             const bidderName = bidder?.username || bidder?.email || 'Unknown'
+            const bidderId = bidder?.id || bid.submittedBy
+            const bidderEmail = bidder?.email || null
             const msgText = richTextToPlain(bid.message)
 
             return (
@@ -119,7 +130,7 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
                   <span>{new Date(bid.createdAt).toLocaleString()}</span>
                 </div>
 
-                {/* Owner actions on bid */}
+                {/* Shortlist / Reject actions (only for submitted bids) */}
                 {bid.status === 'submitted' && (
                   <div className="flex gap-2 pt-1">
                     <Button
@@ -144,6 +155,30 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
                     >
                       <ThumbsDown className="size-3" /> Reject
                     </Button>
+                  </div>
+                )}
+
+                {/* Contact actions for shortlisted bids */}
+                {bid.status === 'shortlisted' && (
+                  <div className="flex flex-wrap gap-2 pt-1 border-t mt-2 pt-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1.5"
+                      disabled={startChatMutation.isPending}
+                      onClick={() => startChatMutation.mutate({ participantId: bidderId })}
+                    >
+                      <MessageCircle className="size-3.5" />
+                      Chat with {bidderName.split(' ')[0] || 'Bidder'}
+                    </Button>
+                    {bidderEmail && (
+                      <Button size="sm" variant="outline" className="gap-1.5" asChild>
+                        <a href={`mailto:${bidderEmail}`}>
+                          <Mail className="size-3.5" />
+                          Email
+                        </a>
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>

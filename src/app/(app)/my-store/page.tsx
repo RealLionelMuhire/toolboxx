@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp, Share2, Settings } from 'lucide-react';
+import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp, Share2, Settings, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { OrderStats } from '@/components/dashboard/OrderStats';
@@ -29,7 +29,7 @@ import { ProductFormDialog } from '@/modules/dashboard/ui/components/product-for
 import { DeleteProductDialog } from '@/modules/dashboard/ui/components/delete-product-dialog';
 import { Suspense } from 'react';
 
-type TabType = 'account' | 'purchases' | 'products' | 'sales';
+type TabType = 'account' | 'purchases' | 'products' | 'sales' | 'bids';
 
 // Notification type
 type ProductNotification = {
@@ -294,6 +294,17 @@ export default function MyStorePage() {
           <TrendingUp className="h-4 w-4" />
           Sales
         </button>
+        <button
+          onClick={() => setActiveTab('bids')}
+          className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 text-sm ${
+            activeTab === 'bids'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <FileText className="h-4 w-4" />
+          My Bids
+        </button>
       </div>
 
       {/* Content */}
@@ -371,6 +382,7 @@ export default function MyStorePage() {
         </>
       )}
       {activeTab === 'sales' && <SalesSection />}
+      {activeTab === 'bids' && <MyBidsSection />}
     </div>
   );
 }
@@ -853,6 +865,116 @@ function SalesSection() {
           />
         </Suspense>
       </div>
+    </div>
+  );
+}
+
+function MyBidsSection() {
+  const trpc = useTRPC();
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
+  const { data, isLoading } = useQuery({
+    ...trpc.tenders.getMyBids.queryOptions({ limit: 50 }),
+  });
+
+  const withdrawMutation = useMutation(
+    trpc.tenders.withdrawBid.mutationOptions({
+      onSuccess: () => {
+        toast.success('Bid withdrawn');
+        queryClient.invalidateQueries(trpc.tenders.getMyBids.queryFilter());
+      },
+      onError: (err) => toast.error(err.message),
+    }),
+  );
+
+  if (isLoading) return <LoadingState />;
+
+  const bids = data?.bids || [];
+
+  const statusColor = (status: string) => {
+    switch (status) {
+      case 'submitted': return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+      case 'shortlisted': return 'bg-green-100 text-green-700 border-green-300';
+      case 'rejected': return 'bg-red-100 text-red-700 border-red-300';
+      case 'withdrawn': return 'bg-gray-100 text-gray-500 border-gray-300';
+      default: return '';
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+        <h2 className="text-lg font-semibold text-indigo-900 mb-1">
+          My Bids ({bids.length})
+        </h2>
+        <p className="text-sm text-indigo-700">
+          Track bids you have submitted on tenders
+        </p>
+      </div>
+
+      {bids.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <FileText className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No bids yet</h3>
+            <p className="text-muted-foreground text-center mb-4">
+              Browse open tenders and submit your first bid
+            </p>
+            <Button onClick={() => router.push('/tenders')} variant="outline">
+              Browse Tenders
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-3">
+          {bids.map((bid: any) => {
+            const tender = typeof bid.tender === 'object' ? bid.tender : null;
+            const tenderTitle = tender?.title || 'Unknown Tender';
+            const tenderId = tender?.id || bid.tender;
+
+            return (
+              <Card key={bid.id} className="hover:shadow-md transition-shadow">
+                <CardContent className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      onClick={() => router.push(`/tenders/${tenderId}`)}
+                      className="text-sm font-semibold text-left hover:text-blue-600 transition-colors line-clamp-1"
+                    >
+                      {tenderTitle}
+                    </button>
+                    <Badge variant="outline" className={`text-xs shrink-0 ${statusColor(bid.status)}`}>
+                      {bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}
+                    </Badge>
+                  </div>
+
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                    {bid.amount != null && (
+                      <span>Amount: <strong>{bid.amount.toLocaleString()} {bid.currency || 'RWF'}</strong></span>
+                    )}
+                    {bid.validUntil && (
+                      <span>Valid until {new Date(bid.validUntil).toLocaleDateString()}</span>
+                    )}
+                    <span>Submitted {new Date(bid.createdAt).toLocaleDateString()}</span>
+                  </div>
+
+                  {bid.status === 'submitted' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                      disabled={withdrawMutation.isPending}
+                      onClick={() => withdrawMutation.mutate({ bidId: bid.id })}
+                    >
+                      Withdraw Bid
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

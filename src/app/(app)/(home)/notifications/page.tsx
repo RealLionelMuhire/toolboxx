@@ -140,6 +140,7 @@ export default function NotificationsPage() {
       system: "bg-gray-100 text-gray-800 border-gray-300",
       engagement: "bg-orange-100 text-orange-800 border-orange-300",
       promotion: "bg-red-100 text-red-800 border-red-300",
+      tender: "bg-indigo-100 text-indigo-800 border-indigo-300",
     };
     return colors[type] || colors.system;
   };
@@ -196,6 +197,7 @@ export default function NotificationsPage() {
             <SelectItem value="transaction">Transactions</SelectItem>
             <SelectItem value="engagement">Engagement</SelectItem>
             <SelectItem value="promotion">Promotions</SelectItem>
+            <SelectItem value="tender">Tenders</SelectItem>
           </SelectContent>
         </Select>
       </div>

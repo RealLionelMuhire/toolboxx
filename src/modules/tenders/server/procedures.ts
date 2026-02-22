@@ -214,17 +214,51 @@ export const tendersRouter = createTRPCRouter({
       // ── Notifications ──
 
       if (input.status === 'open') {
-        // Tender published → notify all tenants (potential vendors)
-        const tenants = await ctx.db.find({
-          collection: 'users',
-          where: { roles: { contains: 'tenant' } },
-          limit: 500,
-          depth: 0,
-        })
+        // Tender published → notify tenants whose products match the tender categories
         const tenderUrl = `/tenders/${input.id}`
-        for (const u of tenants.docs) {
-          if (String(u.id) === String(user.id)) continue
-          notify(ctx.db, u.id, 'New Tender Published', `"${tender.title}" is now open for bids.`, tenderUrl)
+        const categoryIds = (tender.category as any[]) || []
+        const resolvedCatIds = categoryIds.map((c: any) => (typeof c === 'string' ? c : c.id))
+
+        if (resolvedCatIds.length > 0) {
+          // Find products in those categories, extract unique tenant IDs
+          const matchingProducts = await ctx.db.find({
+            collection: 'products',
+            where: { category: { in: resolvedCatIds } },
+            limit: 1000,
+            depth: 0,
+          })
+
+          const tenantIdSet = new Set<string>()
+          for (const p of matchingProducts.docs) {
+            const tid = typeof p.tenant === 'string' ? p.tenant : (p.tenant as any)?.id
+            if (tid) tenantIdSet.add(tid)
+          }
+
+          // Find users linked to those tenants
+          if (tenantIdSet.size > 0) {
+            const tenantUsers = await ctx.db.find({
+              collection: 'users',
+              where: { 'tenants.tenant': { in: Array.from(tenantIdSet) } },
+              limit: 500,
+              depth: 0,
+            })
+            for (const u of tenantUsers.docs) {
+              if (String(u.id) === String(user.id)) continue
+              notify(ctx.db, u.id, 'New Tender Published', `"${tender.title}" is now open for bids.`, tenderUrl)
+            }
+          }
+        } else {
+          // No categories specified — fallback: notify all tenants
+          const allTenants = await ctx.db.find({
+            collection: 'users',
+            where: { roles: { contains: 'tenant' } },
+            limit: 500,
+            depth: 0,
+          })
+          for (const u of allTenants.docs) {
+            if (String(u.id) === String(user.id)) continue
+            notify(ctx.db, u.id, 'New Tender Published', `"${tender.title}" is now open for bids.`, tenderUrl)
+          }
         }
       }
 
