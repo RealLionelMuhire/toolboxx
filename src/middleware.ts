@@ -75,6 +75,8 @@ export default async function middleware(req: NextRequest) {
       '/messages',
       '/chat',
       '/library',
+      '/tenders',
+      '/my-bids',
     ];
     
     // Check if the current path starts with any global route
