@@ -1,39 +1,22 @@
-import { Suspense } from 'react'
-import { dehydrate, HydrationBoundary } from '@tanstack/react-query'
-import { getQueryClient, trpc } from '@/trpc/server'
-import { SubmitBidView } from '@/modules/tenders/ui/views/submit-bid-view'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import dynamic from 'next/dynamic'
+import { useParams } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 
-export default async function SubmitBidPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const queryClient = getQueryClient()
-
-  void queryClient.prefetchQuery(trpc.auth.session.queryOptions())
-  void queryClient.prefetchQuery(trpc.tenders.getById.queryOptions({ id }))
-
-  return (
-    <HydrationBoundary state={dehydrate(queryClient)}>
-      <Suspense fallback={<SubmitBidSkeleton />}>
-        <SubmitBidView tenderId={id} />
-      </Suspense>
-    </HydrationBoundary>
-  )
-}
-
-function SubmitBidSkeleton() {
-  return (
-    <div className="px-2 sm:px-4 lg:px-12 py-4 md:py-8 max-w-2xl mx-auto space-y-5">
-      <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
-      <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
-      <div className="border border-gray-200 rounded-xl bg-white p-5 space-y-4">
-        <div className="h-28 w-full bg-gray-200 rounded animate-pulse" />
-        <div className="grid grid-cols-2 gap-4">
-          <div className="h-10 bg-gray-200 rounded animate-pulse" />
-          <div className="h-10 bg-gray-200 rounded animate-pulse" />
-        </div>
-        <div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+const SubmitBidView = dynamic(
+  () => import('@/modules/tenders/ui/views/submit-bid-view').then((m) => m.SubmitBidView),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex justify-center py-20">
+        <Loader2 className="size-6 animate-spin text-gray-400" />
       </div>
-    </div>
-  )
+    ),
+  },
+)
+
+export default function SubmitBidPage() {
+  const params = useParams<{ id: string }>()
+  return <SubmitBidView tenderId={params.id} />
 }
