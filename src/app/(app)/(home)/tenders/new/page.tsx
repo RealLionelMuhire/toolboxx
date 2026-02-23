@@ -1,7 +1,7 @@
-import { DynamicCreateTenderView } from '@/modules/tenders/ui/components/dynamic-views'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import { CreateTenderView } from '@/modules/tenders/ui/views/create-tender-view'
 
 export default function NewTenderPage() {
-  return <DynamicCreateTenderView />
+  return <CreateTenderView />
 }

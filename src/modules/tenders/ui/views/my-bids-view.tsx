@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { Loader2, FileX } from 'lucide-react'
@@ -65,8 +66,8 @@ export function MyBidsView() {
         <div className="flex flex-col items-center justify-center py-20 text-gray-400 gap-2">
           <FileX className="size-10" />
           <p className="text-sm">You haven&apos;t submitted any bids yet</p>
-          <Button variant="outline" size="sm" onClick={() => router.push('/tenders')}>
-            Browse Tenders
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/tenders">Browse Tenders</Link>
           </Button>
         </div>
       ) : (
@@ -83,12 +84,12 @@ export function MyBidsView() {
                 className="border border-gray-200 rounded-xl bg-white p-4 space-y-2"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <button
-                    onClick={() => router.push(`/tenders/${tenderId}`)}
+                  <Link
+                    href={`/tenders/${tenderId}`}
                     className="text-sm font-semibold text-left hover:text-blue-600 transition-colors line-clamp-1"
                   >
                     {tenderTitle}
-                  </button>
+                  </Link>
                   <TenderStatusBadge status={bid.status} />
                 </div>
 

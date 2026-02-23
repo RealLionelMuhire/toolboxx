@@ -1,8 +1,9 @@
-import { DynamicTenderBidsView } from '@/modules/tenders/ui/components/dynamic-views'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import { useParams } from 'next/navigation'
+import { TenderBidsView } from '@/modules/tenders/ui/views/tender-bids-view'
 
-export default async function TenderBidsPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  return <DynamicTenderBidsView tenderId={id} />
+export default function TenderBidsPage() {
+  const { id } = useParams<{ id: string }>()
+  return <TenderBidsView tenderId={id} />
 }

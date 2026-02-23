@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { Loader2, ArrowLeft, ThumbsUp, ThumbsDown, User, MessageCircle, Phone, Mail } from 'lucide-react'
@@ -73,12 +74,12 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
 
   return (
     <div className="px-2 sm:px-4 lg:px-12 py-4 md:py-8 max-w-3xl mx-auto space-y-5">
-      <button
-        onClick={() => router.push(`/tenders/${tenderId}`)}
+      <Link
+        href={`/tenders/${tenderId}`}
         className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
       >
         <ArrowLeft className="size-4" /> Back to tender
-      </button>
+      </Link>
 
       <div>
         <h1 className="text-xl font-bold">Bids</h1>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { Plus, Loader2, FileX } from 'lucide-react'
@@ -52,13 +53,11 @@ export function TendersListView() {
             Browse open tenders or create your own RFQ/RFP
           </p>
         </div>
-        <Button
-          variant="elevated"
-          onClick={() => router.push('/tenders/new')}
-          className="gap-1.5 bg-orange-400"
-        >
-          <Plus className="size-4" />
-          <span className="hidden sm:inline">New Tender</span>
+        <Button variant="elevated" className="gap-1.5 bg-orange-400" asChild>
+          <Link href="/tenders/new">
+            <Plus className="size-4" />
+            <span className="hidden sm:inline">New Tender</span>
+          </Link>
         </Button>
       </div>
 
