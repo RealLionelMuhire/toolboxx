@@ -1,20 +1,7 @@
-'use client'
+import { DynamicMyBidsView } from '@/modules/tenders/ui/components/dynamic-views'
 
-import dynamic from 'next/dynamic'
-import { Loader2 } from 'lucide-react'
-
-const MyBidsView = dynamic(
-  () => import('@/modules/tenders/ui/views/my-bids-view').then((m) => m.MyBidsView),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex justify-center py-20">
-        <Loader2 className="size-6 animate-spin text-gray-400" />
-      </div>
-    ),
-  },
-)
+export const dynamic = 'force-dynamic'
 
 export default function MyBidsPage() {
-  return <MyBidsView />
+  return <DynamicMyBidsView />
 }

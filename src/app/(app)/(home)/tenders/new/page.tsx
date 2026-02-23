@@ -1,20 +1,7 @@
-'use client'
+import { DynamicCreateTenderView } from '@/modules/tenders/ui/components/dynamic-views'
 
-import dynamic from 'next/dynamic'
-import { Loader2 } from 'lucide-react'
-
-const CreateTenderView = dynamic(
-  () => import('@/modules/tenders/ui/views/create-tender-view').then((m) => m.CreateTenderView),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex justify-center py-20">
-        <Loader2 className="size-6 animate-spin text-gray-400" />
-      </div>
-    ),
-  },
-)
+export const dynamic = 'force-dynamic'
 
 export default function NewTenderPage() {
-  return <CreateTenderView />
+  return <DynamicCreateTenderView />
 }
