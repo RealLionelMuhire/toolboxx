@@ -52,7 +52,11 @@ export function TendersListView() {
             Browse open tenders or create your own RFQ/RFP
           </p>
         </div>
-        <Button onClick={() => router.push('/tenders/new')} className="gap-1.5">
+        <Button
+          variant="elevated"
+          onClick={() => router.push('/tenders/new')}
+          className="gap-1.5 bg-orange-400"
+        >
           <Plus className="size-4" />
           <span className="hidden sm:inline">New Tender</span>
         </Button>

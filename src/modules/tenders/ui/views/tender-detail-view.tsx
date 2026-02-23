@@ -270,6 +270,8 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
         {/* Owner actions */}
         {isOwner && tender.status === 'draft' && (
           <Button
+            variant="elevated"
+            className="bg-orange-400"
             onClick={() => updateStatusMutation.mutate({ id: tenderId, status: 'open' })}
             disabled={updateStatusMutation.isPending}
           >
@@ -297,14 +299,18 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
           </Button>
         )}
         {isOwner && (
-          <Button variant="outline" onClick={() => router.push(`/tenders/${tenderId}/bids`)}>
+          <Button variant="elevated" className="bg-white" onClick={() => router.push(`/tenders/${tenderId}/bids`)}>
             View Bids ({tender.bidCount || 0})
           </Button>
         )}
 
         {/* Bidder action */}
         {canBid && (
-          <Button onClick={() => router.push(`/tenders/${tenderId}/bid`)} className="gap-1.5">
+          <Button
+            variant="elevated"
+            className="gap-1.5 bg-orange-400"
+            onClick={() => router.push(`/tenders/${tenderId}/bid`)}
+          >
             <Send className="size-4" />
             Submit Bid
           </Button>

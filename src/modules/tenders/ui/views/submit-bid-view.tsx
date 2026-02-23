@@ -131,7 +131,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
         </div>
 
         <div className="flex items-center gap-3 pt-2">
-          <Button type="submit" disabled={submitMutation.isPending}>
+          <Button type="submit" variant="elevated" className="bg-orange-400" disabled={submitMutation.isPending}>
             {submitMutation.isPending && <Loader2 className="size-4 animate-spin mr-1.5" />}
             Submit Bid
           </Button>
