@@ -4,6 +4,10 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { getQueryClient, trpc } from "@/trpc/server";
 
 import { Footer } from "@/modules/home/ui/components/footer";
+
+// Layout uses prefetchQuery (tRPC) which reads headers() — must be dynamic
+export const dynamic = "force-dynamic";
+
 import { ConditionalSearchFilters } from "@/modules/home/ui/components/conditional-search-filters";
 import { ConditionalFooter } from "@/modules/home/ui/components/conditional-footer";
 import { ConditionalLayoutWrapper } from "@/modules/home/ui/components/conditional-layout-wrapper";
