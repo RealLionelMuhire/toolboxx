@@ -1,8 +1,9 @@
-import { DynamicSubmitBidView } from '@/modules/tenders/ui/components/dynamic-views'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import { useParams } from 'next/navigation'
+import { SubmitBidView } from '@/modules/tenders/ui/views/submit-bid-view'
 
-export default async function SubmitBidPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  return <DynamicSubmitBidView tenderId={id} />
+export default function SubmitBidPage() {
+  const { id } = useParams<{ id: string }>()
+  return <SubmitBidView tenderId={id} />
 }

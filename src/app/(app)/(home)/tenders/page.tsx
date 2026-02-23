@@ -1,7 +1,7 @@
-import { DynamicTendersListView } from '@/modules/tenders/ui/components/dynamic-views'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import { TendersListView } from '@/modules/tenders/ui/views/tenders-list-view'
 
 export default function TendersPage() {
-  return <DynamicTendersListView />
+  return <TendersListView />
 }

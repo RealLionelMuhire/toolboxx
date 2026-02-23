@@ -1,7 +1,7 @@
-import { DynamicMyBidsView } from '@/modules/tenders/ui/components/dynamic-views'
+'use client'
 
-export const dynamic = 'force-dynamic'
+import { MyBidsView } from '@/modules/tenders/ui/views/my-bids-view'
 
 export default function MyBidsPage() {
-  return <DynamicMyBidsView />
+  return <MyBidsView />
 }

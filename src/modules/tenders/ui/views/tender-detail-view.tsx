@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { Loader2, ArrowLeft, Calendar, Mail, Phone, MessageCircle, FileText, Send, CheckCircle } from 'lucide-react'
@@ -125,12 +126,12 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
   return (
     <div className="px-2 sm:px-4 lg:px-12 py-4 md:py-8 max-w-3xl mx-auto space-y-5">
       {/* Back */}
-      <button
-        onClick={() => router.push('/tenders')}
+      <Link
+        href="/tenders"
         className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors"
       >
         <ArrowLeft className="size-4" /> Back to tenders
-      </button>
+      </Link>
 
       {/* Header */}
       <div className="border border-gray-200 rounded-xl bg-white p-5 space-y-3">
@@ -299,20 +300,20 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
           </Button>
         )}
         {isOwner && (
-          <Button variant="elevated" className="bg-white" onClick={() => router.push(`/tenders/${tenderId}/bids`)}>
-            View Bids ({tender.bidCount || 0})
+          <Button variant="elevated" className="bg-white" asChild>
+            <Link href={`/tenders/${tenderId}/bids`}>
+              View Bids ({tender.bidCount || 0})
+            </Link>
           </Button>
         )}
 
         {/* Bidder action */}
         {canBid && (
-          <Button
-            variant="elevated"
-            className="gap-1.5 bg-orange-400"
-            onClick={() => router.push(`/tenders/${tenderId}/bid`)}
-          >
-            <Send className="size-4" />
-            Submit Bid
+          <Button variant="elevated" className="gap-1.5 bg-orange-400" asChild>
+            <Link href={`/tenders/${tenderId}/bid`}>
+              <Send className="size-4" />
+              Submit Bid
+            </Link>
           </Button>
         )}
       </div>
