@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
+import { OptimizedLink } from '@/components/optimized-link'
 import { useRouter } from 'next/navigation'
 import { Plus, Loader2, FileX } from 'lucide-react'
 import { useTRPC } from '@/trpc/client'
@@ -54,10 +54,10 @@ export function TendersListView() {
           </p>
         </div>
         <Button variant="elevated" className="gap-1.5 bg-orange-400" asChild>
-          <Link href="/tenders/new">
+          <OptimizedLink href="/tenders/new">
             <Plus className="size-4" />
             <span className="hidden sm:inline">New Tender</span>
-          </Link>
+          </OptimizedLink>
         </Button>
       </div>
 
