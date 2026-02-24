@@ -54,7 +54,10 @@ export function TendersListView() {
           </p>
         </div>
         <Button variant="elevated" className="gap-1.5 bg-orange-400" asChild>
-          <OptimizedLink href="/tenders/new">
+          <OptimizedLink
+            href="/tenders/new"
+            onClick={() => console.log('[Add Tender] Button clicked — form/navigation triggered')}
+          >
             <Plus className="size-4" />
             <span className="hidden sm:inline">New Tender</span>
           </OptimizedLink>
