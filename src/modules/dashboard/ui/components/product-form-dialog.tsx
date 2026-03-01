@@ -112,9 +112,10 @@ export const ProductFormDialog = ({
   });
 
   // Populate form when editing - wait for BOTH product data AND categories to load
+  // Only populate when productData matches current productId (avoids mixing products when switching)
   useEffect(() => {
-    // Prevent multiple resets
-    if (mode === "edit" && productData && !isLoadingCategories && categoriesData && !hasPopulatedRef.current) {
+    const productMatches = productData && productId && (productData as any).id === productId;
+    if (mode === "edit" && productMatches && !isLoadingCategories && categoriesData && !hasPopulatedRef.current) {
       // Handle multiple categories
       const categoryIds = productData.category
         ? Array.isArray(productData.category)
@@ -189,12 +190,19 @@ export const ProductFormDialog = ({
     }
   }, [productData, mode, isLoadingCategories, categoriesData]);
 
-  // Reset the hasPopulated flag when dialog opens/closes or mode changes
+  // Reset the hasPopulated flag when dialog opens/closes, mode changes, or productId changes
+  // This ensures we re-fetch and populate when editing a different product
   useEffect(() => {
     if (!open || mode === "create") {
       hasPopulatedRef.current = false;
     }
   }, [open, mode]);
+
+  useEffect(() => {
+    if (mode === "edit" && productId) {
+      hasPopulatedRef.current = false;
+    }
+  }, [productId, mode]);
 
   // Cleanup orphaned images when dialog closes
   useEffect(() => {
@@ -255,11 +263,18 @@ export const ProductFormDialog = ({
     }
   }, [open, mode]);
 
+  // Invalidate all product queries so updates show across My Products, homepage, storefront, etc.
+  const invalidateProductQueries = () => {
+    queryClient.invalidateQueries({ queryKey: [["products"]] });
+    queryClient.invalidateQueries(trpc.products.getMany.infiniteQueryFilter());
+    queryClient.invalidateQueries(trpc.products.getMyProducts.infiniteQueryFilter());
+  };
+
   // Create mutation
   const createMutation = useMutation(trpc.products.createProduct.mutationOptions({
     onSuccess: () => {
       toast.success("Product created successfully!");
-      queryClient.invalidateQueries({ queryKey: [["products"]] });
+      invalidateProductQueries();
       hasSubmittedRef.current = true; // Mark as submitted to prevent cleanup
       onClose();
       reset();
@@ -272,13 +287,9 @@ export const ProductFormDialog = ({
   // Update mutation
   const updateMutation = useMutation(
     trpc.products.updateProduct.mutationOptions({
-      onSuccess: async (data, variables: any) => {
+      onSuccess: async (_data, variables: any) => {
         toast.success("Product updated successfully!");
-        // Refetch the updated product directly to ensure UI is fresh
-        if (variables?.id) {
-          await queryClient.refetchQueries({ queryKey: [["products", "getOne"], { id: variables.id }] });
-        }
-        queryClient.invalidateQueries({ queryKey: [["products"]] });
+        invalidateProductQueries();
         hasSubmittedRef.current = true; // Mark as submitted to prevent cleanup
         onClose();
       },
@@ -712,6 +723,7 @@ export const ProductFormDialog = ({
               <div>
                 <Label>Product Photos & Videos *</Label>
                 <ImageUpload
+                  key={mode === "edit" ? `edit-${productId}` : "create"}
                   value={watch("gallery") || []}
                   onChange={(value) => setValue("gallery", value)}
                   maxImages={24}

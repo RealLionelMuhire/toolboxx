@@ -2,7 +2,7 @@
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
-import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
+import { s3Storage } from '@payloadcms/storage-s3'
 import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import { resendAdapter } from '@/lib/email/resend-adapter'
 // import { multiTenantPlugin } from "@payloadcms/plugin-multi-tenant";
@@ -99,12 +99,29 @@ export default buildConfig({
     //   },
     //   userHasAccessToAllTenants: (user) => isSuperAdmin(user),
     // }),
-    vercelBlobStorage({
-      enabled: true,
+    s3Storage({
+      acl: 'public-read',
       collections: {
-        media: true,
+        media: {
+          prefix: 'media',
+          disablePayloadAccessControl: true,
+          generateFileURL: ({ filename, prefix }) => {
+            const base = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '')
+            const path = prefix ? `${prefix}/${filename}` : filename
+            return `${base}/${path}`
+          },
+        },
       },
-      token: process.env.BLOB_READ_WRITE_TOKEN,
+      bucket: process.env.S3_BUCKET || '',
+      config: {
+        credentials: {
+          accessKeyId: process.env.S3_ACCESS_KEY_ID || '',
+          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY || '',
+        },
+        region: process.env.S3_REGION || 'auto',
+        endpoint: process.env.S3_ENDPOINT,
+        forcePathStyle: true,
+      },
     }),
   ],
 })

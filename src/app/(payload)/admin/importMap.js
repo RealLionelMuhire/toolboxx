@@ -30,7 +30,7 @@ import { TransactionActionCell as TransactionActionCell_4f9f4e61fa661cf2d6fe687b
 import { TransactionOrdersField as TransactionOrdersField_fce471c963de32879d569b1bf26e200b } from '@/components/admin/TransactionOrdersField'
 import { OrderStatusCell as OrderStatusCell_a62e47b57797e0bb7a9458ad5341f335 } from '@/components/admin/OrderStatusCell'
 import { default as default_2837fafbe816b12f64987280154e7abd } from '@/components/admin/UserVerificationBadge'
-import { VercelBlobClientUploadHandler as VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-vercel-blob/client'
+import { S3ClientUploadHandler as S3ClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-s3/client'
 
 export const importMap = {
   "@/components/admin/AccountVerificationSection#default": default_1e2e402e0a627aa710399a87d12cd77b,
@@ -65,5 +65,5 @@ export const importMap = {
   "@/components/admin/TransactionOrdersField#TransactionOrdersField": TransactionOrdersField_fce471c963de32879d569b1bf26e200b,
   "@/components/admin/OrderStatusCell#OrderStatusCell": OrderStatusCell_a62e47b57797e0bb7a9458ad5341f335,
   "@/components/admin/UserVerificationBadge#default": default_2837fafbe816b12f64987280154e7abd,
-  "@payloadcms/storage-vercel-blob/client#VercelBlobClientUploadHandler": VercelBlobClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e
+  "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e
 }

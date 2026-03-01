@@ -33,6 +33,8 @@ export const DeleteProductDialog = ({
     onSuccess: () => {
       toast.success("Product archived successfully");
       queryClient.invalidateQueries({ queryKey: [["products"]] });
+      queryClient.invalidateQueries(trpc.products.getMany.infiniteQueryFilter());
+      queryClient.invalidateQueries(trpc.products.getMyProducts.infiniteQueryFilter());
       onOpenChange(false);
     },
     onError: (error: any) => {
