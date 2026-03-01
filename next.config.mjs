@@ -21,13 +21,16 @@ const nextConfig = {
     optimizePackageImports: ['@radix-ui/react-icons', 'lucide-react'],
   },
   images: {
+    // Next.js optimizes images: resizes, WebP/AVIF, caches. Much faster than loading full-res from R2.
+    // R2 is public — no 401. transformAlgorithm stderr is patched in start script.
+    unoptimized: false,
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60,
+    minimumCacheTTL: 86400, // 24h — product images rarely change
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    contentSecurityPolicy: "default-src 'self' https://*.r2.dev https://*.public.blob.vercel-storage.com; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: 'https',
@@ -37,6 +40,27 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'public.blob.vercel-storage.com',
       },
+      // Cloudflare R2 (pub-xxx.r2.dev or custom domain)
+      {
+        protocol: 'https',
+        hostname: '**.r2.dev',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.r2.dev',
+      },
+      // R2 custom domain (e.g. cdn.yourdomain.com from R2_PUBLIC_URL)
+      ...(process.env.R2_PUBLIC_URL
+        ? (() => {
+            try {
+              const url = new URL(process.env.R2_PUBLIC_URL);
+              if (!url.hostname.endsWith('.r2.dev')) {
+                return [{ protocol: url.protocol.replace(':', ''), hostname: url.hostname }];
+              }
+            } catch {}
+            return [];
+          })()
+        : []),
       // Railway deployment support - wildcard for all railway domains
       {
         protocol: 'https',
