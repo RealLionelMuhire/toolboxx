@@ -15,6 +15,7 @@ interface TenderCardProps {
   tenant?: { name?: string } | string | null
   responseDeadline?: string | null
   bidCount?: number
+  itemsCount?: number
   createdAt?: string
 }
 
@@ -28,6 +29,7 @@ export function TenderCard({
   tenant,
   responseDeadline,
   bidCount = 0,
+  itemsCount = 0,
   createdAt,
 }: TenderCardProps) {
   const creatorName =
@@ -84,6 +86,11 @@ export function TenderCard({
           <FileText className="size-3" />
           {bidCount} bid{bidCount !== 1 ? 's' : ''}
         </span>
+        {itemsCount > 0 && (
+          <span className="flex items-center gap-1 text-gray-400">
+            {itemsCount} item{itemsCount !== 1 ? 's' : ''}
+          </span>
+        )}
 
         {createdAt && (
           <span className="text-gray-400">

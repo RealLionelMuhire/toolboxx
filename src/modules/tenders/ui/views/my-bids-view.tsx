@@ -1,9 +1,20 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { Loader2, FileX } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
 import { useTRPC } from '@/trpc/client'
 import { Button } from '@/components/ui/button'
@@ -14,6 +25,7 @@ export function MyBidsView() {
   const trpc = useTRPC()
   const router = useRouter()
   const queryClient = useQueryClient()
+  const [withdrawBidId, setWithdrawBidId] = useState<string | null>(null)
 
   const session = useQuery({
     ...trpc.auth.session.queryOptions(),
@@ -33,6 +45,7 @@ export function MyBidsView() {
       onSuccess: () => {
         toast.success('Bid withdrawn')
         queryClient.invalidateQueries(trpc.tenders.getMyBids.queryFilter())
+        setWithdrawBidId(null)
       },
       onError: (err) => toast.error(err.message),
     }),
@@ -96,7 +109,7 @@ export function MyBidsView() {
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
                   {bid.amount != null && (
                     <span>
-                      Amount: <strong>{formatCurrency(bid.amount)}</strong>
+                      Amount: <strong>{formatCurrency(bid.amount, bid.currency || 'RWF')}</strong>
                     </span>
                   )}
                   {bid.validUntil && (
@@ -111,7 +124,7 @@ export function MyBidsView() {
                     variant="outline"
                     className="text-red-600 border-red-200 hover:bg-red-50"
                     disabled={withdrawMutation.isPending}
-                    onClick={() => withdrawMutation.mutate({ bidId: bid.id })}
+                    onClick={() => setWithdrawBidId(bid.id)}
                   >
                     Withdraw Bid
                   </Button>
@@ -121,6 +134,26 @@ export function MyBidsView() {
           })}
         </div>
       )}
+
+      <AlertDialog open={!!withdrawBidId} onOpenChange={(open) => !open && setWithdrawBidId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Withdraw Bid?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will withdraw your bid from the tender. The tender owner will be notified. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Bid</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => withdrawBidId && withdrawMutation.mutate({ bidId: withdrawBidId })}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Withdraw
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

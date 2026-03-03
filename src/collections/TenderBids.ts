@@ -57,6 +57,31 @@ export const TenderBids: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [
+      async ({ doc, previousDoc, operation, req }) => {
+        // Decrement tender bidCount when bid is withdrawn
+        if (operation === 'update' && previousDoc?.status !== 'withdrawn' && doc.status === 'withdrawn') {
+          const tenderId = typeof doc.tender === 'string' ? doc.tender : (doc.tender as { id: string })?.id
+          if (tenderId) {
+            try {
+              const tender = await req.payload.findByID({
+                collection: 'tenders',
+                id: tenderId,
+                depth: 0,
+              })
+              const newCount = Math.max(0, (tender.bidCount || 0) - 1)
+              await req.payload.update({
+                collection: 'tenders',
+                id: tenderId,
+                data: { bidCount: newCount },
+              })
+            } catch (e) {
+              req.payload.logger?.error?.('[TenderBids] Failed to decrement bidCount:', e)
+            }
+          }
+        }
+      },
+    ],
   },
   fields: [
     {
