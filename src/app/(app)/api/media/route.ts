@@ -252,18 +252,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "File is required" }, { status: 400 });
     }
 
-    // Validate file type
+    // Validate file type: images, videos, or documents (PDF, Word, Excel, TXT)
     const isImage = file.type.startsWith("image/");
     const isVideo = file.type.startsWith("video/");
+    const allowedDocTypes = [
+      "application/pdf",
+      "application/msword", // .doc
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+      "application/vnd.ms-excel", // .xls
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+      "text/plain",
+    ];
+    const isDocument = allowedDocTypes.includes(file.type);
 
-    if (!isImage && !isVideo) {
-      return NextResponse.json({ error: "Only images and videos are allowed" }, { status: 400 });
+    if (!isImage && !isVideo && !isDocument) {
+      return NextResponse.json({ error: "Only images, videos, and documents (PDF, Word, Excel, TXT) are allowed" }, { status: 400 });
     }
 
     // Validate video size (60MB limit for 1-minute video)
     if (isVideo && file.size > 60 * 1024 * 1024) {
       return NextResponse.json({
         error: `Video file too large. Maximum size is 60MB (${(file.size / 1024 / 1024).toFixed(1)}MB uploaded). Please compress your video before uploading.`
+      }, { status: 400 });
+    }
+
+    // Validate document size (10MB limit)
+    if (isDocument && file.size > 10 * 1024 * 1024) {
+      return NextResponse.json({
+        error: `Document too large. Maximum size is 10MB (${(file.size / 1024 / 1024).toFixed(1)}MB uploaded).`
       }, { status: 400 });
     }
 

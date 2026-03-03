@@ -75,10 +75,9 @@ export function generateTenantResourceURL(tenantSlug: string, path: string) {
   return `${baseURL}${cleanPath}`;
 }
 
-export function formatCurrency(value: number | string) {
+export function formatCurrency(value: number | string, currency = 'RWF') {
   const num = Number(value);
-  if (isNaN(num)) return "RWF 0";
-  
-  // Use a simple format that's consistent between server and client
-  return `RWF ${num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
-};
+  if (isNaN(num)) return `${currency} 0`;
+
+  return `${currency} ${num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+}

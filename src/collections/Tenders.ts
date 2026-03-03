@@ -150,6 +150,56 @@ export const Tenders: CollectionConfig = {
       },
     },
     {
+      name: 'items',
+      type: 'array',
+      maxRows: 50,
+      admin: {
+        description: 'Optional product line items for this tender',
+      },
+      fields: [
+        {
+          name: 'product',
+          type: 'relationship',
+          relationTo: 'products',
+          admin: {
+            description: 'Optional: reference existing product from catalog',
+          },
+        },
+        {
+          name: 'name',
+          type: 'text',
+          required: true,
+          admin: {
+            description: 'Item or product name',
+          },
+        },
+        {
+          name: 'quantity',
+          type: 'number',
+          required: true,
+          min: 0.001,
+          admin: {
+            description: 'Required quantity',
+          },
+        },
+        {
+          name: 'unit',
+          type: 'text',
+          defaultValue: 'unit',
+          admin: {
+            description: 'Unit of measurement',
+          },
+        },
+        {
+          name: 'specification',
+          type: 'textarea',
+          admin: {
+            description: 'Additional specifications',
+          },
+        },
+      ],
+    },
+    {
       name: 'documents',
       type: 'array',
       maxRows: 10,

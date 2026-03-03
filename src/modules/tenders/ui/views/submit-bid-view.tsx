@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { DocumentUpload } from '../components/document-upload'
 
 export function SubmitBidView({ tenderId }: { tenderId: string }) {
   const trpc = useTRPC()
@@ -18,6 +19,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
   const [message, setMessage] = useState('')
   const [amount, setAmount] = useState('')
   const [validUntil, setValidUntil] = useState('')
+  const [documents, setDocuments] = useState<{ file: string }[]>([])
 
   const session = useQuery({
     ...trpc.auth.session.queryOptions(),
@@ -70,6 +72,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
       message: message.trim()
         ? { root: { children: [{ children: [{ text: message }], type: 'paragraph', version: 1 }], direction: null, format: '', indent: 0, type: 'root', version: 1 } }
         : undefined,
+      documents: documents.length > 0 ? documents : undefined,
       amount: amount ? parseFloat(amount) : undefined,
       validUntil: validUntil || undefined,
     })
@@ -101,6 +104,11 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
             onChange={(e) => setMessage(e.target.value)}
             rows={5}
           />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Attachments (optional)</Label>
+          <DocumentUpload value={documents} onChange={setDocuments} maxFiles={10} />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

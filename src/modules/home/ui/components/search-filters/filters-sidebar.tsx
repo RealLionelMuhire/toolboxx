@@ -23,6 +23,7 @@ import { PriceFilter } from "@/modules/products/ui/components/price-filter";
 import { CategoriesGetManyOutput } from "@/modules/categories/types";
 import { cn } from "@/lib/utils";
 import { COUNTRIES, getCountryByCode } from "@/lib/location-data";
+import { UNIT_OPTIONS } from "@/constants/units";
 import { getIconByName } from "@/components/admin/icon-picker";
 import {
   Select,
@@ -602,30 +603,7 @@ export const FiltersSidebar = ({
               onToggle={() => setOpenFilter(openFilter === "unitType" ? null : "unitType")}
             >
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {[
-                  { value: "unit", label: "Unit(s)" },
-                  { value: "piece", label: "Piece(s)" },
-                  { value: "box", label: "Box(es)" },
-                  { value: "pack", label: "Pack(s)" },
-                  { value: "bag", label: "Bag(s)" },
-                  { value: "kg", label: "Kilogram(s)" },
-                  { value: "gram", label: "Gram(s)" },
-                  { value: "meter", label: "Meter(s)" },
-                  { value: "cm", label: "Centimeter(s)" },
-                  { value: "liter", label: "Liter(s)" },
-                  { value: "sqm", label: "Square Meter(s)" },
-                  { value: "cbm", label: "Cubic Meter(s)" },
-                  { value: "set", label: "Set(s)" },
-                  { value: "pair", label: "Pair(s)" },
-                  { value: "roll", label: "Roll(s)" },
-                  { value: "sheet", label: "Sheet(s)" },
-                  { value: "carton", label: "Carton(s)" },
-                  { value: "pallet", label: "Pallet(s)" },
-                  { value: "hour", label: "Hour(s) - Rental" },
-                  { value: "day", label: "Day(s) - Rental" },
-                  { value: "week", label: "Week(s) - Rental" },
-                  { value: "month", label: "Month(s) - Rental" },
-                ].map((unit) => (
+                {UNIT_OPTIONS.map((unit) => (
                   <div key={unit.value} className="flex items-center space-x-2">
                     <Checkbox
                       id={`unit-${unit.value}`}

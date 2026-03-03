@@ -96,6 +96,33 @@ const updateProductSchema = z.preprocess(
 );
 
 export const productsRouter = createTRPCRouter({
+  searchAutocomplete: baseProcedure
+    .input(
+      z.object({
+        search: z.string().min(2).max(100),
+        limit: z.number().min(1).max(20).default(10),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      const docs = await ctx.db.find({
+        collection: "products",
+        where: {
+          and: [
+            { name: { like: input.search } },
+            { isArchived: { equals: false } },
+          ],
+        },
+        limit: input.limit,
+        depth: 0,
+        select: { id: true, name: true, unit: true },
+      });
+      return docs.docs.map((p: { id: string; name: string; unit?: string | null }) => ({
+        id: p.id,
+        name: p.name,
+        unit: p.unit ?? "unit",
+      }));
+    }),
+
   getOne: baseProcedure
     .input(
       z.object({

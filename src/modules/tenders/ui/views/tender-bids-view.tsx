@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { Loader2, ArrowLeft, ThumbsUp, ThumbsDown, User, MessageCircle, Phone, Mail } from 'lucide-react'
+import { Loader2, ArrowLeft, ThumbsUp, ThumbsDown, User, MessageCircle, Phone, Mail, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/trpc/client'
 import { Button } from '@/components/ui/button'
@@ -119,10 +119,33 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
                   <p className="text-sm text-gray-600 whitespace-pre-wrap">{msgText}</p>
                 )}
 
+                {bid.documents && bid.documents.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {bid.documents.map((doc: any, di: number) => {
+                      const file = typeof doc.file === 'object' ? doc.file : null
+                      const url = file?.url
+                      const filename = file?.filename || `Document ${di + 1}`
+                      if (!url) return null
+                      return (
+                        <a
+                          key={di}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs px-2 py-1 border rounded hover:bg-gray-50"
+                        >
+                          <FileText className="size-3" />
+                          {filename}
+                        </a>
+                      )
+                    })}
+                  </div>
+                )}
+
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
                   {bid.amount != null && (
                     <span>
-                      Amount: <strong>{formatCurrency(bid.amount)}</strong>
+                      Amount: <strong>{formatCurrency(bid.amount, bid.currency || 'RWF')}</strong>
                     </span>
                   )}
                   {bid.validUntil && (

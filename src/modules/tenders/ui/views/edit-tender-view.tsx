@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { Loader2, ChevronDownIcon, ChevronRightIcon, Plus, Trash2 } from 'lucide-react'
+import { Loader2, ChevronDownIcon, ChevronRightIcon, ArrowLeft, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/trpc/client'
 import { Button } from '@/components/ui/button'
@@ -23,7 +24,31 @@ import { DocumentUpload } from '../components/document-upload'
 import { ProductSearchInput } from '../components/product-search-input'
 import { UNIT_OPTIONS } from '@/constants/units'
 
-export function CreateTenderView() {
+function richTextToPlain(root: any): string {
+  if (!root) return ''
+  if (typeof root === 'string') return root
+  const extract = (node: any): string => {
+    if (node.text) return node.text
+    if (node.children) return node.children.map(extract).join('')
+    return ''
+  }
+  if (root.root) return extract(root.root)
+  return extract(root)
+}
+
+function toDatetimeLocal(d: string | Date | null | undefined): string {
+  if (!d) return ''
+  const date = new Date(d)
+  if (isNaN(date.getTime())) return ''
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const h = String(date.getHours()).padStart(2, '0')
+  const min = String(date.getMinutes()).padStart(2, '0')
+  return `${y}-${m}-${day}T${h}:${min}`
+}
+
+export function EditTenderView({ tenderId }: { tenderId: string }) {
   const trpc = useTRPC()
   const router = useRouter()
   const [title, setTitle] = useState('')
@@ -35,6 +60,7 @@ export function CreateTenderView() {
   const [contactPreference, setContactPreference] = useState<'email' | 'phone' | 'chat'>('email')
   const [documents, setDocuments] = useState<{ file: string }[]>([])
   const [items, setItems] = useState<{ product?: string; name: string; quantity: number; unit: string; specification?: string }[]>([])
+  const [initialized, setInitialized] = useState(false)
 
   const session = useQuery({
     ...trpc.auth.session.queryOptions(),
@@ -42,23 +68,50 @@ export function CreateTenderView() {
     refetchOnMount: 'always',
   })
 
+  const { data: tender, isLoading } = useQuery({
+    ...trpc.tenders.getById.queryOptions({ id: tenderId }),
+    enabled: !!session.data?.user,
+  })
+
   const { data: categories } = useQuery(trpc.categories.getMany.queryOptions())
 
   const isLoggedIn = !!session.data?.user
 
-  const createMutation = useMutation(
-    trpc.tenders.create.mutationOptions({
-      onSuccess: (data) => {
-        toast.success('Tender created as draft')
-        router.push(`/tenders/${data.id}`)
+  useEffect(() => {
+    if (tender && !initialized) {
+      setTitle(tender.title || '')
+      setDescription(richTextToPlain(tender.description) || '')
+      setType((tender.type as 'rfq' | 'rfp') || 'rfq')
+      setContactPreference((tender.contactPreference as 'email' | 'phone' | 'chat') || 'email')
+      setResponseDeadline(toDatetimeLocal(tender.responseDeadline))
+      const cats = (tender.category as any[]) || []
+      setSelectedCategories(cats.map((c: any) => (typeof c === 'string' ? c : c.id)).filter(Boolean))
+      const docs = (tender.documents as any[]) || []
+      setDocuments(docs.map((d: any) => ({ file: typeof d.file === 'string' ? d.file : d.file?.id })).filter((d) => d.file))
+      const rawItems = (tender.items as any[]) || []
+      setItems(
+        rawItems.map((i: any) => ({
+          product: typeof i.product === 'string' ? i.product : i.product?.id,
+          name: i.name || '',
+          quantity: i.quantity ?? 1,
+          unit: i.unit || 'unit',
+          specification: i.specification || '',
+        })),
+      )
+      setInitialized(true)
+    }
+  }, [tender, initialized])
+
+  const updateMutation = useMutation(
+    trpc.tenders.update.mutationOptions({
+      onSuccess: () => {
+        toast.success('Tender updated')
+        router.push(`/tenders/${tenderId}`)
       },
-      onError: (err) => {
-        toast.error(err.message || 'Failed to create tender')
-      },
+      onError: (err) => toast.error(err.message || 'Failed to update tender'),
     }),
   )
 
-  // Build parent→subcategory tree (same logic as filters sidebar)
   const categoryOptions = useMemo(() => {
     if (!categories) return []
     const parents: Array<{
@@ -90,13 +143,11 @@ export function CreateTenderView() {
 
   const toggleCategory = (categoryId: string, isParent: boolean, subcategoryIds?: string[]) => {
     let next: string[]
-
     if (isParent) {
       if (subcategoryIds && subcategoryIds.length > 0) {
         const allIds = [categoryId, ...subcategoryIds]
         const allSelected = allIds.every((id) => selectedCategories.includes(id))
         const someSubsSelected = subcategoryIds.some((id) => selectedCategories.includes(id))
-
         if (someSubsSelected && !allSelected) {
           next = [...new Set([...selectedCategories, categoryId])]
         } else if (allSelected) {
@@ -115,7 +166,6 @@ export function CreateTenderView() {
       if (parentOption) {
         const allSubIds = parentOption.subcategories.map((s) => s.id)
         const allSubsSelected = allSubIds.every((id) => selectedCategories.includes(id))
-
         if (allSubsSelected) {
           const withoutSiblings = selectedCategories.filter((id) => !allSubIds.includes(id))
           next = [...new Set([...withoutSiblings, parentOption.id, categoryId])]
@@ -135,7 +185,6 @@ export function CreateTenderView() {
           : [...selectedCategories, categoryId]
       }
     }
-
     setSelectedCategories(next)
   }
 
@@ -148,18 +197,35 @@ export function CreateTenderView() {
   }
 
   if (!isLoggedIn && session.isFetched) {
-    router.push('/sign-in?redirect=/tenders/new')
+    router.push(`/sign-in?redirect=/tenders/${tenderId}/edit`)
     return null
+  }
+
+  if (isLoading || !tender) {
+    return (
+      <div className="flex justify-center py-20">
+        <Loader2 className="size-6 animate-spin text-gray-400" />
+      </div>
+    )
+  }
+
+  if (!['draft', 'open'].includes(tender.status as string)) {
+    return (
+      <div className="px-4 py-20 text-center text-gray-400">
+        This tender can no longer be edited.
+        <Link href={`/tenders/${tenderId}`} className="block mt-2 text-blue-600 hover:underline">
+          View tender
+        </Link>
+      </div>
+    )
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!title.trim() || !description.trim()) {
       toast.error('Title and description are required')
       return
     }
-
     if (selectedCategories.length === 0 && items.length === 0) {
       toast.error('Add at least one category or line item')
       return
@@ -173,24 +239,31 @@ export function CreateTenderView() {
       specification: i.specification?.trim() || undefined,
     }))
 
-    createMutation.mutate({
+    updateMutation.mutate({
+      id: tenderId,
       title: title.trim(),
       description: { root: { children: [{ children: [{ text: description }], type: 'paragraph', version: 1 }], direction: null, format: '', indent: 0, type: 'root', version: 1 } },
       type,
       category: selectedCategories.length > 0 ? selectedCategories : undefined,
       items: validItems.length > 0 ? validItems : undefined,
       documents: documents.length > 0 ? documents : undefined,
-      responseDeadline: responseDeadline || undefined,
+      responseDeadline: responseDeadline || null,
       contactPreference,
     })
   }
 
   return (
     <div className="px-2 sm:px-4 lg:px-12 py-4 md:py-8 max-w-2xl mx-auto">
-      <h1 className="text-xl sm:text-2xl font-bold mb-1">Create Tender</h1>
+      <Link
+        href={`/tenders/${tenderId}`}
+        className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 mb-4"
+      >
+        <ArrowLeft className="size-4" /> Back to tender
+      </Link>
+
+      <h1 className="text-xl sm:text-2xl font-bold mb-1">Edit Tender</h1>
       <p className="text-sm text-gray-500 mb-6">
-        Create a Request for Quotation (RFQ) or Request for Proposal (RFP).
-        It will start as a draft — publish it when ready.
+        Update the tender details. Only draft and open tenders can be edited.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -210,7 +283,7 @@ export function CreateTenderView() {
           <Label htmlFor="description">Description / Requirements *</Label>
           <Textarea
             id="description"
-            placeholder="Describe what you need, specifications, quantities, delivery expectations..."
+            placeholder="Describe what you need..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
@@ -276,9 +349,7 @@ export function CreateTenderView() {
                   value={item.specification || ''}
                   onChange={(e) => {
                     const cur = items[idx] ?? { name: '', quantity: 1, unit: 'unit' }
-                    setItems(items.map((it, i) =>
-                      i === idx ? { ...cur, specification: e.target.value } : it
-                    ))
+                    setItems(items.map((it, i) => (i === idx ? { ...cur, specification: e.target.value } : it)))
                   }}
                   className="flex-1 min-w-[100px]"
                 />
@@ -293,13 +364,7 @@ export function CreateTenderView() {
                 </Button>
               </div>
             ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-1"
-              onClick={() => setItems([...items, { name: '', quantity: 1, unit: 'unit' }])}
-            >
+            <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => setItems([...items, { name: '', quantity: 1, unit: 'unit' }])}>
               <Plus className="size-3.5" /> Add item
             </Button>
           </div>
@@ -310,10 +375,9 @@ export function CreateTenderView() {
           <DocumentUpload value={documents} onChange={setDocuments} maxFiles={10} />
         </div>
 
-        {/* Category picker — mirrors the Filters sidebar style */}
         <div className="space-y-1.5">
           <Label>Category {items.length === 0 ? '*' : '(optional)'}</Label>
-          <p className="text-xs text-gray-400">Only vendors with products in these categories will be notified. Required if no line items.</p>
+          <p className="text-xs text-gray-400">Vendors with products in these categories will be notified</p>
           <div className="border rounded-md bg-white mt-1">
             {categoryOptions.length === 0 ? (
               <div className="text-sm text-gray-500 text-center py-4">Loading categories...</div>
@@ -325,24 +389,14 @@ export function CreateTenderView() {
                   const isParentSelected = selectedCategories.includes(parent.id)
                   const allSubsSelected = subcatIds.length > 0 && subcatIds.every((id) => selectedCategories.includes(id))
                   const someSubsSelected = subcatIds.length > 0 && subcatIds.some((id) => selectedCategories.includes(id)) && !allSubsSelected
-                  const isParentDisabled = someSubsSelected
-
                   const ParentIcon = getIconByName(parent.icon)
 
                   return (
                     <div key={parent.id} className="space-y-0.5">
                       <div className="flex items-center space-x-2 hover:bg-gray-50 rounded px-1 py-1">
                         {parent.subcategories.length > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => toggleExpanded(parent.id)}
-                            className="p-0.5 hover:bg-gray-200 rounded"
-                          >
-                            {isExpanded ? (
-                              <ChevronDownIcon className="h-3.5 w-3.5" />
-                            ) : (
-                              <ChevronRightIcon className="h-3.5 w-3.5" />
-                            )}
+                          <button type="button" onClick={() => toggleExpanded(parent.id)} className="p-0.5 hover:bg-gray-200 rounded">
+                            {isExpanded ? <ChevronDownIcon className="h-3.5 w-3.5" /> : <ChevronRightIcon className="h-3.5 w-3.5" />}
                           </button>
                         ) : (
                           <div className="w-5" />
@@ -350,19 +404,15 @@ export function CreateTenderView() {
                         <Checkbox
                           id={`tcat-${parent.id}`}
                           checked={isParentSelected || allSubsSelected}
-                          disabled={isParentDisabled}
+                          disabled={someSubsSelected}
                           className={someSubsSelected ? 'data-[state=checked]:bg-orange-300' : ''}
                           onCheckedChange={() => toggleCategory(parent.id, true, subcatIds)}
                         />
-                        <Label
-                          htmlFor={`tcat-${parent.id}`}
-                          className="cursor-pointer text-sm font-medium flex-1 flex items-center gap-2"
-                        >
+                        <Label htmlFor={`tcat-${parent.id}`} className="cursor-pointer text-sm font-medium flex-1 flex items-center gap-2">
                           {ParentIcon && <ParentIcon className="h-4 w-4" />}
                           <span>{parent.name}</span>
                         </Label>
                       </div>
-
                       {isExpanded && parent.subcategories.length > 0 && (
                         <div className="ml-8 space-y-0.5 border-l-2 border-gray-200 pl-3">
                           {parent.subcategories.map((sub) => {
@@ -374,10 +424,7 @@ export function CreateTenderView() {
                                   checked={selectedCategories.includes(sub.id)}
                                   onCheckedChange={() => toggleCategory(sub.id, false)}
                                 />
-                                <Label
-                                  htmlFor={`tcat-${sub.id}`}
-                                  className="cursor-pointer text-sm font-normal text-gray-700 flex-1 flex items-center gap-2"
-                                >
+                                <Label htmlFor={`tcat-${sub.id}`} className="cursor-pointer text-sm font-normal text-gray-700 flex-1 flex items-center gap-2">
                                   {SubIcon && <SubIcon className="h-4 w-4 opacity-70" />}
                                   <span>{sub.name}</span>
                                 </Label>
@@ -392,31 +439,24 @@ export function CreateTenderView() {
               </div>
             )}
           </div>
-          {selectedCategories.length > 0 && (
-            <p className="text-xs text-gray-500 mt-1">{selectedCategories.length} selected</p>
-          )}
+          {selectedCategories.length > 0 && <p className="text-xs text-gray-500 mt-1">{selectedCategories.length} selected</p>}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label>Type</Label>
             <Select value={type} onValueChange={(v) => setType(v as 'rfq' | 'rfp')}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="rfq">Request for Quotation (RFQ)</SelectItem>
                 <SelectItem value="rfp">Request for Proposal (RFP)</SelectItem>
               </SelectContent>
             </Select>
           </div>
-
           <div className="space-y-1.5">
             <Label>Contact Preference</Label>
             <Select value={contactPreference} onValueChange={(v) => setContactPreference(v as any)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="email">Email</SelectItem>
                 <SelectItem value="phone">Phone</SelectItem>
@@ -437,9 +477,9 @@ export function CreateTenderView() {
         </div>
 
         <div className="flex items-center gap-3 pt-2">
-          <Button type="submit" variant="elevated" className="bg-orange-400" disabled={createMutation.isPending}>
-            {createMutation.isPending && <Loader2 className="size-4 animate-spin mr-1.5" />}
-            Create Draft
+          <Button type="submit" variant="elevated" className="bg-orange-400" disabled={updateMutation.isPending}>
+            {updateMutation.isPending && <Loader2 className="size-4 animate-spin mr-1.5" />}
+            Save Changes
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>
             Cancel

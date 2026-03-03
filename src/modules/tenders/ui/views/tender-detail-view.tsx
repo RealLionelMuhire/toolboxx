@@ -1,9 +1,21 @@
 'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { Loader2, ArrowLeft, Calendar, Mail, Phone, MessageCircle, FileText, Send, CheckCircle } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { formatCurrency } from '@/lib/utils'
 import { toast } from 'sonner'
 import { useTRPC } from '@/trpc/client'
 import { Button } from '@/components/ui/button'
@@ -20,6 +32,7 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
   const trpc = useTRPC()
   const router = useRouter()
   const queryClient = useQueryClient()
+  const [confirmAction, setConfirmAction] = useState<'close' | 'cancel' | null>(null)
 
   const session = useQuery({
     ...trpc.auth.session.queryOptions(),
@@ -32,14 +45,9 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
     enabled: !!session.data?.user,
   })
 
-  // Fetch current user's bid on this tender (if any)
-  const { data: myBidsData } = useQuery({
-    ...trpc.tenders.getMyBids.queryOptions({ limit: 100 }),
+  const { data: myBid } = useQuery({
+    ...trpc.tenders.getMyBidForTender.queryOptions({ tenderId }),
     enabled: !!session.data?.user,
-    select: (data) => data.bids.find((b: any) => {
-      const tid = typeof b.tender === 'object' ? b.tender?.id : b.tender
-      return tid === tenderId
-    }),
   })
 
   const updateStatusMutation = useMutation(
@@ -82,6 +90,10 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
   const user = session.data?.user
   const ownerId = typeof tender.createdBy === 'object' ? tender.createdBy?.id : tender.createdBy
   const isOwner = user && String(user.id) === String(ownerId)
+  const tenantIds = (user?.tenants ?? []).map((t: any) => (typeof t.tenant === 'string' ? t.tenant : t.tenant?.id)).filter(Boolean)
+  const tenderTenantId = tender.tenant && (typeof tender.tenant === 'string' ? tender.tenant : (tender.tenant as any)?.id)
+  const isTenantMember = !!tenderTenantId && tenantIds.includes(tenderTenantId)
+  const canEdit = (isOwner || isTenantMember) && ['draft', 'open'].includes(tender.status)
   const creatorName =
     typeof tender.createdBy === 'object'
       ? tender.createdBy?.username || tender.createdBy?.email
@@ -102,7 +114,6 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
     ? new Date(tender.responseDeadline) < new Date()
     : false
 
-  const myBid = myBidsData
   const hasSubmittedBid = !!myBid
   const canBid = tender.status === 'open' && !isOwner && !isDeadlinePassed && !hasSubmittedBid
 
@@ -177,6 +188,39 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
           {richTextToPlain(tender.description) || 'No description provided.'}
         </div>
 
+        {/* Items table (when tender has multiple products) */}
+        {tender.items && tender.items.length > 0 && (
+          <div className="border-t pt-3">
+            <p className="text-xs font-medium text-gray-500 mb-2">Products / Items</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left">
+                    <th className="py-2 pr-2 font-medium">Product / Name</th>
+                    <th className="py-2 pr-2 font-medium">Qty</th>
+                    <th className="py-2 pr-2 font-medium">Unit</th>
+                    <th className="py-2 font-medium">Specification</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(tender.items as any[]).map((item: any, i: number) => {
+                    const prod = typeof item.product === 'object' ? item.product : null
+                    const name = item.name || prod?.name || '—'
+                    return (
+                      <tr key={i} className="border-b last:border-0">
+                        <td className="py-2 pr-2">{name}</td>
+                        <td className="py-2 pr-2">{item.quantity ?? '—'}</td>
+                        <td className="py-2 pr-2">{item.unit || 'unit'}</td>
+                        <td className="py-2 text-gray-600">{item.specification || '—'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Documents */}
         {tender.documents && tender.documents.length > 0 && (
           <div className="border-t pt-3">
@@ -224,7 +268,7 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
               {myBid.status === 'withdrawn' && 'You withdrew your bid'}
             </p>
             {myBid.amount != null && (
-              <p className="text-xs text-gray-500 mt-0.5">Quoted amount: {myBid.amount?.toLocaleString()} {myBid.currency || 'RWF'}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Quoted amount: {formatCurrency(myBid.amount, myBid.currency || 'RWF')}</p>
             )}
           </div>
           <TenderStatusBadge status={myBid.status} />
@@ -268,8 +312,8 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
 
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
-        {/* Owner actions */}
-        {isOwner && tender.status === 'draft' && (
+        {/* Owner/tenant actions */}
+        {(isOwner || isTenantMember) && tender.status === 'draft' && (
           <Button
             variant="elevated"
             className="bg-orange-400"
@@ -280,30 +324,31 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
             Publish Tender
           </Button>
         )}
-        {isOwner && tender.status === 'open' && (
-          <Button
-            variant="outline"
-            onClick={() => updateStatusMutation.mutate({ id: tenderId, status: 'closed' })}
-            disabled={updateStatusMutation.isPending}
-          >
+        {(isOwner || isTenantMember) && tender.status === 'open' && (
+          <Button variant="outline" onClick={() => setConfirmAction('close')} disabled={updateStatusMutation.isPending}>
             Close Tender
           </Button>
         )}
-        {isOwner && ['draft', 'open'].includes(tender.status) && (
+        {(isOwner || isTenantMember) && ['draft', 'open'].includes(tender.status) && (
           <Button
             variant="outline"
             className="text-red-600 border-red-200 hover:bg-red-50"
-            onClick={() => updateStatusMutation.mutate({ id: tenderId, status: 'cancelled' })}
+            onClick={() => setConfirmAction('cancel')}
             disabled={updateStatusMutation.isPending}
           >
             Cancel Tender
           </Button>
         )}
-        {isOwner && (
+        {(isOwner || isTenantMember) && (
           <Button variant="elevated" className="bg-white" asChild>
             <Link href={`/tenders/${tenderId}/bids`}>
               View Bids ({tender.bidCount || 0})
             </Link>
+          </Button>
+        )}
+        {canEdit && (
+          <Button variant="outline" asChild>
+            <Link href={`/tenders/${tenderId}/edit`}>Edit</Link>
           </Button>
         )}
 
@@ -317,6 +362,35 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
           </Button>
         )}
       </div>
+
+      <AlertDialog open={!!confirmAction} onOpenChange={(open) => !open && setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction === 'close' ? 'Close Tender?' : 'Cancel Tender?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction === 'close'
+                ? 'Closing will stop accepting new bids. You can still view and evaluate existing bids.'
+                : 'Cancelling will close this tender and it will no longer be visible to bidders. This cannot be undone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmAction) {
+                  updateStatusMutation.mutate({ id: tenderId, status: confirmAction === 'close' ? 'closed' : 'cancelled' })
+                  setConfirmAction(null)
+                }
+              }}
+              className={confirmAction === 'cancel' ? 'bg-red-600 hover:bg-red-700' : ''}
+            >
+              {confirmAction === 'close' ? 'Close' : 'Cancel Tender'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
