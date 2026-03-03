@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { Loader2, ChevronDownIcon, ChevronRightIcon } from 'lucide-react'
+import { Loader2, ChevronDownIcon, ChevronRightIcon, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTRPC } from '@/trpc/client'
 import { Button } from '@/components/ui/button'
@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { DocumentUpload } from '../components/document-upload'
 
 export function CreateTenderView() {
   const trpc = useTRPC()
@@ -30,6 +31,8 @@ export function CreateTenderView() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [responseDeadline, setResponseDeadline] = useState('')
   const [contactPreference, setContactPreference] = useState<'email' | 'phone' | 'chat'>('email')
+  const [documents, setDocuments] = useState<{ file: string }[]>([])
+  const [items, setItems] = useState<{ product?: string; name: string; quantity: number; unit: string; specification?: string }[]>([])
 
   const session = useQuery({
     ...trpc.auth.session.queryOptions(),
@@ -155,16 +158,25 @@ export function CreateTenderView() {
       return
     }
 
-    if (selectedCategories.length === 0) {
-      toast.error('Select at least one category so relevant vendors are notified')
+    if (selectedCategories.length === 0 && items.length === 0) {
+      toast.error('Add at least one category or line item')
       return
     }
+
+    const validItems = items.filter((i) => i.name.trim() && i.quantity > 0).map((i) => ({
+      name: i.name.trim(),
+      quantity: i.quantity,
+      unit: i.unit || 'unit',
+      specification: i.specification?.trim() || undefined,
+    }))
 
     createMutation.mutate({
       title: title.trim(),
       description: { root: { children: [{ children: [{ text: description }], type: 'paragraph', version: 1 }], direction: null, format: '', indent: 0, type: 'root', version: 1 } },
       type,
-      category: selectedCategories,
+      category: selectedCategories.length > 0 ? selectedCategories : undefined,
+      items: validItems.length > 0 ? validItems : undefined,
+      documents: documents.length > 0 ? documents : undefined,
       responseDeadline: responseDeadline || undefined,
       contactPreference,
     })
@@ -203,10 +215,83 @@ export function CreateTenderView() {
           />
         </div>
 
+        <div className="space-y-1.5">
+          <Label>Line items (optional)</Label>
+          <p className="text-xs text-gray-400">Add products or items you need. When added, tender can be displayed in table view.</p>
+          <div className="border rounded-md bg-white p-3 space-y-2">
+            {items.map((item, idx) => (
+              <div key={idx} className="flex flex-wrap gap-2 items-start p-2 border rounded bg-gray-50">
+                <Input
+                  placeholder="Product / item name"
+                  value={item.name}
+                  onChange={(e) => {
+                    const cur = items[idx] ?? { name: '', quantity: 1, unit: 'unit' }
+                    setItems(items.map((it, i) => i === idx ? { ...cur, name: e.target.value, quantity: cur.quantity ?? 1, unit: cur.unit || 'unit' } : it))
+                  }}
+                  className="flex-1 min-w-[120px]"
+                />
+                <Input
+                  type="number"
+                  placeholder="Qty"
+                  min={0.001}
+                  step={0.01}
+                  value={item.quantity || ''}
+                  onChange={(e) => {
+                    const cur = items[idx] ?? { name: '', quantity: 1, unit: 'unit' }
+                    setItems(items.map((it, i) => i === idx ? { ...cur, quantity: parseFloat(e.target.value) || 1, unit: cur.unit || 'unit' } : it))
+                  }}
+                  className="w-20"
+                />
+                <Input
+                  placeholder="Unit"
+                  value={item.unit || ''}
+                  onChange={(e) => {
+                    const cur = items[idx] ?? { name: '', quantity: 1, unit: 'unit' }
+                    setItems(items.map((it, i) => i === idx ? { ...cur, unit: e.target.value || 'unit', quantity: cur.quantity ?? 1 } : it))
+                  }}
+                  className="w-24"
+                />
+                <Input
+                  placeholder="Spec (optional)"
+                  value={item.specification || ''}
+                  onChange={(e) => {
+                    const cur = items[idx] ?? { name: '', quantity: 1, unit: 'unit' }
+                    setItems(items.map((it, i) => i === idx ? { ...cur, specification: e.target.value, quantity: cur.quantity ?? 1, unit: cur.unit || 'unit' } : it))
+                  }}
+                  className="flex-1 min-w-[100px]"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  onClick={() => setItems(items.filter((_, i) => i !== idx))}
+                >
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1"
+              onClick={() => setItems([...items, { name: '', quantity: 1, unit: 'unit' }])}
+            >
+              <Plus className="size-3.5" /> Add item
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Attachments (optional)</Label>
+          <DocumentUpload value={documents} onChange={setDocuments} maxFiles={10} />
+        </div>
+
         {/* Category picker — mirrors the Filters sidebar style */}
         <div className="space-y-1.5">
-          <Label>Category *</Label>
-          <p className="text-xs text-gray-400">Only vendors with products in these categories will be notified</p>
+          <Label>Category {items.length === 0 ? '*' : '(optional)'}</Label>
+          <p className="text-xs text-gray-400">Only vendors with products in these categories will be notified. Required if no line items.</p>
           <div className="border rounded-md bg-white mt-1">
             {categoryOptions.length === 0 ? (
               <div className="text-sm text-gray-500 text-center py-4">Loading categories...</div>

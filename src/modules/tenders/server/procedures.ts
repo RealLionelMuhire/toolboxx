@@ -110,6 +110,16 @@ export const tendersRouter = createTRPCRouter({
         type: z.enum(['rfq', 'rfp']),
         tenant: z.string().optional(),
         category: z.array(z.string()).optional(),
+        documents: z.array(z.object({ file: z.string() })).optional(),
+        items: z.array(
+          z.object({
+            product: z.string().optional(),
+            name: z.string(),
+            quantity: z.number().min(0.001),
+            unit: z.string().optional(),
+            specification: z.string().optional(),
+          }),
+        ).optional(),
         responseDeadline: z.string().optional(),
         contactPreference: z.enum(['email', 'phone', 'chat']).optional(),
       }),
@@ -133,6 +143,8 @@ export const tendersRouter = createTRPCRouter({
           description: input.description,
           type: input.type,
           category: input.category,
+          documents: input.documents,
+          items: input.items,
           responseDeadline: input.responseDeadline,
           contactPreference: input.contactPreference,
           tenant: tenantId || null,
@@ -153,6 +165,16 @@ export const tendersRouter = createTRPCRouter({
         description: z.any().optional(),
         type: z.enum(['rfq', 'rfp']).optional(),
         category: z.array(z.string()).optional(),
+        documents: z.array(z.object({ file: z.string() })).optional(),
+        items: z.array(
+          z.object({
+            product: z.string().optional(),
+            name: z.string(),
+            quantity: z.number().min(0.001),
+            unit: z.string().optional(),
+            specification: z.string().optional(),
+          }),
+        ).optional(),
         responseDeadline: z.string().nullable().optional(),
         contactPreference: z.enum(['email', 'phone', 'chat']).optional(),
       }),
@@ -170,7 +192,9 @@ export const tendersRouter = createTRPCRouter({
 
       const ownerId = resolveId(tender.createdBy as string | { id: string })
       const isOwner = ownerId === String(user.id)
-      if (!isOwner && !isSuperAdmin(user)) {
+      const tenantIds = (user.tenants ?? []).map((t: any) => resolveId(t.tenant))
+      const isTenantMember = tender.tenant && tenantIds.includes(resolveId(tender.tenant as string | { id: string }))
+      if (!isOwner && !isTenantMember && !isSuperAdmin(user)) {
         throw new TRPCError({ code: 'FORBIDDEN' })
       }
 
@@ -193,7 +217,9 @@ export const tendersRouter = createTRPCRouter({
 
       const ownerId = resolveId(tender.createdBy as string | { id: string })
       const isOwner = ownerId === String(user.id)
-      if (!isOwner && !isSuperAdmin(user)) {
+      const tenantIds = (user.tenants ?? []).map((t: any) => resolveId(t.tenant))
+      const isTenantMember = tender.tenant && tenantIds.includes(resolveId(tender.tenant as string | { id: string }))
+      if (!isOwner && !isTenantMember && !isSuperAdmin(user)) {
         throw new TRPCError({ code: 'FORBIDDEN' })
       }
 
@@ -306,7 +332,9 @@ export const tendersRouter = createTRPCRouter({
 
       const ownerId = resolveId(tender.createdBy as string | { id: string })
       const isOwner = ownerId === String(user.id)
-      if (!isOwner && !isSuperAdmin(user)) {
+      const tenantIds = (user.tenants ?? []).map((t: any) => resolveId(t.tenant))
+      const isTenantMember = tender.tenant && tenantIds.includes(resolveId(tender.tenant as string | { id: string }))
+      if (!isOwner && !isTenantMember && !isSuperAdmin(user)) {
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the tender owner can view all bids' })
       }
 
@@ -319,7 +347,7 @@ export const tendersRouter = createTRPCRouter({
         limit: input.limit,
         page: input.page,
         sort: '-createdAt',
-        depth: 1,
+        depth: 2,
       })
 
       return {
@@ -328,6 +356,23 @@ export const tendersRouter = createTRPCRouter({
         totalPages: result.totalPages,
         page: result.page,
       }
+    }),
+
+  getMyBidForTender: protectedProcedure
+    .input(z.object({ tenderId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const result = await ctx.db.find({
+        collection: 'tender-bids',
+        where: {
+          and: [
+            { tender: { equals: input.tenderId } },
+            { submittedBy: { equals: ctx.session.user.id } },
+          ],
+        },
+        limit: 1,
+        depth: 1,
+      })
+      return result.docs[0] ?? null
     }),
 
   getMyBids: protectedProcedure
@@ -360,6 +405,7 @@ export const tendersRouter = createTRPCRouter({
       z.object({
         tenderId: z.string(),
         message: z.any().optional(),
+        documents: z.array(z.object({ file: z.string() })).optional(),
         amount: z.number().min(0).optional(),
         currency: z.string().optional(),
         validUntil: z.string().optional(),
@@ -410,6 +456,7 @@ export const tendersRouter = createTRPCRouter({
           submittedBy: user.id,
           status: 'submitted',
           message: input.message,
+          documents: input.documents,
           amount: input.amount,
           currency: input.currency || 'RWF',
           validUntil: input.validUntil,
@@ -453,9 +500,10 @@ export const tendersRouter = createTRPCRouter({
       const tender = await ctx.db.findByID({ collection: 'tenders', id: tenderId, depth: 0 })
       if (!tender) throw new TRPCError({ code: 'NOT_FOUND' })
 
-      // Only tender owner or super-admin can shortlist/reject
       const ownerId = resolveId(tender.createdBy as string | { id: string })
-      if (ownerId !== String(user.id) && !isSuperAdmin(user)) {
+      const tenantIds = (user.tenants ?? []).map((t: any) => resolveId(t.tenant))
+      const isTenantMember = tender.tenant && tenantIds.includes(resolveId(tender.tenant as string | { id: string }))
+      if (ownerId !== String(user.id) && !isTenantMember && !isSuperAdmin(user)) {
         throw new TRPCError({ code: 'FORBIDDEN' })
       }
 

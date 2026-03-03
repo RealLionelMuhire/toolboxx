@@ -1050,6 +1050,16 @@ export interface Tender {
   createdBy: string | User;
   tenant?: (string | null) | Tenant;
   category?: (string | Category)[] | null;
+  items?:
+    | {
+        product?: string | Product | null;
+        name: string;
+        quantity: number;
+        unit?: string | null;
+        specification?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   documents?:
     | {
         file: string | Media;
@@ -1556,6 +1566,16 @@ export interface TendersSelect<T extends boolean = true> {
   createdBy?: T;
   tenant?: T;
   category?: T;
+  items?:
+    | T
+    | {
+        product?: T;
+        name?: T;
+        quantity?: T;
+        unit?: T;
+        specification?: T;
+        id?: T;
+      };
   documents?:
     | T
     | {
