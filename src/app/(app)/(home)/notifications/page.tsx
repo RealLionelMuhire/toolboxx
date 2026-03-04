@@ -1,7 +1,7 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
 import { Bell, Check, CheckCheck, Trash2, Filter } from "lucide-react";
 import { useTRPC } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,6 @@ import { useState, useEffect } from "react";
 import type { Notification } from "@/payload-types";
 
 export default function NotificationsPage() {
-  const router = useRouter();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState<"all" | "unread">("all");
@@ -101,19 +100,6 @@ export default function NotificationsPage() {
       },
     })
   );
-
-  // Handle notification click
-  const handleNotificationClick = async (notification: Notification) => {
-    // Mark as read
-    if (!notification.read) {
-      await markAsRead.mutateAsync({ notificationId: notification.id });
-    }
-
-    // Navigate to URL if present
-    if (notification.url) {
-      router.push(notification.url);
-    }
-  };
 
   // Mark all unseen as seen when page loads
   useEffect(() => {
@@ -226,14 +212,9 @@ export default function NotificationsPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {notifications.map((notification) => (
-            <Card
-              key={notification.id}
-              className={`transition-all hover:shadow-md cursor-pointer ${
-                !notification.read ? "border-l-4 border-l-blue-500" : ""
-              }`}
-              onClick={() => handleNotificationClick(notification)}
-            >
+          {notifications.map((notification) => {
+            const hasUrl = !!notification.url?.trim();
+            const cardContent = (
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
@@ -301,8 +282,35 @@ export default function NotificationsPage() {
                   </div>
                 </div>
               </CardContent>
-            </Card>
-          ))}
+            );
+            return hasUrl ? (
+              <Link
+                key={notification.id}
+                href={notification.url!}
+                prefetch={true}
+                onClick={() => !notification.read && markAsRead.mutate({ notificationId: notification.id })}
+                className="block"
+              >
+                <Card
+                  className={`transition-all hover:shadow-md cursor-pointer ${
+                    !notification.read ? "border-l-4 border-l-blue-500" : ""
+                  }`}
+                >
+                  {cardContent}
+                </Card>
+              </Link>
+            ) : (
+              <Card
+                key={notification.id}
+                className={`transition-all hover:shadow-md cursor-pointer ${
+                  !notification.read ? "border-l-4 border-l-blue-500" : ""
+                }`}
+                onClick={() => !notification.read && markAsRead.mutate({ notificationId: notification.id })}
+              >
+                {cardContent}
+              </Card>
+            );
+          })}
         </div>
       )}
 
