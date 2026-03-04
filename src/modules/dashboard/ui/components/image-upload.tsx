@@ -91,7 +91,7 @@ export const ImageUpload = ({
         const files = data.docs.map((doc: any) => ({
           id: doc.id,
           url: doc.url,
-          alt: doc.alt || "",
+          alt: doc.alt || (doc.filename ? doc.filename.replace(/\.[^/.]+$/, "") : "Product image"),
           fileType: doc.mimeType?.startsWith("video/") ? "video" : "image",
         }));
         

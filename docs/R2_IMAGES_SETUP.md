@@ -27,16 +27,24 @@ S3_REGION=auto
 
 ## 3. Run Migration (if coming from Vercel Blob)
 
+**If `/api/media/file/xxx` returns 404** (Payload can't serve files) but files are in Vercel Blob, use the Blob API migration:
+
+1. Uncomment `BLOB_READ_WRITE_TOKEN` in `.env` (get it from Vercel Dashboard → Storage → your Blob store)
+2. Run: `bun run storage:migrate-blob-api`
+
+This fetches directly from Vercel Blob API and uploads to R2.
+
 If you had media in Vercel Blob, run the migration script to copy files to R2 and update DB URLs:
 
 ```bash
 bun run storage:migrate
 ```
 
-**If images show 404 after migration** (e.g. `helmets.jpeg` not found but `68ffe305-helmets.jpeg` exists in R2), the Media `filename` field may be wrong. Run:
+**If images show 404 after migration** — wrong filename/URL. Try:
 
 ```bash
-bun run storage:fix-filenames
+bun run storage:fix-filenames     # Sync filename from URL
+bun run storage:fix-broken-urls   # Fix docs where URL 404s (missing id prefix)
 ```
 
 This updates `filename` to match the actual R2 object key (`{id}-{name}.ext`).

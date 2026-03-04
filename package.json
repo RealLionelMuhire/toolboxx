@@ -23,6 +23,8 @@
     "storage:migrate": "node scripts/migrate-vercel-blob-to-r2.mjs",
     "storage:fix-filenames": "node scripts/fix-r2-media-filenames.mjs",
     "storage:add-cache-control": "node scripts/add-r2-cache-control.mjs",
+    "storage:fix-broken-urls": "node scripts/fix-r2-broken-urls.mjs",
+    "storage:migrate-blob-api": "node scripts/migrate-vercel-blob-api-to-r2.mjs",
     "db:seed": "bun run src/seed.ts",
     "reset:sw": "bash scripts/reset-sw-cache.sh"
   },
@@ -67,6 +69,7 @@
     "@trpc/client": "11.0.3",
     "@trpc/server": "11.0.3",
     "@trpc/tanstack-react-query": "11.0.3",
+    "@vercel/blob": "^2.3.1",
     "aws4": "^1.13.2",
     "class-variance-authority": "^0.7.1",
     "client-only": "0.0.1",

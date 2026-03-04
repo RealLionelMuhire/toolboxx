@@ -79,11 +79,31 @@ async function migrate() {
 
     for (const doc of docs) {
       const id = doc._id.toString();
-      const filename = doc.filename || 'unknown';
       const url = doc.url;
 
-      if (!url || !url.includes('blob.vercel-storage.com')) {
-        console.log(`⏭️  Skip ${id}: no Vercel Blob URL`);
+      if (!url) {
+        console.log(`⏭️  Skip ${id}: no URL`);
+        skip++;
+        continue;
+      }
+
+      // Already on R2 — skip
+      if (url.includes('.r2.dev')) {
+        console.log(`⏭️  Skip ${id}: already on R2`);
+        skip++;
+        continue;
+      }
+
+      // Extract filename: from blob.vercel-storage.com path, or from /api/media/file/xxx
+      let filename = doc.filename || 'unknown';
+      if (url.includes('/api/media/file/')) {
+        filename = url.split('/api/media/file/').pop()?.split('?')[0] || filename;
+      }
+
+      const isBlob = url.includes('blob.vercel-storage.com');
+      const isVercelApi = url.includes('vercel.app/api/media/file/');
+      if (!isBlob && !isVercelApi) {
+        console.log(`⏭️  Skip ${id}: unknown URL format`);
         skip++;
         continue;
       }
@@ -116,7 +136,7 @@ async function migrate() {
           { $set: { url: newUrl, filename: storedFilename } }
         );
 
-        console.log(`✅ ${filename} → R2`);
+        console.log(`✅ ${filename} → R2 ${isVercelApi ? '(from Vercel API)' : '(from Blob)'}`);
         ok++;
       } catch (err) {
         console.error(`❌ ${id} (${filename}): ${err.message}`);
