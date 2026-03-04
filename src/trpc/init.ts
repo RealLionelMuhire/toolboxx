@@ -67,3 +67,23 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
     },
   });
 });
+
+/**
+ * Like protectedProcedure but does NOT throw when unauthenticated.
+ * Passes session.user as null when not logged in. Use for count endpoints
+ * that can safely return 0 when the user is not authenticated.
+ */
+export const optionalAuthProcedure = baseProcedure.use(async ({ ctx, next }) => {
+  const headers = await getHeaders();
+  const session = await ctx.db.auth({ headers });
+
+  return next({
+    ctx: {
+      ...ctx,
+      session: {
+        ...session,
+        user: session.user ?? null,
+      },
+    },
+  });
+});

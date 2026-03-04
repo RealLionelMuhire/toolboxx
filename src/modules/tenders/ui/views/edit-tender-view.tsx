@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select'
 import { DocumentUpload } from '../components/document-upload'
 import { ProductSearchInput } from '../components/product-search-input'
-import { UNIT_OPTIONS } from '@/constants/units'
+import { UNIT_OPTIONS, CURRENCY_OPTIONS } from '@/constants/units'
 
 function richTextToPlain(root: any): string {
   if (!root) return ''
@@ -58,6 +58,7 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [responseDeadline, setResponseDeadline] = useState('')
   const [contactPreference, setContactPreference] = useState<'email' | 'phone' | 'chat'>('email')
+  const [currency, setCurrency] = useState('USD')
   const [documents, setDocuments] = useState<{ file: string }[]>([])
   const [items, setItems] = useState<{ product?: string; name: string; quantity: number; unit: string; specification?: string }[]>([])
   const [initialized, setInitialized] = useState(false)
@@ -83,6 +84,7 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
       setDescription(richTextToPlain(tender.description) || '')
       setType((tender.type as 'rfq' | 'rfp') || 'rfq')
       setContactPreference((tender.contactPreference as 'email' | 'phone' | 'chat') || 'email')
+      setCurrency((tender as any).currency || 'USD')
       setResponseDeadline(toDatetimeLocal(tender.responseDeadline))
       const cats = (tender.category as any[]) || []
       setSelectedCategories(cats.map((c: any) => (typeof c === 'string' ? c : c.id)).filter(Boolean))
@@ -248,7 +250,8 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
       items: validItems.length > 0 ? validItems : undefined,
       documents: documents.length > 0 ? documents : undefined,
       responseDeadline: responseDeadline || null,
-      contactPreference,
+      contactPreference: (contactPreference && ['email', 'phone', 'chat'].includes(contactPreference)) ? contactPreference : 'email',
+      currency: currency || 'USD',
     })
   }
 
@@ -461,6 +464,18 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
                 <SelectItem value="email">Email</SelectItem>
                 <SelectItem value="phone">Phone</SelectItem>
                 <SelectItem value="chat">In-App Chat</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Currency</Label>
+            <Select value={currency} onValueChange={setCurrency}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {CURRENCY_OPTIONS.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

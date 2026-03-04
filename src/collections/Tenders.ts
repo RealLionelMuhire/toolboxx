@@ -237,6 +237,14 @@ export const Tenders: CollectionConfig = {
       },
     },
     {
+      name: 'currency',
+      type: 'text',
+      defaultValue: 'USD',
+      admin: {
+        description: 'Currency for this tender (buyer preference)',
+      },
+    },
+    {
       name: 'bidCount',
       type: 'number',
       defaultValue: 0,

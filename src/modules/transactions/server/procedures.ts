@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { createTRPCRouter, optionalAuthProcedure, protectedProcedure } from "@/trpc/init";
 import type { Tenant } from "@/payload-types";
 import { notifyNewOrder } from "@/lib/notifications/notification-manager";
 
@@ -579,8 +579,10 @@ export const transactionsRouter = createTRPCRouter({
     }),
 
   // Get actionable notification count (unverified + undelivered)
-  getNotificationCount: protectedProcedure
+  getNotificationCount: optionalAuthProcedure
     .query(async ({ ctx }) => {
+      if (!ctx.session.user) return { count: 0, unverified: 0, undelivered: 0 };
+
       // Get current user's tenant
       const userData = await ctx.db.findByID({
         collection: "users",

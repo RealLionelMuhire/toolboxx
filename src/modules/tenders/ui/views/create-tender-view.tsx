@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select'
 import { DocumentUpload } from '../components/document-upload'
 import { ProductSearchInput } from '../components/product-search-input'
-import { UNIT_OPTIONS } from '@/constants/units'
+import { UNIT_OPTIONS, CURRENCY_OPTIONS } from '@/constants/units'
 
 export function CreateTenderView() {
   const trpc = useTRPC()
@@ -33,6 +33,7 @@ export function CreateTenderView() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [responseDeadline, setResponseDeadline] = useState('')
   const [contactPreference, setContactPreference] = useState<'email' | 'phone' | 'chat'>('email')
+  const [currency, setCurrency] = useState('USD')
   const [documents, setDocuments] = useState<{ file: string }[]>([])
   const [items, setItems] = useState<{ product?: string; name: string; quantity: number; unit: string; specification?: string }[]>([])
 
@@ -182,6 +183,7 @@ export function CreateTenderView() {
       documents: documents.length > 0 ? documents : undefined,
       responseDeadline: responseDeadline || undefined,
       contactPreference,
+      currency: currency || 'USD',
     })
   }
 
@@ -421,6 +423,20 @@ export function CreateTenderView() {
                 <SelectItem value="email">Email</SelectItem>
                 <SelectItem value="phone">Phone</SelectItem>
                 <SelectItem value="chat">In-App Chat</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Currency</Label>
+            <Select value={currency} onValueChange={setCurrency}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CURRENCY_OPTIONS.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
 
-import { protectedProcedure, createTRPCRouter } from '@/trpc/init';
+import { optionalAuthProcedure, protectedProcedure, createTRPCRouter } from '@/trpc/init';
 import type { User, Conversation, Message } from '@/payload-types';
 import { sendMessageNotification } from '@/lib/notifications/send-push';
 import { notifyNewMessage } from '@/lib/notifications/notification-manager';
@@ -462,14 +462,17 @@ export const chatRouter = createTRPCRouter({
     }),
 
   /**
-   * Get unread message count for current user
+   * Get unread message count for current user (returns 0 when not authenticated)
    */
-  getUnreadCount: protectedProcedure.query(async ({ ctx }) => {
+  getUnreadCount: optionalAuthProcedure.query(async ({ ctx }) => {
+    if (!ctx.session.user) return { totalUnread: 0 };
+    const userId = ctx.session.user.id;
+
     const conversations = await ctx.db.find({
       collection: 'conversations',
       where: {
         participants: {
-          contains: ctx.session.user.id,
+          contains: userId,
         },
       },
       depth: 0,
@@ -479,7 +482,7 @@ export const chatRouter = createTRPCRouter({
     let totalUnread = 0;
     conversations.docs.forEach((conv) => {
       const unreadCount = (conv.unreadCount as any as Record<string, number>) || {};
-      totalUnread += unreadCount[ctx.session.user.id] || 0;
+      totalUnread += unreadCount[userId] || 0;
     });
 
     return { totalUnread };

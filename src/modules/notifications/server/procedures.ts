@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { protectedProcedure, createTRPCRouter } from '@/trpc/init';
+import { optionalAuthProcedure, protectedProcedure, createTRPCRouter } from '@/trpc/init';
 
 export const notificationsRouter = createTRPCRouter({
   /**
@@ -44,9 +44,11 @@ export const notificationsRouter = createTRPCRouter({
     }),
 
   /**
-   * Get unseen notification count
+   * Get unseen notification count (returns 0 when not authenticated)
    */
-  getUnseenCount: protectedProcedure.query(async ({ ctx }) => {
+  getUnseenCount: optionalAuthProcedure.query(async ({ ctx }) => {
+    if (!ctx.session.user) return { count: 0 };
+
     const notifications = await ctx.db.find({
       collection: 'notifications',
       where: {

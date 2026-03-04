@@ -99,28 +99,52 @@ async function migrate() {
       blobByFilename.set(blob.pathname, blob);
     }
 
-    // 3. Get media docs that need migration
-    const mediaDocs = await mediaCollection.find({
-      $or: [
-        { url: { $regex: /vercel\.app\/api\/media\/file\// } },
-        { url: { $regex: /blob\.vercel-storage\.com/ } },
-      ],
-    }).toArray();
+    // 3. Process ALL media docs - try to find matching blob and migrate to R2
+    // (Filter was excluding docs with non-standard url formats; blob matching handles skips)
+    const mediaDocs = await mediaCollection.find({}).toArray();
 
-    console.log(`Media docs to migrate: ${mediaDocs.length}`);
+    console.log(`Media docs to process: ${mediaDocs.length}`);
 
     let ok = 0;
     let skip = 0;
     let fail = 0;
 
+    async function checkR2Exists(key) {
+      try {
+        const url = `${R2_PUBLIC_URL}/${key}`;
+        const res = await fetch(url, { method: 'GET', redirect: 'follow', headers: { Accept: 'image/*,*/*' } });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    }
+
     for (const doc of mediaDocs) {
       const id = doc._id.toString();
-      const filename = doc.filename || doc.url?.split('/').pop()?.split('?')[0] || 'unknown';
+      const rawFilename = doc.filename || doc.url?.split('/').pop()?.split('?')[0] || 'unknown';
+      const filename = rawFilename.startsWith(id) ? rawFilename.split('-').slice(1).join('-') || rawFilename : rawFilename;
+      const r2Key = `media/${id}-${filename}`;
 
-      // Find matching blob
-      const blob = blobByFilename.get(filename) || blobByFilename.get(`${id}-${filename}`);
+      // Skip if already in R2 with correct key
+      if (await checkR2Exists(r2Key)) {
+        const storedFilename = `${id}-${filename}`;
+        if (doc.filename !== storedFilename || !doc.url?.includes(r2Key)) {
+          await mediaCollection.updateOne(
+            { _id: doc._id },
+            { $set: { url: `${R2_PUBLIC_URL}/${r2Key}`, filename: storedFilename } }
+          );
+          console.log(`✅ Fixed doc only: ${filename} (already in R2)`);
+          ok++;
+        } else {
+          skip++;
+        }
+        continue;
+      }
+
+      // Find matching blob (by base filename)
+      const blob = blobByFilename.get(filename) || blobByFilename.get(rawFilename) || blobByFilename.get(`${id}-${filename}`);
       if (!blob) {
-        console.log(`⏭️  Skip ${id}: no matching blob for ${filename}`);
+        if (skip < 5) console.log(`⏭️  Skip ${id}: no matching blob for ${filename}`);
         skip++;
         continue;
       }

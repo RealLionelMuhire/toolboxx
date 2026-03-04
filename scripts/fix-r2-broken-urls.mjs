@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 /**
  * Fix R2 media docs with broken URLs (404).
- * Some docs have url like .../media/1000320068.jpg but the actual R2 object
- * is at media/{id}-1000320068.jpg. This script detects 404s and fixes them.
+ * Payload uses generateFileURL({ filename }) -> R2_PUBLIC_URL/media/{filename}.
+ * R2 objects are stored at media/{id}-{originalFilename}.
+ * Docs with filename "IMG.jpg" produce wrong URL media/IMG.jpg (404).
+ * This script fixes filename to "{id}-IMG.jpg" so the URL matches R2.
+ *
+ * Processes ALL media docs (not just those with r2 URLs in the stored url field).
  *
  * Run: node scripts/fix-r2-broken-urls.mjs
  * Or: bun run storage:fix-broken-urls
@@ -32,7 +36,6 @@ if (!R2_PUBLIC_URL) {
 
 async function checkUrl(url) {
   try {
-    // Use GET: some CDNs (incl. R2) return 401 for HEAD but 200 for GET
     const res = await fetch(url, {
       method: 'GET',
       headers: {
@@ -54,83 +57,59 @@ async function fix() {
     const db = client.db();
     const mediaCollection = db.collection('media');
 
-    const totalMedia = await mediaCollection.countDocuments();
-    // Match r2.dev OR custom domain from R2_PUBLIC_URL (e.g. cdn.example.com)
-    const r2Host = R2_PUBLIC_URL ? new URL(R2_PUBLIC_URL).hostname : null;
-    const r2Query = r2Host
-      ? { $or: [{ url: { $regex: /\.r2\.dev\// } }, { url: { $regex: new RegExp(r2Host.replace(/\./g, "\\."), "i") } }] }
-      : { url: { $regex: /\.r2\.dev\// } };
-    const r2Docs = await mediaCollection.find(r2Query).toArray();
+    const allDocs = await mediaCollection.find({}).toArray();
+    const totalMedia = allDocs.length;
 
     console.log(`Total media docs: ${totalMedia}`);
-    console.log(`R2 docs (url contains r2.dev or ${r2Host || "N/A"}): ${r2Docs.length}`);
-    if (r2Docs.length === 0 && totalMedia > 0) {
-      const sample = await mediaCollection.findOne({ url: { $exists: true, $ne: null } }, { url: 1, filename: 1 });
-      console.log(`Sample URL format: ${sample?.url?.slice(0, 80) || "(none)"}...`);
-    }
 
     let fixed = 0;
     let skippedOk = 0;
-    let skippedErr = 0;
+    let needsMigration = 0;
 
-    for (const doc of r2Docs) {
+    for (const doc of allDocs) {
       const id = doc._id.toString();
-      const url = doc.url;
-      const currentFilename = doc.filename || '';
+      const currentFilename = (doc.filename || '').trim() || 'unknown';
 
-      const status = await checkUrl(url);
-      if (status === 200) {
-        skippedOk++;
-        continue;
-      }
-
-      if (status !== 404) {
-        console.log(`⏭️  Skip ${id}: HTTP ${status}`);
-        skippedErr++;
-        continue;
-      }
-
-      // URL 404s. Try correct format: media/{id}-{filename}
-      const basename = currentFilename.startsWith(id)
+      // Correct R2 key format: media/{id}-{originalFilename}
+      const correctFilename = currentFilename.startsWith(id)
         ? currentFilename
         : `${id}-${currentFilename}`;
-      const correctUrl = `${R2_PUBLIC_URL}/media/${basename}`;
+      const correctUrl = `${R2_PUBLIC_URL}/media/${correctFilename}`;
 
-      let correctStatus = await checkUrl(correctUrl);
-
-      // If R2_PUBLIC_URL in .env differs from URL in doc (e.g. wrong bucket), try the doc's base
-      const docBase = url.match(/^(https:\/\/[^/]+)/)?.[1];
-      const altUrl = docBase ? `${docBase}/media/${basename}` : null;
-      if (correctStatus !== 200 && altUrl && altUrl !== correctUrl) {
-        correctStatus = await checkUrl(altUrl);
-        if (correctStatus === 200) {
+      const status = await checkUrl(correctUrl);
+      if (status === 200) {
+        if (currentFilename !== correctFilename) {
           await mediaCollection.updateOne(
             { _id: doc._id },
-            { $set: { url: altUrl, filename: basename } }
+            { $set: { url: correctUrl, filename: correctFilename } }
           );
-          console.log(`✅ Fixed (alt bucket): ${currentFilename} → ${basename}`);
+          console.log(`✅ Fixed: ${currentFilename} → ${correctFilename}`);
           fixed++;
-          continue;
+        } else {
+          // Already correct
+          skippedOk++;
         }
+        continue;
       }
 
-      if (correctStatus === 200) {
-        await mediaCollection.updateOne(
-          { _id: doc._id },
-          { $set: { url: correctUrl, filename: basename } }
-        );
-        console.log(`✅ Fixed: ${currentFilename} → ${basename}`);
-        fixed++;
-      } else {
-        console.log(`❌ No fix for ${id} (${currentFilename}) - tried ${correctUrl} → ${correctStatus}`);
+      // Object not found at correct path - needs migration from Vercel Blob first
+      if (status === 404) {
+        needsMigration++;
+        if (needsMigration <= 5) {
+          console.log(`⏳ Needs migration: ${id} (${currentFilename}) - run storage:migrate-blob-api first`);
+        }
       }
     }
 
+    if (needsMigration > 5) {
+      console.log(`⏳ ... and ${needsMigration - 5} more need migration`);
+    }
+
     console.log('\n=== Done ===');
-    console.log(`Fixed:       ${fixed}`);
-    console.log(`Skipped (OK): ${skippedOk}`);
-    if (skippedErr > 0) {
-      console.log(`Skipped (4xx/5xx): ${skippedErr}`);
+    console.log(`Fixed:           ${fixed}`);
+    console.log(`Skipped (OK):    ${skippedOk}`);
+    if (needsMigration > 0) {
+      console.log(`Needs migration: ${needsMigration} (run: bun run storage:migrate-blob-api)`);
     }
   } finally {
     await client.close();

@@ -24,3 +24,9 @@ export const UNIT_OPTIONS = [
 ] as const;
 
 export type UnitValue = (typeof UNIT_OPTIONS)[number]["value"];
+
+export const CURRENCY_OPTIONS = [
+  { value: 'USD', label: 'USD' },
+  { value: 'RWF', label: 'RWF' },
+  { value: 'EUR', label: 'EUR' },
+] as const;

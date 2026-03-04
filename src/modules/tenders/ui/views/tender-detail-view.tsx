@@ -262,7 +262,7 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
           }`} />
           <div className="flex-1">
             <p className="text-sm font-medium">
-              {myBid.status === 'submitted' && 'Your bid has been submitted'}
+              {myBid.status === 'submitted' && 'Your bid has been submitted. You can update it until the tender closes.'}
               {myBid.status === 'shortlisted' && 'Your bid has been shortlisted!'}
               {myBid.status === 'rejected' && 'Your bid was not selected'}
               {myBid.status === 'withdrawn' && 'You withdrew your bid'}
@@ -358,6 +358,13 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
             <Link href={`/tenders/${tenderId}/bid`}>
               <Send className="size-4" />
               Submit Bid
+            </Link>
+          </Button>
+        )}
+        {hasSubmittedBid && !isOwner && myBid.status === 'submitted' && (tender.status === 'draft' || tender.status === 'open') && (
+          <Button variant="elevated" className="gap-1.5 bg-orange-400" asChild>
+            <Link href={`/tenders/${tenderId}/bid`}>
+              Update bid
             </Link>
           </Button>
         )}

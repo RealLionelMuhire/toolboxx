@@ -166,6 +166,37 @@ export const TenderBids: CollectionConfig = {
         date: { pickerAppearance: 'dayOnly' },
       },
     },
+    {
+      name: 'lineItems',
+      type: 'array',
+      admin: {
+        description: 'Per-line offering (price, quantity, spec, location)',
+      },
+      fields: [
+        {
+          name: 'price',
+          type: 'number',
+          min: 0,
+          admin: { description: 'Unit or line price' },
+        },
+        {
+          name: 'quantity',
+          type: 'number',
+          min: 0.001,
+          admin: { description: 'Quantity offered' },
+        },
+        {
+          name: 'specification',
+          type: 'textarea',
+          admin: { description: 'Your specs for this line' },
+        },
+        {
+          name: 'location',
+          type: 'text',
+          admin: { description: 'Tenant location for this line' },
+        },
+      ],
+    },
   ],
   timestamps: true,
 }

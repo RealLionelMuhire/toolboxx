@@ -1068,6 +1068,7 @@ export interface Tender {
     | null;
   responseDeadline?: string | null;
   contactPreference?: ('email' | 'phone' | 'chat') | null;
+  currency?: string | null;
   bidCount?: number | null;
   updatedAt: string;
   createdAt: string;
@@ -1091,6 +1092,15 @@ export interface TenderBid {
   amount?: number | null;
   currency?: string | null;
   validUntil?: string | null;
+  lineItems?:
+    | {
+        price?: number | null;
+        quantity?: number | null;
+        specification?: string | null;
+        location?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1584,6 +1594,7 @@ export interface TendersSelect<T extends boolean = true> {
       };
   responseDeadline?: T;
   contactPreference?: T;
+  currency?: T;
   bidCount?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1606,6 +1617,15 @@ export interface TenderBidsSelect<T extends boolean = true> {
   amount?: T;
   currency?: T;
   validUntil?: T;
+  lineItems?:
+    | T
+    | {
+        price?: T;
+        quantity?: T;
+        specification?: T;
+        location?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

@@ -122,6 +122,7 @@ export const tendersRouter = createTRPCRouter({
         ).optional(),
         responseDeadline: z.string().optional(),
         contactPreference: z.enum(['email', 'phone', 'chat']).optional(),
+        currency: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -147,6 +148,7 @@ export const tendersRouter = createTRPCRouter({
           items: input.items,
           responseDeadline: input.responseDeadline,
           contactPreference: input.contactPreference,
+          currency: input.currency ?? 'USD',
           tenant: tenantId || null,
           createdBy: user.id,
           status: 'draft',
@@ -176,7 +178,11 @@ export const tendersRouter = createTRPCRouter({
           }),
         ).optional(),
         responseDeadline: z.string().nullable().optional(),
-        contactPreference: z.enum(['email', 'phone', 'chat']).optional(),
+        contactPreference: z.preprocess(
+          (v) => (v === '' ? undefined : v),
+          z.enum(['email', 'phone', 'chat']).optional(),
+        ),
+        currency: z.string().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -319,6 +325,9 @@ export const tendersRouter = createTRPCRouter({
       z.object({
         tenderId: z.string(),
         status: z.enum(['submitted', 'shortlisted', 'rejected', 'withdrawn']).optional(),
+        sortBy: z.enum(['amount', 'createdAt']).optional(),
+        sortOrder: z.enum(['asc', 'desc']).optional(),
+        locationFilter: z.string().optional(),
         limit: z.number().min(1).max(100).default(50),
         page: z.number().min(1).default(1),
       }),
@@ -340,13 +349,20 @@ export const tendersRouter = createTRPCRouter({
 
       const where: any = { tender: { equals: input.tenderId } }
       if (input.status) where.status = { equals: input.status }
+      if (input.locationFilter) {
+        where['lineItems.location'] = { equals: input.locationFilter }
+      }
+
+      const sortField = input.sortBy === 'amount' ? 'amount' : 'createdAt'
+      const sortOrder = input.sortOrder ?? (input.sortBy === 'amount' ? 'asc' : 'desc')
+      const sort = (sortOrder === 'asc' ? '' : '-') + sortField
 
       const result = await ctx.db.find({
         collection: 'tender-bids',
         where,
         limit: input.limit,
         page: input.page,
-        sort: '-createdAt',
+        sort,
         depth: 2,
       })
 
@@ -409,6 +425,16 @@ export const tendersRouter = createTRPCRouter({
         amount: z.number().min(0).optional(),
         currency: z.string().optional(),
         validUntil: z.string().optional(),
+        lineItems: z
+          .array(
+            z.object({
+              price: z.number().min(0),
+              quantity: z.number().min(0.001),
+              specification: z.string().optional(),
+              location: z.string().optional(),
+            }),
+          )
+          .optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -458,8 +484,9 @@ export const tendersRouter = createTRPCRouter({
           message: input.message,
           documents: input.documents,
           amount: input.amount,
-          currency: input.currency || 'RWF',
+          currency: input.currency ?? 'RWF',
           validUntil: input.validUntil,
+          lineItems: input.lineItems ?? [],
         },
       })
 
@@ -481,6 +508,60 @@ export const tendersRouter = createTRPCRouter({
       )
 
       return bid
+    }),
+
+  updateBid: protectedProcedure
+    .input(
+      z.object({
+        bidId: z.string(),
+        message: z.any().optional(),
+        documents: z.array(z.object({ file: z.string() })).optional(),
+        amount: z.number().min(0).optional(),
+        currency: z.string().optional(),
+        validUntil: z.string().optional(),
+        lineItems: z
+          .array(
+            z.object({
+              price: z.number().min(0),
+              quantity: z.number().min(0.001),
+              specification: z.string().optional(),
+              location: z.string().optional(),
+            }),
+          )
+          .optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const user = ctx.session.user
+
+      const bid = await ctx.db.findByID({ collection: 'tender-bids', id: input.bidId, depth: 0 })
+      if (!bid) throw new TRPCError({ code: 'NOT_FOUND' })
+
+      const bidderId = resolveId(bid.submittedBy as string | { id: string })
+      if (bidderId !== String(user.id)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the bidder can edit their bid' })
+      }
+
+      if (bid.status !== 'submitted') {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Only submitted bids can be edited' })
+      }
+
+      const tenderId = resolveId(bid.tender as string | { id: string })
+      const tender = await ctx.db.findByID({ collection: 'tenders', id: tenderId, depth: 0 })
+      if (!tender) throw new TRPCError({ code: 'NOT_FOUND' })
+
+      if (!['draft', 'open'].includes(tender.status)) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Tender is no longer accepting bid edits' })
+      }
+
+      const { bidId, ...data } = input
+      const updated = await ctx.db.update({
+        collection: 'tender-bids',
+        id: bidId,
+        data,
+      })
+
+      return updated
     }),
 
   updateBidStatus: protectedProcedure

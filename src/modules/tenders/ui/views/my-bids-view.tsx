@@ -90,6 +90,7 @@ export function MyBidsView() {
               typeof bid.tender === 'object' ? bid.tender : null
             const tenderTitle = tender?.title || 'Unknown Tender'
             const tenderId = tender?.id || bid.tender
+            const tenderStatus = tender?.status
 
             return (
               <div
@@ -118,17 +119,24 @@ export function MyBidsView() {
                   <span>Submitted {new Date(bid.createdAt).toLocaleDateString()}</span>
                 </div>
 
-                {bid.status === 'submitted' && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-red-600 border-red-200 hover:bg-red-50"
-                    disabled={withdrawMutation.isPending}
-                    onClick={() => setWithdrawBidId(bid.id)}
-                  >
-                    Withdraw Bid
-                  </Button>
-                )}
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {bid.status === 'submitted' && (tenderStatus === 'draft' || tenderStatus === 'open') && (
+                    <Button size="sm" variant="elevated" className="bg-orange-400" asChild>
+                      <Link href={`/tenders/${tenderId}/bid`}>Update bid</Link>
+                    </Button>
+                  )}
+                  {bid.status === 'submitted' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                      disabled={withdrawMutation.isPending}
+                      onClick={() => setWithdrawBidId(bid.id)}
+                    >
+                      Withdraw Bid
+                    </Button>
+                  )}
+                </div>
               </div>
             )
           })}

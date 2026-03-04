@@ -146,23 +146,32 @@ export function TendersListView() {
               const tender = typeof bid.tender === 'object' ? bid.tender : null
               const tenderTitle = tender?.title || 'Unknown Tender'
               const tenderId = tender?.id || bid.tender
+              const tenderStatus = tender?.status
               return (
-                <Link
+                <div
                   key={bid.id}
-                  href={`/tenders/${tenderId}`}
-                  className="block border border-gray-200 rounded-xl bg-white p-4 hover:shadow-md transition-all"
+                  className="border border-gray-200 rounded-xl bg-white p-4 hover:shadow-md transition-all"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-sm font-semibold line-clamp-1">{tenderTitle}</span>
-                    <TenderStatusBadge status={bid.status} />
-                  </div>
-                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-2">
-                    {bid.amount != null && (
-                      <span>Amount: <strong>{formatCurrency(bid.amount, bid.currency || 'RWF')}</strong></span>
-                    )}
-                    <span>Submitted {new Date(bid.createdAt).toLocaleDateString()}</span>
-                  </div>
-                </Link>
+                  <Link href={`/tenders/${tenderId}`} className="block">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-sm font-semibold line-clamp-1">{tenderTitle}</span>
+                      <TenderStatusBadge status={bid.status} />
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-2">
+                      {bid.amount != null && (
+                        <span>Amount: <strong>{formatCurrency(bid.amount, bid.currency || 'RWF')}</strong></span>
+                      )}
+                      <span>Submitted {new Date(bid.createdAt).toLocaleDateString()}</span>
+                    </div>
+                  </Link>
+                  {bid.status === 'submitted' && (tenderStatus === 'draft' || tenderStatus === 'open') && (
+                    <div className="mt-2 pt-2 border-t">
+                      <Link href={`/tenders/${tenderId}/bid`} className="text-sm font-medium text-orange-600 hover:text-orange-700">
+                        Update bid
+                      </Link>
+                    </div>
+                  )}
+                </div>
               )
             })}
           </div>
