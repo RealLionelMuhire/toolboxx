@@ -51,9 +51,13 @@ export const tenantsRouter = createTRPCRouter({
       });
     }
 
+    const tenantRel = userData.tenants[0].tenant as string | { id: string };
+    const tenantId =
+      typeof tenantRel === "string" ? tenantRel : tenantRel?.id;
+
     const tenant = await ctx.db.findByID({
       collection: "tenants",
-      id: userData.tenants[0].tenant as string,
+      id: tenantId,
     });
 
     return tenant;
