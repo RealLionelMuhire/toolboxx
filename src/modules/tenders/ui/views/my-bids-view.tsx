@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { OptimizedLink } from '@/components/optimized-link'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { Loader2, FileX } from 'lucide-react'
@@ -122,7 +123,7 @@ export function MyBidsView() {
                 <div className="flex flex-wrap gap-2 pt-1">
                   {bid.status === 'submitted' && (tenderStatus === 'draft' || tenderStatus === 'open') && (
                     <Button size="sm" variant="elevated" className="bg-orange-400" asChild>
-                      <Link href={`/tenders/${tenderId}/bid`}>Update bid</Link>
+                      <OptimizedLink href={`/tenders/${tenderId}/bid`} prefetch={true}>Update bid</OptimizedLink>
                     </Button>
                   )}
                   {bid.status === 'submitted' && (

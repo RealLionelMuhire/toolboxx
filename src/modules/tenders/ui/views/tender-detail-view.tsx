@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { OptimizedLink } from '@/components/optimized-link'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
@@ -355,17 +356,17 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
         {/* Bidder action */}
         {canBid && (
           <Button variant="elevated" className="gap-1.5 bg-orange-400" asChild>
-            <Link href={`/tenders/${tenderId}/bid`}>
+            <OptimizedLink href={`/tenders/${tenderId}/bid`} prefetch={true}>
               <Send className="size-4" />
               Submit Bid
-            </Link>
+            </OptimizedLink>
           </Button>
         )}
         {hasSubmittedBid && !isOwner && myBid.status === 'submitted' && (tender.status === 'draft' || tender.status === 'open') && (
           <Button variant="elevated" className="gap-1.5 bg-orange-400" asChild>
-            <Link href={`/tenders/${tenderId}/bid`}>
+            <OptimizedLink href={`/tenders/${tenderId}/bid`} prefetch={true}>
               Update bid
-            </Link>
+            </OptimizedLink>
           </Button>
         )}
       </div>

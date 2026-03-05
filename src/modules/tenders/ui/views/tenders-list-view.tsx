@@ -67,10 +67,7 @@ export function TendersListView() {
           </p>
         </div>
         <Button variant="elevated" className="gap-1.5 bg-orange-400" asChild>
-          <OptimizedLink
-            href="/tenders/new"
-            onClick={() => console.log('[Add Tender] Button clicked — form/navigation triggered')}
-          >
+          <OptimizedLink href="/tenders/new" prefetch={true}>
             <Plus className="size-4" />
             <span className="hidden sm:inline">New Tender</span>
           </OptimizedLink>
@@ -166,9 +163,9 @@ export function TendersListView() {
                   </Link>
                   {bid.status === 'submitted' && (tenderStatus === 'draft' || tenderStatus === 'open') && (
                     <div className="mt-2 pt-2 border-t">
-                      <Link href={`/tenders/${tenderId}/bid`} className="text-sm font-medium text-orange-600 hover:text-orange-700">
+                      <OptimizedLink href={`/tenders/${tenderId}/bid`} prefetch={true} className="text-sm font-medium text-orange-600 hover:text-orange-700">
                         Update bid
-                      </Link>
+                      </OptimizedLink>
                     </div>
                   )}
                 </div>
