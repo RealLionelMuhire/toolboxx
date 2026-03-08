@@ -19,6 +19,10 @@ interface DocumentUploadProps {
   value: { file: string }[]
   onChange: (value: { file: string }[]) => void
   maxFiles?: number
+  /** When set, only these file types accepted (e.g. "image/*") */
+  accept?: string
+  /** Unique id for the file input (needed when multiple uploads on same page) */
+  id?: string
 }
 
 async function uploadFile(file: File): Promise<string | null> {
@@ -44,6 +48,8 @@ export function DocumentUpload({
   value = [],
   onChange,
   maxFiles = 10,
+  accept,
+  id = 'document-upload',
 }: DocumentUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
 
@@ -99,10 +105,11 @@ export function DocumentUpload({
 
     try {
       for (const file of files) {
-        const isAllowed =
-          file.type.startsWith('image/') ||
-          file.type.startsWith('video/') ||
-          ALLOWED_TYPES.includes(file.type)
+        const isAllowed = accept
+          ? (accept === 'image/*' ? file.type.startsWith('image/') : file.type === accept)
+          : file.type.startsWith('image/') ||
+            file.type.startsWith('video/') ||
+            ALLOWED_TYPES.includes(file.type)
 
         if (!isAllowed) {
           toast.error(`${file.name} has an unsupported file type`)
@@ -176,8 +183,8 @@ export function DocumentUpload({
         <div>
           <input
             type="file"
-            id="document-upload"
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,image/*,video/*"
+            id={id}
+            accept={accept ?? ".pdf,.doc,.docx,.xls,.xlsx,.txt,image/*,video/*"}
             className="hidden"
             onChange={handleFileSelect}
             disabled={isUploading}
@@ -187,7 +194,7 @@ export function DocumentUpload({
             variant="outline"
             size="sm"
             disabled={isUploading}
-            onClick={() => document.getElementById('document-upload')?.click()}
+            onClick={() => document.getElementById(id)?.click()}
             className="gap-1.5"
           >
             {isUploading ? (
@@ -195,7 +202,7 @@ export function DocumentUpload({
             ) : (
               <FileText className="size-3.5" />
             )}
-            {isUploading ? 'Uploading...' : 'Add document'}
+            {isUploading ? 'Uploading...' : accept === 'image/*' ? 'Add image' : 'Add document'}
           </Button>
           <p className="text-xs text-gray-500 mt-1">
             PDF, Word, Excel, TXT, images, videos. Max {MAX_SIZE_MB}MB per file.

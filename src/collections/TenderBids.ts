@@ -142,6 +142,22 @@ export const TenderBids: CollectionConfig = {
       ],
     },
     {
+      name: 'images',
+      type: 'array',
+      maxRows: 10,
+      admin: {
+        description: 'Images attached by the bidder (visible to tender creator)',
+      },
+      fields: [
+        {
+          name: 'file',
+          type: 'upload',
+          relationTo: 'media',
+          required: true,
+        },
+      ],
+    },
+    {
       name: 'amount',
       type: 'number',
       min: 0,

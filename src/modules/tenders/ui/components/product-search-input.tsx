@@ -13,12 +13,13 @@ export interface ProductSearchResult {
   id: string
   name: string
   unit: string
+  image?: string | null
 }
 
 interface ProductSearchInputProps {
   value: string
   placeholder?: string
-  onChange: (name: string, productId?: string, unit?: string) => void
+  onChange: (name: string, productId?: string, unit?: string, imageId?: string | null) => void
   disabled?: boolean
   className?: string
 }
@@ -56,7 +57,7 @@ export function ProductSearchInput({ value, placeholder, onChange, disabled, cla
   }, [open])
 
   const handleSelect = (product: ProductSearchResult) => {
-    onChange(product.name, product.id, product.unit || 'unit')
+    onChange(product.name, product.id, product.unit || 'unit', product.image ?? null)
     setOpen(false)
   }
 

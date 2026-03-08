@@ -23,6 +23,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
   const [amount, setAmount] = useState('')
   const [validUntil, setValidUntil] = useState('')
   const [documents, setDocuments] = useState<{ file: string }[]>([])
+  const [images, setImages] = useState<{ file: string }[]>([])
   const [lineItems, setLineItems] = useState<LineItemState[]>([])
   const [useDefaultLocation, setUseDefaultLocation] = useState(false)
 
@@ -92,6 +93,8 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
     setValidUntil(bid.validUntil ? new Date(bid.validUntil).toISOString().slice(0, 10) : '')
     const docs = (bid.documents as any[]) ?? []
     setDocuments(docs.map((d: any) => ({ file: typeof d.file === 'string' ? d.file : d.file?.id })).filter((d: any) => d.file))
+    const imgs = (bid.images as any[]) ?? []
+    setImages(imgs.map((img: any) => ({ file: typeof img.file === 'string' ? img.file : img.file?.id })).filter((img: any) => img.file))
   }, [isEditMode, myBid?.id])
 
   // Initialize lineItems from tender items count or from existing bid
@@ -179,6 +182,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
         ? { root: { children: [{ children: [{ text: message }], type: 'paragraph', version: 1 }], direction: null, format: '', indent: 0, type: 'root', version: 1 } }
         : undefined,
       documents: documents.length > 0 ? documents : undefined,
+      images: images.length > 0 ? images : undefined,
       amount: amount ? parseFloat(amount) : undefined,
       currency: tenderCurrency,
       validUntil: validUntil || undefined,
@@ -237,7 +241,13 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
 
         <div className="space-y-1.5">
           <Label>Attachments (optional)</Label>
-          <DocumentUpload value={documents} onChange={setDocuments} maxFiles={10} />
+          <DocumentUpload id="bid-documents" value={documents} onChange={setDocuments} maxFiles={10} />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label>Images (optional)</Label>
+          <p className="text-xs text-gray-500">Images you attach here can be viewed by the tender creator.</p>
+          <DocumentUpload id="bid-images" value={images} onChange={setImages} maxFiles={5} accept="image/*" />
         </div>
 
         {tenderItems.length > 0 && (
@@ -248,7 +258,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
                 <table className="w-full min-w-[500px] border border-gray-200 rounded-lg overflow-hidden">
                   <thead>
                     <tr className="bg-gray-50 text-left text-sm">
-                      <th className="p-2 font-medium">Item</th>
+                      <th className="p-2 font-medium">Product name</th>
                       <th className="p-2 font-medium">Quantity</th>
                       <th className="p-2 font-medium">Unit</th>
                       <th className="p-2 font-medium">Specification</th>

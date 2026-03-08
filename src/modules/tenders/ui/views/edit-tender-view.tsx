@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/select'
 import { DocumentUpload } from '../components/document-upload'
 import { ProductSearchInput } from '../components/product-search-input'
+import { ItemImageUpload } from '../components/item-image-upload'
+import { TenderDeliveryLocation } from '../components/tender-delivery-location'
 import { UNIT_OPTIONS, CURRENCY_OPTIONS } from '@/constants/units'
 
 function richTextToPlain(root: any): string {
@@ -59,8 +61,12 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
   const [responseDeadline, setResponseDeadline] = useState('')
   const [contactPreference, setContactPreference] = useState<'email' | 'phone' | 'chat'>('email')
   const [currency, setCurrency] = useState('USD')
+  const [deliveryLocationCountry, setDeliveryLocationCountry] = useState('')
+  const [deliveryLocationProvince, setDeliveryLocationProvince] = useState('')
+  const [deliveryLocationDistrict, setDeliveryLocationDistrict] = useState('')
+  const [deliveryAddress, setDeliveryAddress] = useState('')
   const [documents, setDocuments] = useState<{ file: string }[]>([])
-  const [items, setItems] = useState<{ product?: string; name: string; quantity: number; unit: string; specification?: string }[]>([])
+  const [items, setItems] = useState<{ product?: string; name: string; quantity: number; unit: string; specification?: string; image?: string | null }[]>([])
   const [initialized, setInitialized] = useState(false)
 
   const session = useQuery({
@@ -85,6 +91,10 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
       setType((tender.type as 'rfq' | 'rfp') || 'rfq')
       setContactPreference((tender.contactPreference as 'email' | 'phone' | 'chat') || 'email')
       setCurrency((tender as any).currency || 'USD')
+      setDeliveryLocationCountry((tender as any).deliveryLocationCountry || '')
+      setDeliveryLocationProvince((tender as any).deliveryLocationProvince || '')
+      setDeliveryLocationDistrict((tender as any).deliveryLocationDistrict || '')
+      setDeliveryAddress((tender as any).deliveryAddress || '')
       setResponseDeadline(toDatetimeLocal(tender.responseDeadline))
       const cats = (tender.category as any[]) || []
       setSelectedCategories(cats.map((c: any) => (typeof c === 'string' ? c : c.id)).filter(Boolean))
@@ -98,6 +108,7 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
           quantity: i.quantity ?? 1,
           unit: i.unit || 'unit',
           specification: i.specification || '',
+          image: typeof i.image === 'string' ? i.image : i.image?.id ?? null,
         })),
       )
       setInitialized(true)
@@ -239,6 +250,7 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
       quantity: i.quantity,
       unit: i.unit || 'unit',
       specification: i.specification?.trim() || undefined,
+      image: i.image || undefined,
     }))
 
     updateMutation.mutate({
@@ -252,6 +264,10 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
       responseDeadline: responseDeadline || null,
       contactPreference: (contactPreference && ['email', 'phone', 'chat'].includes(contactPreference)) ? contactPreference : 'email',
       currency: currency || 'USD',
+      deliveryLocationCountry: deliveryLocationCountry || undefined,
+      deliveryLocationProvince: deliveryLocationProvince || undefined,
+      deliveryLocationDistrict: deliveryLocationDistrict || undefined,
+      deliveryAddress: deliveryAddress || undefined,
     })
   }
 
@@ -303,13 +319,12 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
                 <div className="flex-1 min-w-[140px]">
                   <ProductSearchInput
                     value={item.name}
-                    onChange={(name, productId, unit) => {
+                    onChange={(name, productId, unit, imageId) => {
                       setItems(items.map((it, i) => {
                         if (i !== idx) return it
                         const next = { ...it, name, product: productId }
-                        if (unit != null && unit !== '') {
-                          next.unit = unit
-                        }
+                        if (unit != null && unit !== '') next.unit = unit
+                        if (imageId != null) next.image = imageId || null
                         return next
                       }))
                     }}
@@ -356,6 +371,12 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
                   }}
                   className="flex-1 min-w-[100px]"
                 />
+                <ItemImageUpload
+                  value={item.image ?? null}
+                  onChange={(id) => {
+                    setItems(items.map((it, i) => (i === idx ? { ...it, image: id } : it)))
+                  }}
+                />
                 <Button
                   type="button"
                   variant="ghost"
@@ -367,7 +388,7 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
                 </Button>
               </div>
             ))}
-            <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => setItems([...items, { name: '', quantity: 1, unit: 'unit' }])}>
+            <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => setItems([...items, { name: '', quantity: 1, unit: 'unit', image: null }])}>
               <Plus className="size-3.5" /> Add item
             </Button>
           </div>
@@ -479,6 +500,21 @@ export function EditTenderView({ tenderId }: { tenderId: string }) {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div>
+          <Label className="mb-2 block">Delivery location</Label>
+          <p className="text-xs text-gray-500 mb-2">Where can products be delivered for this tender?</p>
+          <TenderDeliveryLocation
+            country={deliveryLocationCountry}
+            province={deliveryLocationProvince}
+            district={deliveryLocationDistrict}
+            address={deliveryAddress}
+            onCountryChange={setDeliveryLocationCountry}
+            onProvinceChange={setDeliveryLocationProvince}
+            onDistrictChange={setDeliveryLocationDistrict}
+            onAddressChange={setDeliveryAddress}
+          />
         </div>
 
         <div className="space-y-1.5">

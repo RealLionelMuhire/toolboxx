@@ -5,7 +5,7 @@ import { OptimizedLink } from '@/components/optimized-link'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
-import { Loader2, ArrowLeft, Calendar, Mail, Phone, MessageCircle, FileText, Send, CheckCircle } from 'lucide-react'
+import { Loader2, ArrowLeft, Calendar, Mail, Phone, MessageCircle, FileText, Send, CheckCircle, MapPin } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -91,10 +91,7 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
   const user = session.data?.user
   const ownerId = typeof tender.createdBy === 'object' ? tender.createdBy?.id : tender.createdBy
   const isOwner = user && String(user.id) === String(ownerId)
-  const tenantIds = (user?.tenants ?? []).map((t: any) => (typeof t.tenant === 'string' ? t.tenant : t.tenant?.id)).filter(Boolean)
-  const tenderTenantId = tender.tenant && (typeof tender.tenant === 'string' ? tender.tenant : (tender.tenant as any)?.id)
-  const isTenantMember = !!tenderTenantId && tenantIds.includes(tenderTenantId)
-  const canEdit = (isOwner || isTenantMember) && ['draft', 'open'].includes(tender.status)
+  const canEdit = isOwner && ['draft', 'open'].includes(tender.status)
   const creatorName =
     typeof tender.createdBy === 'object'
       ? tender.createdBy?.username || tender.createdBy?.email
@@ -189,6 +186,18 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
           {richTextToPlain(tender.description) || 'No description provided.'}
         </div>
 
+        {/* Delivery location */}
+        {((tender as any).deliveryLocation || (tender as any).deliveryAddress) && (
+          <div className="border-t pt-3">
+            <p className="text-xs font-medium text-gray-500 mb-1 flex items-center gap-1">
+              <MapPin className="size-3" /> Delivery location
+            </p>
+            <p className="text-sm text-gray-700">
+              {(tender as any).deliveryLocation || (tender as any).deliveryAddress}
+            </p>
+          </div>
+        )}
+
         {/* Items table (when tender has multiple products) */}
         {tender.items && tender.items.length > 0 && (
           <div className="border-t pt-3">
@@ -197,6 +206,7 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left">
+                    <th className="py-2 pr-2 font-medium"></th>
                     <th className="py-2 pr-2 font-medium">Product / Name</th>
                     <th className="py-2 pr-2 font-medium">Qty</th>
                     <th className="py-2 pr-2 font-medium">Unit</th>
@@ -207,8 +217,17 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
                   {(tender.items as any[]).map((item: any, i: number) => {
                     const prod = typeof item.product === 'object' ? item.product : null
                     const name = item.name || prod?.name || '—'
+                    const img = typeof item.image === 'object' ? item.image : null
+                    const imgUrl = img?.url
                     return (
                       <tr key={i} className="border-b last:border-0">
+                        <td className="py-2 pr-2 w-12">
+                          {imgUrl ? (
+                            <img src={imgUrl} alt="" className="h-10 w-10 object-cover rounded border" />
+                          ) : (
+                            <span className="text-gray-300">—</span>
+                          )}
+                        </td>
                         <td className="py-2 pr-2">{name}</td>
                         <td className="py-2 pr-2">{item.quantity ?? '—'}</td>
                         <td className="py-2 pr-2">{item.unit || 'unit'}</td>
@@ -314,7 +333,7 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
       {/* Actions */}
       <div className="flex flex-wrap gap-2">
         {/* Owner/tenant actions */}
-        {(isOwner || isTenantMember) && tender.status === 'draft' && (
+        {isOwner && tender.status === 'draft' && (
           <Button
             variant="elevated"
             className="bg-orange-400"
@@ -325,12 +344,12 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
             Publish Tender
           </Button>
         )}
-        {(isOwner || isTenantMember) && tender.status === 'open' && (
+        {isOwner && tender.status === 'open' && (
           <Button variant="outline" onClick={() => setConfirmAction('close')} disabled={updateStatusMutation.isPending}>
             Close Tender
           </Button>
         )}
-        {(isOwner || isTenantMember) && ['draft', 'open'].includes(tender.status) && (
+        {isOwner && ['draft', 'open'].includes(tender.status) && (
           <Button
             variant="outline"
             className="text-red-600 border-red-200 hover:bg-red-50"
@@ -340,7 +359,7 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
             Cancel Tender
           </Button>
         )}
-        {(isOwner || isTenantMember) && (
+        {isOwner && (
           <Button variant="elevated" className="bg-white" asChild>
             <Link href={`/tenders/${tenderId}/bids`}>
               View Bids ({tender.bidCount || 0})

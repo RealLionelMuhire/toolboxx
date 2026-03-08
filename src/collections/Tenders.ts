@@ -1,35 +1,18 @@
 import type { CollectionConfig, Where } from 'payload'
 import { isSuperAdmin } from '@/lib/access'
+import { formatLocation } from '@/lib/location-data'
 
-function buildTenderAccessQuery(userId: string, tenants?: any[]): Where {
-  const conditions: Where[] = [
-    { status: { equals: 'open' } },
-    { createdBy: { equals: userId } },
-  ]
-
-  if (tenants?.length) {
-    conditions.push({
-      tenant: {
-        in: tenants.map((t) => (typeof t.tenant === 'string' ? t.tenant : t.tenant.id)),
-      },
-    })
+function buildTenderAccessQuery(userId: string): Where {
+  return {
+    or: [
+      { status: { equals: 'open' } },
+      { createdBy: { equals: userId } },
+    ],
   }
-
-  return { or: conditions }
 }
 
-function buildOwnerAccessQuery(userId: string, tenants?: any[]): Where {
-  const conditions: Where[] = [{ createdBy: { equals: userId } }]
-
-  if (tenants?.length) {
-    conditions.push({
-      tenant: {
-        in: tenants.map((t) => (typeof t.tenant === 'string' ? t.tenant : t.tenant.id)),
-      },
-    })
-  }
-
-  return { or: conditions }
+function buildOwnerAccessQuery(userId: string): Where {
+  return { createdBy: { equals: userId } }
 }
 
 export const Tenders: CollectionConfig = {
@@ -43,13 +26,13 @@ export const Tenders: CollectionConfig = {
     read: ({ req }) => {
       if (isSuperAdmin(req.user)) return true
       if (!req.user) return false
-      return buildTenderAccessQuery(req.user.id, req.user.tenants ?? undefined)
+      return buildTenderAccessQuery(req.user.id)
     },
     create: ({ req }) => !!req.user,
     update: ({ req }) => {
       if (isSuperAdmin(req.user)) return true
       if (!req.user) return false
-      return buildOwnerAccessQuery(req.user.id, req.user.tenants ?? undefined)
+      return buildOwnerAccessQuery(req.user.id)
     },
     delete: ({ req }) => isSuperAdmin(req.user),
   },
@@ -60,6 +43,14 @@ export const Tenders: CollectionConfig = {
           const timestamp = Date.now().toString().slice(-8)
           const random = Math.random().toString(36).substring(2, 6).toUpperCase()
           data.tenderNumber = `TND-${timestamp}-${random}`
+        }
+        if (data.deliveryLocationCountry && data.deliveryLocationProvince && data.deliveryLocationDistrict) {
+          data.deliveryLocation = formatLocation(
+            data.deliveryLocationCountry,
+            data.deliveryLocationProvince,
+            data.deliveryLocationDistrict,
+            data.deliveryAddress,
+          )
         }
         return data
       },
@@ -197,6 +188,14 @@ export const Tenders: CollectionConfig = {
             description: 'Additional specifications',
           },
         },
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media',
+          admin: {
+            description: 'Optional: custom image; when product is selected from search, product image is used',
+          },
+        },
       ],
     },
     {
@@ -242,6 +241,47 @@ export const Tenders: CollectionConfig = {
       defaultValue: 'USD',
       admin: {
         description: 'Currency for this tender (buyer preference)',
+      },
+    },
+    {
+      name: 'deliveryLocationCountry',
+      type: 'select',
+      admin: {
+        description: 'Country where products can be delivered',
+      },
+      options: [
+        { label: 'Rwanda', value: 'RW' },
+        { label: 'Uganda', value: 'UG' },
+        { label: 'Tanzania', value: 'TZ' },
+      ],
+    },
+    {
+      name: 'deliveryLocationProvince',
+      type: 'text',
+      admin: {
+        description: 'Province/Region code',
+      },
+    },
+    {
+      name: 'deliveryLocationDistrict',
+      type: 'text',
+      admin: {
+        description: 'District code',
+      },
+    },
+    {
+      name: 'deliveryAddress',
+      type: 'text',
+      admin: {
+        description: 'Exact delivery address (street, building, area)',
+      },
+    },
+    {
+      name: 'deliveryLocation',
+      type: 'text',
+      admin: {
+        readOnly: true,
+        description: 'Auto-generated full delivery location string',
       },
     },
     {

@@ -43,17 +43,24 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
     refetchOnMount: 'always',
   })
 
-  const { data: tender } = useQuery({
+  const { data: tenderAuth } = useQuery({
     ...trpc.tenders.getById.queryOptions({ id: tenderId }),
     enabled: !!session.data?.user,
   })
+
+  const { data: tenderPublic } = useQuery({
+    ...trpc.tenders.getTenderForBids.queryOptions({ id: tenderId }),
+    enabled: !session.data?.user && session.isFetched,
+  })
+
+  const tender = tenderAuth ?? tenderPublic
 
   const { data, isLoading } = useQuery({
     ...trpc.tenders.listBids.queryOptions({
       tenderId,
       limit: 100,
     }),
-    enabled: !!session.data?.user,
+    enabled: true,
   })
 
   const allBids = data?.bids ?? []
@@ -63,6 +70,9 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
     )
     return [...new Set(all)] as string[]
   }, [allBids])
+
+  const ownerId = tender && typeof tender.createdBy === 'object' ? tender.createdBy?.id : tender?.createdBy
+  const isOwner = !!session.data?.user && !!ownerId && String(session.data.user.id) === String(ownerId)
 
   const bids = useMemo(() => {
     let list = [...allBids]
@@ -105,7 +115,7 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
 
   const tenderItems = useMemo(() => (tender?.items as any[]) ?? [], [tender?.items])
 
-  if (isLoading || !session.isFetched) {
+  if (isLoading || (!session.data?.user && !tender && session.isFetched)) {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="size-6 animate-spin text-gray-400" />
@@ -305,6 +315,32 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
                         </div>
                       )}
 
+                      {bid.images && bid.images.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          <span className="text-xs font-medium text-gray-500 w-full">Bidder images</span>
+                          {bid.images.map((img: any, ii: number) => {
+                            const file = typeof img.file === 'object' ? img.file : null
+                            const url = file?.url
+                            if (!url) return null
+                            return (
+                              <a
+                                key={ii}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block"
+                              >
+                                <img
+                                  src={url}
+                                  alt={file?.alt || `Image ${ii + 1}`}
+                                  className="h-20 w-20 object-cover rounded border hover:opacity-90 transition"
+                                />
+                              </a>
+                            )
+                          })}
+                        </div>
+                      )}
+
                       {lineItems.length > 0 && (
                         <div className="mt-3">
                           <p className="text-xs font-medium text-gray-500 mb-1">Line items</p>
@@ -333,7 +369,7 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
                         </div>
                       )}
 
-                      {bid.status === 'submitted' && (
+                      {bid.status === 'submitted' && isOwner && (
                         <div className="flex gap-2 pt-2 border-t mt-2">
                           <Button
                             size="sm"
@@ -362,7 +398,7 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
                         </div>
                       )}
 
-                      {bid.status === 'shortlisted' && (
+                      {bid.status === 'shortlisted' && isOwner && (
                         <div className="flex flex-wrap gap-2 pt-2 border-t mt-2">
                           <Button
                             size="sm"

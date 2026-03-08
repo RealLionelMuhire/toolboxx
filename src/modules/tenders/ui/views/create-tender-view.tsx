@@ -21,6 +21,8 @@ import {
 } from '@/components/ui/select'
 import { DocumentUpload } from '../components/document-upload'
 import { ProductSearchInput } from '../components/product-search-input'
+import { ItemImageUpload } from '../components/item-image-upload'
+import { TenderDeliveryLocation } from '../components/tender-delivery-location'
 import { UNIT_OPTIONS, CURRENCY_OPTIONS } from '@/constants/units'
 
 export function CreateTenderView() {
@@ -34,8 +36,12 @@ export function CreateTenderView() {
   const [responseDeadline, setResponseDeadline] = useState('')
   const [contactPreference, setContactPreference] = useState<'email' | 'phone' | 'chat'>('email')
   const [currency, setCurrency] = useState('USD')
+  const [deliveryLocationCountry, setDeliveryLocationCountry] = useState('')
+  const [deliveryLocationProvince, setDeliveryLocationProvince] = useState('')
+  const [deliveryLocationDistrict, setDeliveryLocationDistrict] = useState('')
+  const [deliveryAddress, setDeliveryAddress] = useState('')
   const [documents, setDocuments] = useState<{ file: string }[]>([])
-  const [items, setItems] = useState<{ product?: string; name: string; quantity: number; unit: string; specification?: string }[]>([])
+  const [items, setItems] = useState<{ product?: string; name: string; quantity: number; unit: string; specification?: string; image?: string | null }[]>([])
 
   const session = useQuery({
     ...trpc.auth.session.queryOptions(),
@@ -172,6 +178,7 @@ export function CreateTenderView() {
       quantity: i.quantity,
       unit: i.unit || 'unit',
       specification: i.specification?.trim() || undefined,
+      image: i.image || undefined,
     }))
 
     createMutation.mutate({
@@ -184,6 +191,10 @@ export function CreateTenderView() {
       responseDeadline: responseDeadline || undefined,
       contactPreference,
       currency: currency || 'USD',
+      deliveryLocationCountry: deliveryLocationCountry || undefined,
+      deliveryLocationProvince: deliveryLocationProvince || undefined,
+      deliveryLocationDistrict: deliveryLocationDistrict || undefined,
+      deliveryAddress: deliveryAddress || undefined,
     })
   }
 
@@ -229,13 +240,12 @@ export function CreateTenderView() {
                 <div className="flex-1 min-w-[140px]">
                   <ProductSearchInput
                     value={item.name}
-                    onChange={(name, productId, unit) => {
+                    onChange={(name, productId, unit, imageId) => {
                       setItems(items.map((it, i) => {
                         if (i !== idx) return it
                         const next = { ...it, name, product: productId }
-                        if (unit != null && unit !== '') {
-                          next.unit = unit
-                        }
+                        if (unit != null && unit !== '') next.unit = unit
+                        if (imageId != null) next.image = imageId || null
                         return next
                       }))
                     }}
@@ -284,6 +294,14 @@ export function CreateTenderView() {
                   }}
                   className="flex-1 min-w-[100px]"
                 />
+                <ItemImageUpload
+                  value={item.image ?? null}
+                  onChange={(id) => {
+                    setItems(items.map((it, i) =>
+                      i === idx ? { ...it, image: id } : it
+                    ))
+                  }}
+                />
                 <Button
                   type="button"
                   variant="ghost"
@@ -300,7 +318,7 @@ export function CreateTenderView() {
               variant="outline"
               size="sm"
               className="gap-1"
-              onClick={() => setItems([...items, { name: '', quantity: 1, unit: 'unit' }])}
+              onClick={() => setItems([...items, { name: '', quantity: 1, unit: 'unit', image: null }])}
             >
               <Plus className="size-3.5" /> Add item
             </Button>
@@ -440,6 +458,21 @@ export function CreateTenderView() {
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        <div>
+          <Label className="mb-2 block">Delivery location</Label>
+          <p className="text-xs text-gray-500 mb-2">Where can products be delivered for this tender?</p>
+          <TenderDeliveryLocation
+            country={deliveryLocationCountry}
+            province={deliveryLocationProvince}
+            district={deliveryLocationDistrict}
+            address={deliveryAddress}
+            onCountryChange={setDeliveryLocationCountry}
+            onProvinceChange={setDeliveryLocationProvince}
+            onDistrictChange={setDeliveryLocationDistrict}
+            onAddressChange={setDeliveryAddress}
+          />
         </div>
 
         <div className="space-y-1.5">
