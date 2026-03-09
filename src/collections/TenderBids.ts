@@ -142,22 +142,6 @@ export const TenderBids: CollectionConfig = {
       ],
     },
     {
-      name: 'images',
-      type: 'array',
-      maxRows: 10,
-      admin: {
-        description: 'Images attached by the bidder (visible to tender creator)',
-      },
-      fields: [
-        {
-          name: 'file',
-          type: 'upload',
-          relationTo: 'media',
-          required: true,
-        },
-      ],
-    },
-    {
       name: 'amount',
       type: 'number',
       min: 0,
@@ -210,6 +194,12 @@ export const TenderBids: CollectionConfig = {
           name: 'location',
           type: 'text',
           admin: { description: 'Tenant location for this line' },
+        },
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media',
+          admin: { description: 'Optional image for this line (visible to tender creator)' },
         },
       ],
     },

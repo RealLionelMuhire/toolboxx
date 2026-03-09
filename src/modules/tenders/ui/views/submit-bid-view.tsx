@@ -13,8 +13,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { DocumentUpload } from '../components/document-upload'
+import { ItemImageUpload } from '../components/item-image-upload'
 
-type LineItemState = { price: string; quantity: string; specification: string; location: string }
+type LineItemState = { price: string; quantity: string; specification: string; location: string; image?: string | null }
 
 export function SubmitBidView({ tenderId }: { tenderId: string }) {
   const trpc = useTRPC()
@@ -23,8 +24,8 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
   const [amount, setAmount] = useState('')
   const [validUntil, setValidUntil] = useState('')
   const [documents, setDocuments] = useState<{ file: string }[]>([])
-  const [images, setImages] = useState<{ file: string }[]>([])
   const [lineItems, setLineItems] = useState<LineItemState[]>([])
+  const [amountIsOverridden, setAmountIsOverridden] = useState(false)
   const [useDefaultLocation, setUseDefaultLocation] = useState(false)
 
   const session = useQuery({
@@ -90,11 +91,10 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
       } else setMessage('')
     }
     setAmount(bid.amount != null ? String(bid.amount) : '')
+    setAmountIsOverridden(bid.amount != null)
     setValidUntil(bid.validUntil ? new Date(bid.validUntil).toISOString().slice(0, 10) : '')
     const docs = (bid.documents as any[]) ?? []
     setDocuments(docs.map((d: any) => ({ file: typeof d.file === 'string' ? d.file : d.file?.id })).filter((d: any) => d.file))
-    const imgs = (bid.images as any[]) ?? []
-    setImages(imgs.map((img: any) => ({ file: typeof img.file === 'string' ? img.file : img.file?.id })).filter((img: any) => img.file))
   }, [isEditMode, myBid?.id])
 
   // Initialize lineItems from tender items count or from existing bid
@@ -106,7 +106,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
       return
     }
     if (isEditMode && myBid?.lineItems && Array.isArray(myBid.lineItems)) {
-      const existing = myBid.lineItems as { price?: number; quantity?: number; specification?: string; location?: string }[]
+      const existing = myBid.lineItems as { price?: number; quantity?: number; specification?: string; location?: string; image?: string | null }[]
       setLineItems(
         items.map((_: any, i: number) => {
           const row = existing[i]
@@ -115,6 +115,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
             quantity: row?.quantity != null ? String(row.quantity) : '',
             specification: row?.specification ?? '',
             location: row?.location ?? '',
+            image: typeof row?.image === 'string' ? row.image : (row?.image as any)?.id ?? null,
           }
         }),
       )
@@ -125,6 +126,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
           quantity: item.quantity != null ? String(item.quantity) : '',
           specification: item.specification ?? '',
           location: '',
+          image: null,
         })),
       )
     }
@@ -135,6 +137,21 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
     if (!useDefaultLocation || !defaultLocation) return
     setLineItems((prev) => prev.map((row) => ({ ...row, location: defaultLocation })))
   }, [useDefaultLocation, defaultLocation])
+
+  const computedTotal = useMemo(() => {
+    return lineItems.reduce((sum, row) => {
+      const p = parseFloat(row.price) || 0
+      const q = parseFloat(row.quantity) || 0
+      return sum + p * q
+    }, 0)
+  }, [lineItems])
+
+  // Sync amount with computed total when not overridden
+  useEffect(() => {
+    if (!amountIsOverridden && computedTotal > 0) {
+      setAmount(String(computedTotal))
+    }
+  }, [computedTotal, amountIsOverridden])
 
   if (tenderLoading || !session.isFetched || (isEditMode && bidLoading)) {
     return (
@@ -164,12 +181,15 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
     )
   }
 
-  const setLineItem = (index: number, field: keyof LineItemState, value: string) => {
+  const displayAmount = amountIsOverridden ? amount : (computedTotal > 0 ? String(computedTotal) : amount)
+
+  const setLineItem = (index: number, field: keyof LineItemState, value: string | null) => {
     setLineItems((prev) => {
       const next = [...prev]
-      if (next[index]) next[index] = { ...next[index], [field]: value }
+      if (next[index]) next[index] = { ...next[index], [field]: value ?? '' }
       return next
     })
+    if (field === 'price' || field === 'quantity') setAmountIsOverridden(false)
   }
 
   const tenderCurrency = (tender as any).currency ?? 'USD'
@@ -182,8 +202,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
         ? { root: { children: [{ children: [{ text: message }], type: 'paragraph', version: 1 }], direction: null, format: '', indent: 0, type: 'root', version: 1 } }
         : undefined,
       documents: documents.length > 0 ? documents : undefined,
-      images: images.length > 0 ? images : undefined,
-      amount: amount ? parseFloat(amount) : undefined,
+      amount: amountIsOverridden ? (amount ? parseFloat(amount) : undefined) : (computedTotal > 0 ? computedTotal : (amount ? parseFloat(amount) : undefined)),
       currency: tenderCurrency,
       validUntil: validUntil || undefined,
       lineItems:
@@ -193,6 +212,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
               quantity: parseFloat(row.quantity) || 0.001,
               specification: row.specification || undefined,
               location: (row.location?.trim() || defaultLocation) || undefined,
+              image: row.image || undefined,
             }))
           : undefined,
     }
@@ -244,55 +264,28 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
           <DocumentUpload id="bid-documents" value={documents} onChange={setDocuments} maxFiles={10} />
         </div>
 
-        <div className="space-y-1.5">
-          <Label>Images (optional)</Label>
-          <p className="text-xs text-gray-500">Images you attach here can be viewed by the tender creator.</p>
-          <DocumentUpload id="bid-images" value={images} onChange={setImages} maxFiles={5} accept="image/*" />
-        </div>
-
         {tenderItems.length > 0 && (
           <>
             <div>
-              <Label className="mb-2 block">Tender items (buyer requirements)</Label>
+              <Label className="mb-2 block">Your offering per line</Label>
               <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
-                <table className="w-full min-w-[500px] border border-gray-200 rounded-lg overflow-hidden">
+                <table className="w-full min-w-[700px] border border-gray-200 rounded-lg overflow-hidden">
                   <thead>
                     <tr className="bg-gray-50 text-left text-sm">
                       <th className="p-2 font-medium">Product name</th>
-                      <th className="p-2 font-medium">Quantity</th>
-                      <th className="p-2 font-medium">Unit</th>
-                      <th className="p-2 font-medium">Specification</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tenderItems.map((item: any, i: number) => (
-                      <tr key={i} className="border-t border-gray-100">
-                        <td className="p-2">{item.name ?? '—'}</td>
-                        <td className="p-2">{item.quantity ?? '—'}</td>
-                        <td className="p-2">{item.unit ?? '—'}</td>
-                        <td className="p-2 text-gray-600">{item.specification ?? '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div>
-              <Label className="mb-2 block">Your offering per line</Label>
-              <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
-                <table className="w-full min-w-[600px] border border-gray-200 rounded-lg overflow-hidden">
-                  <thead>
-                    <tr className="bg-gray-50 text-left text-sm">
                       <th className="p-2 font-medium">Price</th>
                       <th className="p-2 font-medium">Quantity</th>
                       <th className="p-2 font-medium">Specification</th>
                       <th className="p-2 font-medium">Location</th>
+                      <th className="p-2 font-medium w-24">Image</th>
                     </tr>
                   </thead>
                   <tbody>
                     {lineItems.map((row, i) => (
                       <tr key={i} className="border-t border-gray-100">
+                        <td className="p-2 font-medium text-gray-700">
+                          {tenderItems[i]?.name ?? '—'}
+                        </td>
                         <td className="p-2">
                           <Input
                             type="number"
@@ -329,6 +322,18 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
                             placeholder="Location"
                           />
                         </td>
+                        <td className="p-2">
+                          <ItemImageUpload
+                            value={row.image ?? null}
+                            onChange={(id) => {
+                              setLineItems((prev) => {
+                                const next = [...prev]
+                                if (next[i]) next[i] = { ...next[i], image: id }
+                                return next
+                              })
+                            }}
+                          />
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -357,11 +362,17 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
               id="amount"
               type="number"
               min={0}
-              step={100}
-              placeholder="e.g. 500000"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              step={0.01}
+              placeholder={computedTotal > 0 ? String(computedTotal) : 'e.g. 500000'}
+              value={displayAmount}
+              onChange={(e) => {
+                setAmount(e.target.value)
+                setAmountIsOverridden(true)
+              }}
             />
+            {computedTotal > 0 && !amountIsOverridden && (
+              <p className="text-xs text-gray-500">Auto-computed from price × quantity. Edit to override.</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>Currency</Label>

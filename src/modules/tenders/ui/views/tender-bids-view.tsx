@@ -43,24 +43,17 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
     refetchOnMount: 'always',
   })
 
-  const { data: tenderAuth } = useQuery({
+  const { data: tender } = useQuery({
     ...trpc.tenders.getById.queryOptions({ id: tenderId }),
     enabled: !!session.data?.user,
   })
-
-  const { data: tenderPublic } = useQuery({
-    ...trpc.tenders.getTenderForBids.queryOptions({ id: tenderId }),
-    enabled: !session.data?.user && session.isFetched,
-  })
-
-  const tender = tenderAuth ?? tenderPublic
 
   const { data, isLoading } = useQuery({
     ...trpc.tenders.listBids.queryOptions({
       tenderId,
       limit: 100,
     }),
-    enabled: true,
+    enabled: !!session.data?.user,
   })
 
   const allBids = data?.bids ?? []
@@ -115,7 +108,7 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
 
   const tenderItems = useMemo(() => (tender?.items as any[]) ?? [], [tender?.items])
 
-  if (isLoading || (!session.data?.user && !tender && session.isFetched)) {
+  if (!session.data?.user || isLoading || !tender) {
     return (
       <div className="flex justify-center py-20">
         <Loader2 className="size-6 animate-spin text-gray-400" />
@@ -315,32 +308,6 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
                         </div>
                       )}
 
-                      {bid.images && bid.images.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          <span className="text-xs font-medium text-gray-500 w-full">Bidder images</span>
-                          {bid.images.map((img: any, ii: number) => {
-                            const file = typeof img.file === 'object' ? img.file : null
-                            const url = file?.url
-                            if (!url) return null
-                            return (
-                              <a
-                                key={ii}
-                                href={url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block"
-                              >
-                                <img
-                                  src={url}
-                                  alt={file?.alt || `Image ${ii + 1}`}
-                                  className="h-20 w-20 object-cover rounded border hover:opacity-90 transition"
-                                />
-                              </a>
-                            )
-                          })}
-                        </div>
-                      )}
-
                       {lineItems.length > 0 && (
                         <div className="mt-3">
                           <p className="text-xs font-medium text-gray-500 mb-1">Line items</p>
@@ -348,21 +315,39 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
                             <table className="w-full min-w-[500px] border border-gray-100 rounded-lg text-sm">
                               <thead>
                                 <tr className="bg-gray-50 text-left">
+                                  <th className="p-2 font-medium">Product</th>
                                   <th className="p-2 font-medium">Price</th>
                                   <th className="p-2 font-medium">Quantity</th>
                                   <th className="p-2 font-medium">Spec</th>
                                   <th className="p-2 font-medium">Location</th>
+                                  <th className="p-2 font-medium w-12">Image</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {lineItems.map((li: any, idx: number) => (
-                                  <tr key={idx} className="border-t border-gray-100">
-                                    <td className="p-2">{li.price != null ? formatCurrency(li.price, currency) : '—'}</td>
-                                    <td className="p-2">{li.quantity ?? '—'}</td>
-                                    <td className="p-2 text-gray-600">{li.specification ?? '—'}</td>
-                                    <td className="p-2">{li.location ?? '—'}</td>
-                                  </tr>
-                                ))}
+                                {lineItems.map((li: any, idx: number) => {
+                                  const tenderItem = tenderItems[idx]
+                                  const productName = tenderItem?.name ?? '—'
+                                  const img = typeof li.image === 'object' ? li.image : null
+                                  const imgUrl = img?.url
+                                  return (
+                                    <tr key={idx} className="border-t border-gray-100">
+                                      <td className="p-2 font-medium text-gray-700">{productName}</td>
+                                      <td className="p-2">{li.price != null ? formatCurrency(li.price, currency) : '—'}</td>
+                                      <td className="p-2">{li.quantity ?? '—'}</td>
+                                      <td className="p-2 text-gray-600">{li.specification ?? '—'}</td>
+                                      <td className="p-2">{li.location ?? '—'}</td>
+                                      <td className="p-2">
+                                        {imgUrl ? (
+                                          <a href={imgUrl} target="_blank" rel="noopener noreferrer">
+                                            <img src={imgUrl} alt="" className="h-10 w-10 object-cover rounded border" />
+                                          </a>
+                                        ) : (
+                                          <span className="text-gray-300">—</span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
                               </tbody>
                             </table>
                           </div>

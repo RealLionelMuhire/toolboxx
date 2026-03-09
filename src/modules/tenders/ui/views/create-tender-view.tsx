@@ -55,8 +55,8 @@ export function CreateTenderView() {
 
   const createMutation = useMutation(
     trpc.tenders.create.mutationOptions({
-      onSuccess: (data) => {
-        toast.success('Tender created as draft')
+      onSuccess: (data, vars) => {
+        toast.success(vars.publish ? 'Tender published' : 'Tender created as draft')
         router.push(`/tenders/${data.id}`)
       },
       onError: (err) => {
@@ -159,7 +159,7 @@ export function CreateTenderView() {
     return null
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent, publish = false) => {
     e.preventDefault()
 
     if (!title.trim() || !description.trim()) {
@@ -195,6 +195,7 @@ export function CreateTenderView() {
       deliveryLocationProvince: deliveryLocationProvince || undefined,
       deliveryLocationDistrict: deliveryLocationDistrict || undefined,
       deliveryAddress: deliveryAddress || undefined,
+      publish,
     })
   }
 
@@ -206,7 +207,7 @@ export function CreateTenderView() {
         It will start as a draft — publish it when ready.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-5">
         <div className="space-y-1.5">
           <Label htmlFor="title">Title *</Label>
           <Input
@@ -486,9 +487,19 @@ export function CreateTenderView() {
         </div>
 
         <div className="flex items-center gap-3 pt-2">
-          <Button type="submit" variant="elevated" className="bg-orange-400" disabled={createMutation.isPending}>
+          <Button type="submit" variant="outline" disabled={createMutation.isPending}>
             {createMutation.isPending && <Loader2 className="size-4 animate-spin mr-1.5" />}
-            Create Draft
+            Save as Draft
+          </Button>
+          <Button
+            type="button"
+            variant="elevated"
+            className="bg-orange-400"
+            disabled={createMutation.isPending}
+            onClick={(e) => handleSubmit(e as any, true)}
+          >
+            {createMutation.isPending && <Loader2 className="size-4 animate-spin mr-1.5" />}
+            Publish Tender
           </Button>
           <Button type="button" variant="outline" onClick={() => router.back()}>
             Cancel

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { TRPCError } from '@trpc/server'
-import { baseProcedure, protectedProcedure, optionalAuthProcedure, createTRPCRouter } from '@/trpc/init'
+import { protectedProcedure, createTRPCRouter } from '@/trpc/init'
 import { isSuperAdmin } from '@/lib/access'
 
 // Valid status transitions for tenders
@@ -52,16 +52,20 @@ export const tendersRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const user = ctx.session.user
       const where: any = {}
+      const isBuyer = (user as any).roles?.includes?.('client')
+      const isSeller = (user as any).roles?.includes?.('tenant')
 
       if (input.mine) {
         where.createdBy = { equals: user.id }
       } else {
-        // Non-owners only see open tenders + their own
         if (!isSuperAdmin(user)) {
-          where.or = [
-            { status: { equals: 'open' } },
-            { createdBy: { equals: user.id } },
-          ]
+          if (isBuyer && !isSeller) {
+            // Pure buyer: only see their own tenders (cannot see others' open tenders)
+            where.createdBy = { equals: user.id }
+          } else {
+            // Seller (or both): see open tenders to bid on
+            where.status = { equals: 'open' }
+          }
         }
       }
 
@@ -135,6 +139,7 @@ export const tendersRouter = createTRPCRouter({
         deliveryLocationProvince: z.string().optional(),
         deliveryLocationDistrict: z.string().optional(),
         deliveryAddress: z.string().optional(),
+        publish: z.boolean().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -167,10 +172,57 @@ export const tendersRouter = createTRPCRouter({
           deliveryAddress: input.deliveryAddress,
           tenant: tenantId || null,
           createdBy: user.id,
-          status: 'draft',
+          status: input.publish ? 'open' : 'draft',
           bidCount: 0,
         } as any,
       })
+
+      if (input.publish) {
+        const tenderId = (tender as any).id
+        const tenderUrl = `/tenders/${tenderId}`
+        const categoryIds = (input.category ?? []) as string[]
+        const resolvedCatIds = categoryIds.map((c: any) => (typeof c === 'string' ? c : c?.id)).filter(Boolean)
+        try {
+          if (resolvedCatIds.length > 0) {
+            const matchingProducts = await ctx.db.find({
+              collection: 'products',
+              where: { category: { in: resolvedCatIds } },
+              limit: 1000,
+              depth: 0,
+            })
+            const tenantIdSet = new Set<string>()
+            for (const p of matchingProducts.docs) {
+              const tid = typeof p.tenant === 'string' ? p.tenant : (p.tenant as any)?.id
+              if (tid) tenantIdSet.add(tid)
+            }
+            if (tenantIdSet.size > 0) {
+              const tenantUsers = await ctx.db.find({
+                collection: 'users',
+                where: { 'tenants.tenant': { in: Array.from(tenantIdSet) } },
+                limit: 500,
+                depth: 0,
+              })
+              for (const u of tenantUsers.docs) {
+                if (String(u.id) === String(user.id)) continue
+                notify(ctx.db, u.id, 'New Tender Published', `"${input.title}" is now open for bids.`, tenderUrl)
+              }
+            }
+          } else {
+            const allTenants = await ctx.db.find({
+              collection: 'users',
+              where: { roles: { contains: 'tenant' } },
+              limit: 500,
+              depth: 0,
+            })
+            for (const u of allTenants.docs) {
+              if (String(u.id) === String(user.id)) continue
+              notify(ctx.db, u.id, 'New Tender Published', `"${input.title}" is now open for bids.`, tenderUrl)
+            }
+          }
+        } catch (e) {
+          console.error('[tenders] publish notifications failed:', e)
+        }
+      }
 
       return tender
     }),
@@ -335,22 +387,7 @@ export const tendersRouter = createTRPCRouter({
 
   // ─── Bid CRUD ──────────────────────────────────────────────────
 
-  /** Minimal tender info for bids page - no auth required when tender is open */
-  getTenderForBids: baseProcedure
-    .input(z.object({ id: z.string() }))
-    .query(async ({ ctx, input }) => {
-      const tender = await ctx.db.findByID({
-        collection: 'tenders',
-        id: input.id,
-        depth: 1,
-        select: { id: true, title: true, status: true, items: true },
-      })
-      if (!tender) throw new TRPCError({ code: 'NOT_FOUND' })
-      if (tender.status !== 'open') throw new TRPCError({ code: 'FORBIDDEN', message: 'Tender is not open for viewing bids' })
-      return tender
-    }),
-
-  listBids: optionalAuthProcedure
+  listBids: protectedProcedure
     .input(
       z.object({
         tenderId: z.string(),
@@ -363,19 +400,14 @@ export const tendersRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const user = ctx.session?.user ?? null
+      const user = ctx.session.user
 
       const tender = await ctx.db.findByID({ collection: 'tenders', id: input.tenderId, depth: 0 })
       if (!tender) throw new TRPCError({ code: 'NOT_FOUND' })
 
       const ownerId = resolveId(tender.createdBy as string | { id: string })
-      const isOwner = user && ownerId === String(user.id)
-      const isSeller = user && (user as any).roles?.includes?.('tenant')
-      const isBuyerOnly = user && (user as any).roles?.includes?.('client') && !isOwner
-
-      // Bids visible to: unauthenticated, seller (tenant), or tender creator (buyer). NOT visible to other buyers.
-      if (isBuyerOnly && !isSuperAdmin(user)) {
-        throw new TRPCError({ code: 'FORBIDDEN', message: 'Buyers cannot view bids on tenders they did not create' })
+      if (ownerId !== String(user.id) && !isSuperAdmin(user)) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Only the buyer who created this tender can view its bids' })
       }
 
       const where: any = { tender: { equals: input.tenderId } }
@@ -453,7 +485,6 @@ export const tendersRouter = createTRPCRouter({
         tenderId: z.string(),
         message: z.any().optional(),
         documents: z.array(z.object({ file: z.string() })).optional(),
-        images: z.array(z.object({ file: z.string() })).optional(),
         amount: z.number().min(0).optional(),
         currency: z.string().optional(),
         validUntil: z.string().optional(),
@@ -464,6 +495,7 @@ export const tendersRouter = createTRPCRouter({
               quantity: z.number().min(0.001),
               specification: z.string().optional(),
               location: z.string().optional(),
+              image: z.string().optional(),
             }),
           )
           .optional(),
@@ -515,7 +547,6 @@ export const tendersRouter = createTRPCRouter({
           status: 'submitted',
           message: input.message,
           documents: input.documents,
-          images: input.images,
           amount: input.amount,
           currency: input.currency ?? 'RWF',
           validUntil: input.validUntil,
@@ -549,7 +580,6 @@ export const tendersRouter = createTRPCRouter({
         bidId: z.string(),
         message: z.any().optional(),
         documents: z.array(z.object({ file: z.string() })).optional(),
-        images: z.array(z.object({ file: z.string() })).optional(),
         amount: z.number().min(0).optional(),
         currency: z.string().optional(),
         validUntil: z.string().optional(),
@@ -560,6 +590,7 @@ export const tendersRouter = createTRPCRouter({
               quantity: z.number().min(0.001),
               specification: z.string().optional(),
               location: z.string().optional(),
+              image: z.string().optional(),
             }),
           )
           .optional(),
