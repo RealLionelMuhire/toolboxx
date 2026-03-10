@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ImageIcon, X, Loader2 } from 'lucide-react'
+import { ImageIcon, X, Loader2, Maximize2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { ImageLightbox } from '@/components/image-lightbox'
 
 const MAX_SIZE_MB = 5
 
@@ -35,6 +36,7 @@ interface ItemImageUploadProps {
 export function ItemImageUpload({ value, onChange, disabled }: ItemImageUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   useEffect(() => {
     if (!value) {
@@ -87,11 +89,24 @@ export function ItemImageUpload({ value, onChange, disabled }: ItemImageUploadPr
       {value ? (
         <div className="flex items-center gap-1.5">
           {previewUrl && (
-            <img
-              src={previewUrl}
-              alt="Item"
-              className="h-10 w-10 object-cover rounded border"
-            />
+            <>
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(true)}
+                className="relative group h-10 w-10 rounded border overflow-hidden focus:outline-none focus:ring-2 focus:ring-orange-400"
+              >
+                <img src={previewUrl} alt="Item" className="h-full w-full object-cover" />
+                <span className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Maximize2 className="size-4 text-white" />
+                </span>
+              </button>
+              <ImageLightbox
+                images={[{ url: previewUrl, alt: 'Item image' }]}
+                initialIndex={0}
+                open={lightboxOpen}
+                onOpenChange={setLightboxOpen}
+              />
+            </>
           )}
           <button
             type="button"

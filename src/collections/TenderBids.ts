@@ -196,6 +196,12 @@ export const TenderBids: CollectionConfig = {
           admin: { description: 'Tenant location for this line' },
         },
         {
+          name: 'skipped',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: { description: 'Seller chose not to bid on this item' },
+        },
+        {
           name: 'image',
           type: 'upload',
           relationTo: 'media',

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { Loader2, ArrowLeft } from 'lucide-react'
 import { toast } from 'sonner'
@@ -19,12 +19,14 @@ type LineItemState = { price: string; quantity: string; specification: string; l
 
 export function SubmitBidView({ tenderId }: { tenderId: string }) {
   const trpc = useTRPC()
+  const queryClient = useQueryClient()
   const router = useRouter()
   const [message, setMessage] = useState('')
   const [amount, setAmount] = useState('')
   const [validUntil, setValidUntil] = useState('')
   const [documents, setDocuments] = useState<{ file: string }[]>([])
   const [lineItems, setLineItems] = useState<LineItemState[]>([])
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
   const [amountIsOverridden, setAmountIsOverridden] = useState(false)
   const [useDefaultLocation, setUseDefaultLocation] = useState(false)
 
@@ -54,7 +56,10 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
 
   const submitMutation = useMutation(
     trpc.tenders.submitBid.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (data) => {
+        queryClient.setQueryData(trpc.tenders.getMyBidForTender.queryKey({ tenderId }), data)
+        queryClient.invalidateQueries(trpc.tenders.getMyBids.queryFilter())
+        queryClient.invalidateQueries(trpc.tenders.getById.queryFilter({ id: tenderId }))
         toast.success('Bid submitted successfully')
         router.push(`/tenders/${tenderId}`)
       },
@@ -66,9 +71,13 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
 
   const updateMutation = useMutation(
     trpc.tenders.updateBid.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (data) => {
+        queryClient.setQueryData(trpc.tenders.getMyBidForTender.queryKey({ tenderId }), data)
+        queryClient.invalidateQueries(trpc.tenders.getMyBids.queryFilter())
+        queryClient.invalidateQueries(trpc.tenders.getById.queryFilter({ id: tenderId }))
+        queryClient.invalidateQueries(trpc.tenders.listBids.queryFilter({ tenderId }))
         toast.success('Bid updated')
-        router.push(`/tenders/${tenderId}`)
+        // Stay on page for swift UX; data is synced via setQueryData above
       },
       onError: (err) => {
         toast.error(err.message || 'Failed to update bid')
@@ -97,19 +106,23 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
     setDocuments(docs.map((d: any) => ({ file: typeof d.file === 'string' ? d.file : d.file?.id })).filter((d: any) => d.file))
   }, [isEditMode, myBid?.id])
 
-  // Initialize lineItems from tender items count or from existing bid
+  // Initialize lineItems and selectedIndices from tender items or existing bid
   useEffect(() => {
     if (!tender) return
     const items = tenderItems
     if (items.length === 0) {
       setLineItems([])
+      setSelectedIndices(new Set())
       return
     }
     if (isEditMode && myBid?.lineItems && Array.isArray(myBid.lineItems)) {
-      const existing = myBid.lineItems as { price?: number; quantity?: number; specification?: string; location?: string; image?: string | null }[]
+      const existing = myBid.lineItems as { price?: number; quantity?: number; specification?: string; location?: string; image?: string | null; skipped?: boolean }[]
+      const selected = new Set<number>()
       setLineItems(
         items.map((_: any, i: number) => {
           const row = existing[i]
+          const skipped = row?.skipped ?? false
+          if (!skipped) selected.add(i)
           return {
             price: row?.price != null ? String(row.price) : '',
             quantity: row?.quantity != null ? String(row.quantity) : '',
@@ -119,6 +132,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
           }
         }),
       )
+      setSelectedIndices(selected)
     } else {
       setLineItems(
         items.map((item: any) => ({
@@ -129,6 +143,7 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
           image: null,
         })),
       )
+      setSelectedIndices(new Set(items.map((_: any, i: number) => i)))
     }
   }, [tender?.id, tenderItems.length, isEditMode, myBid?.id])
 
@@ -138,13 +153,17 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
     setLineItems((prev) => prev.map((row) => ({ ...row, location: defaultLocation })))
   }, [useDefaultLocation, defaultLocation])
 
+  const selectedIndicesSorted = useMemo(() => Array.from(selectedIndices).sort((a, b) => a - b), [selectedIndices])
+
   const computedTotal = useMemo(() => {
-    return lineItems.reduce((sum, row) => {
+    return selectedIndicesSorted.reduce((sum, i) => {
+      const row = lineItems[i]
+      if (!row) return sum
       const p = parseFloat(row.price) || 0
       const q = parseFloat(row.quantity) || 0
       return sum + p * q
     }, 0)
-  }, [lineItems])
+  }, [lineItems, selectedIndicesSorted])
 
   // Sync amount with computed total when not overridden
   useEffect(() => {
@@ -197,6 +216,11 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
+    if (tenderItems.length > 0 && selectedIndices.size === 0) {
+      toast.error('Select at least one item to bid on')
+      return
+    }
+
     const payload = {
       message: message.trim()
         ? { root: { children: [{ children: [{ text: message }], type: 'paragraph', version: 1 }], direction: null, format: '', indent: 0, type: 'root', version: 1 } }
@@ -207,13 +231,17 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
       validUntil: validUntil || undefined,
       lineItems:
         tenderItems.length > 0
-          ? lineItems.map((row) => ({
-              price: parseFloat(row.price) || 0,
-              quantity: parseFloat(row.quantity) || 0.001,
-              specification: row.specification || undefined,
-              location: (row.location?.trim() || defaultLocation) || undefined,
-              image: row.image || undefined,
-            }))
+          ? lineItems.map((row, i) => {
+              const skipped = !selectedIndices.has(i)
+              return {
+                price: parseFloat(row.price) || 0,
+                quantity: skipped ? 0.001 : parseFloat(row.quantity) || 0.001,
+                specification: row.specification || undefined,
+                location: (row.location?.trim() || defaultLocation) || undefined,
+                image: row.image || undefined,
+                skipped,
+              }
+            })
           : undefined,
     }
 
@@ -267,79 +295,128 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
         {tenderItems.length > 0 && (
           <>
             <div>
-              <Label className="mb-2 block">Your offering per line</Label>
-              <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
-                <table className="w-full min-w-[700px] border border-gray-200 rounded-lg overflow-hidden">
-                  <thead>
-                    <tr className="bg-gray-50 text-left text-sm">
-                      <th className="p-2 font-medium">Product name</th>
-                      <th className="p-2 font-medium">Price</th>
-                      <th className="p-2 font-medium">Quantity</th>
-                      <th className="p-2 font-medium">Specification</th>
-                      <th className="p-2 font-medium">Location</th>
-                      <th className="p-2 font-medium w-24">Image</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lineItems.map((row, i) => (
-                      <tr key={i} className="border-t border-gray-100">
-                        <td className="p-2 font-medium text-gray-700">
-                          {tenderItems[i]?.name ?? '—'}
-                        </td>
-                        <td className="p-2">
-                          <Input
-                            type="number"
-                            min={0}
-                            step={0.01}
-                            className="h-8 w-full min-w-0"
-                            value={row.price}
-                            onChange={(e) => setLineItem(i, 'price', e.target.value)}
-                          />
-                        </td>
-                        <td className="p-2">
-                          <Input
-                            type="number"
-                            min={0.001}
-                            step={0.001}
-                            className="h-8 w-full min-w-0"
-                            value={row.quantity}
-                            onChange={(e) => setLineItem(i, 'quantity', e.target.value)}
-                          />
-                        </td>
-                        <td className="p-2">
-                          <Input
-                            className="h-8 w-full min-w-0"
-                            value={row.specification}
-                            onChange={(e) => setLineItem(i, 'specification', e.target.value)}
-                            placeholder="Your spec"
-                          />
-                        </td>
-                        <td className="p-2">
-                          <Input
-                            className="h-8 w-full min-w-0"
-                            value={row.location}
-                            onChange={(e) => setLineItem(i, 'location', e.target.value)}
-                            placeholder="Location"
-                          />
-                        </td>
-                        <td className="p-2">
-                          <ItemImageUpload
-                            value={row.image ?? null}
-                            onChange={(id) => {
-                              setLineItems((prev) => {
-                                const next = [...prev]
-                                if (next[i]) next[i] = { ...next[i], image: id }
-                                return next
-                              })
-                            }}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <Label className="mb-2 block">Select items to bid on</Label>
+              <p className="text-xs text-gray-500 mb-2">Choose which tender items you want to quote on. Only selected items will appear in your offering table.</p>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedIndices(new Set(tenderItems.map((_: any, i: number) => i)))}
+                >
+                  Check all
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedIndices(new Set())}
+                >
+                  Uncheck all
+                </Button>
               </div>
-              {defaultLocation && (
+              <div className="border rounded-lg divide-y bg-gray-50/50 max-h-48 overflow-y-auto">
+                {tenderItems.map((item: any, i: number) => (
+                  <div key={i} className="flex items-center gap-2 p-2 hover:bg-gray-50">
+                    <Checkbox
+                      id={`bid-item-${i}`}
+                      checked={selectedIndices.has(i)}
+                      onCheckedChange={(v) => {
+                        setSelectedIndices((prev) => {
+                          const next = new Set(prev)
+                          if (v) next.add(i)
+                          else next.delete(i)
+                          return next
+                        })
+                      }}
+                    />
+                    <Label htmlFor={`bid-item-${i}`} className="flex-1 cursor-pointer text-sm font-medium">
+                      {item.name ?? '—'} — {item.quantity} {item.unit || 'unit'}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {selectedIndicesSorted.length > 0 && (
+              <div>
+                <Label className="mb-2 block">Your offering per line</Label>
+                <div className="overflow-x-auto -webkit-overflow-scrolling-touch">
+                  <table className="w-full min-w-[700px] border border-gray-200 rounded-lg overflow-hidden">
+                    <thead>
+                      <tr className="bg-gray-50 text-left text-sm">
+                        <th className="p-2 font-medium">Product name</th>
+                        <th className="p-2 font-medium">Price</th>
+                        <th className="p-2 font-medium">Quantity</th>
+                        <th className="p-2 font-medium">Specification</th>
+                        <th className="p-2 font-medium">Location</th>
+                        <th className="p-2 font-medium w-24">Image</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedIndicesSorted.map((i) => {
+                        const row = lineItems[i]
+                        if (!row) return null
+                        return (
+                          <tr key={i} className="border-t border-gray-100">
+                            <td className="p-2 font-medium text-gray-700">
+                              {tenderItems[i]?.name ?? '—'}
+                            </td>
+                            <td className="p-2">
+                              <Input
+                                type="number"
+                                min={0}
+                                step={0.01}
+                                className="h-8 w-full min-w-0"
+                                value={row.price}
+                                onChange={(e) => setLineItem(i, 'price', e.target.value)}
+                              />
+                            </td>
+                            <td className="p-2">
+                              <Input
+                                type="number"
+                                min={0.001}
+                                step={0.001}
+                                className="h-8 w-full min-w-0"
+                                value={row.quantity}
+                                onChange={(e) => setLineItem(i, 'quantity', e.target.value)}
+                              />
+                            </td>
+                            <td className="p-2">
+                              <Input
+                                className="h-8 w-full min-w-0"
+                                value={row.specification}
+                                onChange={(e) => setLineItem(i, 'specification', e.target.value)}
+                                placeholder="Your spec"
+                              />
+                            </td>
+                            <td className="p-2">
+                              <Input
+                                className="h-8 w-full min-w-0"
+                                value={row.location}
+                                onChange={(e) => setLineItem(i, 'location', e.target.value)}
+                                placeholder="Location"
+                              />
+                            </td>
+                            <td className="p-2">
+                              <ItemImageUpload
+                                value={row.image ?? null}
+                                onChange={(id) => {
+                                  setLineItems((prev) => {
+                                    const next = [...prev]
+                                    if (next[i]) next[i] = { ...next[i], image: id }
+                                    return next
+                                  })
+                                }}
+                              />
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                {defaultLocation && (
                 <div className="flex items-center gap-2 mt-2">
                   <Checkbox
                     id="defaultLoc"
@@ -351,7 +428,8 @@ export function SubmitBidView({ tenderId }: { tenderId: string }) {
                   </Label>
                 </div>
               )}
-            </div>
+              </div>
+            )}
           </>
         )}
 

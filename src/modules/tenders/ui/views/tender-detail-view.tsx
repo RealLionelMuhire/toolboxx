@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { Loader2, ArrowLeft, Calendar, Mail, Phone, MessageCircle, FileText, Send, CheckCircle, MapPin } from 'lucide-react'
+import { ImageWithLightbox } from '@/components/image-with-lightbox'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -223,7 +224,7 @@ export function TenderDetailView({ tenderId }: { tenderId: string }) {
                       <tr key={i} className="border-b last:border-0">
                         <td className="py-2 pr-2 w-12">
                           {imgUrl ? (
-                            <img src={imgUrl} alt="" className="h-10 w-10 object-cover rounded border" />
+                            <ImageWithLightbox src={imgUrl} alt={name} />
                           ) : (
                             <span className="text-gray-300">—</span>
                           )}

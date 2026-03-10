@@ -496,6 +496,7 @@ export const tendersRouter = createTRPCRouter({
               specification: z.string().optional(),
               location: z.string().optional(),
               image: z.string().optional(),
+              skipped: z.boolean().optional(),
             }),
           )
           .optional(),
@@ -591,6 +592,7 @@ export const tendersRouter = createTRPCRouter({
               specification: z.string().optional(),
               location: z.string().optional(),
               image: z.string().optional(),
+              skipped: z.boolean().optional(),
             }),
           )
           .optional(),

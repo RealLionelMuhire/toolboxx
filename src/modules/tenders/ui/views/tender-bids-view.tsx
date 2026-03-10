@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { Loader2, ArrowLeft, ThumbsUp, ThumbsDown, User, MessageCircle, Mail, FileText, ChevronDown, ChevronRight } from 'lucide-react'
+import { ImageWithLightbox } from '@/components/image-with-lightbox'
 import { toast } from 'sonner'
 import { useTRPC } from '@/trpc/client'
 import { Button } from '@/components/ui/button'
@@ -332,15 +333,15 @@ export function TenderBidsView({ tenderId }: { tenderId: string }) {
                                   return (
                                     <tr key={idx} className="border-t border-gray-100">
                                       <td className="p-2 font-medium text-gray-700">{productName}</td>
-                                      <td className="p-2">{li.price != null ? formatCurrency(li.price, currency) : '—'}</td>
-                                      <td className="p-2">{li.quantity ?? '—'}</td>
-                                      <td className="p-2 text-gray-600">{li.specification ?? '—'}</td>
-                                      <td className="p-2">{li.location ?? '—'}</td>
+                                      <td className="p-2">{li.skipped ? '—' : (li.price != null ? formatCurrency(li.price, currency) : '—')}</td>
+                                      <td className="p-2">{li.skipped ? 'Not bidding' : (li.quantity ?? '—')}</td>
+                                      <td className="p-2 text-gray-600">{li.skipped ? '—' : (li.specification ?? '—')}</td>
+                                      <td className="p-2">{li.skipped ? '—' : (li.location ?? '—')}</td>
                                       <td className="p-2">
-                                        {imgUrl ? (
-                                          <a href={imgUrl} target="_blank" rel="noopener noreferrer">
-                                            <img src={imgUrl} alt="" className="h-10 w-10 object-cover rounded border" />
-                                          </a>
+                                        {li.skipped ? (
+                                          <span className="text-gray-300">—</span>
+                                        ) : imgUrl ? (
+                                          <ImageWithLightbox src={imgUrl} alt={productName} />
                                         ) : (
                                           <span className="text-gray-300">—</span>
                                         )}
