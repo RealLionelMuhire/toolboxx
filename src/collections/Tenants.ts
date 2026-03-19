@@ -230,6 +230,77 @@ export const Tenants: CollectionConfig = {
       },
     },
     {
+      name: "logisticsContactPhone",
+      type: "text",
+      required: false,
+      admin: {
+        condition: (data) => data.category === 'logistics',
+        description: "Optional logistics contact phone number (if category is Logistics)",
+      },
+      validate: (value: any, data: any) => {
+        if (data?.category === 'logistics' && !value) {
+          return "Logistics contact phone number is recommended for Logistic providers";
+        }
+        if (value) {
+          const phoneStr = String(value);
+          if (!/^\+\d{10,15}$/.test(phoneStr)) {
+            return "Phone number must start with + and contain 10-15 digits (e.g., +250788888888)";
+          }
+        }
+        return true;
+      },
+    },
+    {
+      name: "logisticsContactEmail",
+      type: "email",
+      required: false,
+      admin: {
+        condition: (data) => data.category === 'logistics',
+        description: "Optional logistics contact email for Logistic providers",
+      },
+    },
+    {
+      name: "logisticsServices",
+      type: "array",
+      required: false,
+      minRows: 0,
+      admin: {
+        condition: (data) => data.category === 'logistics',
+        description: "List of logistics services (e.g., pickup, delivery, cross-border)",
+      },
+      fields: [
+        {
+          name: 'service',
+          type: 'text',
+        },
+      ],
+    },
+    {
+      name: "logisticsCoverageAreas",
+      type: "array",
+      required: false,
+      minRows: 0,
+      admin: {
+        condition: (data) => data.category === 'logistics',
+        description: "Areas covered by this logistics provider",
+      },
+      fields: [
+        {
+          name: 'area',
+          type: 'text',
+        },
+      ],
+    },
+    {
+      name: "logisticsDetails",
+      type: "textarea",
+      required: false,
+      admin: {
+        condition: (data) => data.category === 'logistics',
+        description: "Additional details about logistics services",
+      },
+    },
+    {
       name: "currency",
       type: "select",
       required: true,

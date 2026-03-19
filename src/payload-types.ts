@@ -237,6 +237,26 @@ export interface Tenant {
    */
   contactPhone: string;
   /**
+   * Logistics contact phone number, shown for logistics providers
+   */
+  logisticsContactPhone?: string | null;
+  /**
+   * Logistics contact email, shown for logistics providers
+   */
+  logisticsContactEmail?: string | null;
+  /**
+   * List of logistics services (e.g., pickup, delivery)
+   */
+  logisticsServices?: { service?: string | null }[] | null;
+  /**
+   * Areas covered by logistics provider
+   */
+  logisticsCoverageAreas?: { area?: string | null }[] | null;
+  /**
+   * Additional logistics details
+   */
+  logisticsDetails?: string | null;
+  /**
    * Currency for all transactions in your store
    */
   currency: 'USD' | 'RWF' | 'UGX' | 'TZS' | 'BIF' | 'KSH';

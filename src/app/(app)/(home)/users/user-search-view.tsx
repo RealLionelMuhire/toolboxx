@@ -23,18 +23,30 @@ export function UserSearchView() {
   const router = useRouter();
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
-  const [userType, setUserType] = useState<"all" | "tenants" | "clients">("all");
+  const [userType, setUserType] = useState<"all" | "tenants" | "clients" | "logistics">("all");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
   const { data: session } = useQuery(trpc.auth.session.queryOptions());
 
-  const { data: users, isLoading } = useQuery({
+  const usersQuery = useQuery({
     ...trpc.users.search.queryOptions({ 
       query: debouncedQuery,
-      userType,
+      userType: userType === 'logistics' ? 'tenants' : userType,
     }),
-    enabled: debouncedQuery.length >= 2,
+    enabled: debouncedQuery.length >= 2 && userType !== 'logistics',
   });
+
+  const logisticsQuery = useQuery({
+    ...trpc.tenants.getLogisticsProviders.queryOptions({
+      query: debouncedQuery,
+      limit: 50,
+    }),
+    enabled: debouncedQuery.length >= 2 && userType === 'logistics',
+  });
+
+  const users = userType === 'logistics' ? undefined : usersQuery.data;
+  const isLoading = userType === 'logistics' ? logisticsQuery.isLoading : usersQuery.isLoading;
+
 
   const startConversation = useMutation(trpc.chat.startConversation.mutationOptions({
     onSuccess: (conversation) => {
@@ -111,6 +123,7 @@ export function UserSearchView() {
               <SelectItem value="all">All Users</SelectItem>
               <SelectItem value="tenants">Sellers Only</SelectItem>
               <SelectItem value="clients">Buyers Only</SelectItem>
+              <SelectItem value="logistics">Logistics Providers</SelectItem>
             </SelectContent>
           </Select>
           <Button type="submit" disabled={isLoading}>
@@ -139,6 +152,66 @@ export function UserSearchView() {
                     <div className="h-4 bg-muted rounded w-1/4" />
                   </div>
                   <div className="h-10 w-32 bg-muted rounded" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : userType === 'logistics' ? (
+        <div className="space-y-4">
+          {(logisticsQuery.data || []).map((tenant) => (
+            <Card key={tenant.id}>
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Store className="h-5 w-5 text-green-600" />
+                      <h3 className="font-semibold text-lg">{tenant.name}</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">{tenant.slug}</p>
+                    <div className="flex gap-2 flex-wrap">
+                      <Badge variant="default">Logistics</Badge>
+                      {tenant.locationCityOrArea && <Badge variant="secondary">{tenant.locationCityOrArea}</Badge>}
+                    </div>
+                    <div className="flex gap-2">  
+                      {tenant.isVerified ? (
+                        <Badge variant="default">Verified</Badge>
+                      ) : (
+                        <Badge variant="destructive">Unverified</Badge>
+                      )}
+                      {tenant.verificationStatus && (
+                        <Badge variant="outline" className="text-xs">
+                          {tenant.verificationStatus.replace('_', ' ')}
+                        </Badge>
+                      )}
+                    </div>
+                    {tenant.logisticsContactPhone && <p className="text-sm">Phone: {tenant.logisticsContactPhone}</p>}
+                    {tenant.logisticsContactEmail && <p className="text-sm">Email: {tenant.logisticsContactEmail}</p>}
+                    {tenant.logisticsServices && tenant.logisticsServices.length > 0 && (
+                      <p className="text-sm text-muted-foreground">Services: {tenant.logisticsServices.map((s:any)=>s.service).filter(Boolean).join(', ')}</p>
+                    )}
+                    {tenant.logisticsCoverageAreas && tenant.logisticsCoverageAreas.length > 0 && (
+                      <p className="text-sm text-muted-foreground">Coverage: {tenant.logisticsCoverageAreas.map((a:any)=>a.area).filter(Boolean).join(', ')}</p>
+                    )}
+                    {tenant.logisticsDetails && <p className="text-sm text-muted-foreground">{tenant.logisticsDetails}</p>}
+                    {(tenant.contactPhone || tenant.locationCountry) && (
+                      <p className="text-sm text-muted-foreground">Contact: {tenant.contactPhone} • {tenant.locationCountry}</p>
+                    )}
+                  </div>
+                  <Button
+                    onClick={() => {
+                      if (!session?.user) {
+                        const loginUrl = `/sign-in?redirect=${encodeURIComponent(pathname)}`;
+                        router.prefetch(loginUrl);
+                        router.push(loginUrl);
+                        return;
+                      }
+                      toast.success("Contact vendor via messaging or phone directly.");
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Contact
+                  </Button>
                 </div>
               </CardContent>
             </Card>

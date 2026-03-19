@@ -37,6 +37,44 @@ export const tenantsRouter = createTRPCRouter({
       return tenant as Tenant & { image: Media | null };
     }),
 
+  // Get logistics providers (public listing)
+  getLogisticsProviders: baseProcedure
+    .input(
+      z.object({
+        query: z.string().optional(),
+        limit: z.number().min(1).max(100).optional().default(50),
+        includeUnverified: z.boolean().optional().default(true),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      // Show logistics providers, optionally including unverified ones
+      const where: any = {
+        category: { equals: 'logistics' },
+      };
+
+      if (!input.includeUnverified) {
+        where.isVerified = { equals: true };
+      }
+
+      if (input.query && input.query.trim().length >= 2) {
+        where.or = [
+          { name: { contains: input.query.trim() } },
+          { slug: { contains: input.query.trim() } },
+          { locationCityOrArea: { contains: input.query.trim() } },
+        ];
+      }
+
+      const tenants = await ctx.db.find({
+        collection: 'tenants',
+        where,
+        limit: input.limit,
+        sort: '-createdAt',
+        depth: 1,
+      });
+
+      return tenants.docs as (Tenant & { image: Media | null })[];
+    }),
+
   // Get current user's tenant
   getCurrentTenant: protectedProcedure.query(async ({ ctx }) => {
     const userData = await ctx.db.findByID({
