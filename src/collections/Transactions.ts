@@ -366,6 +366,15 @@ export const Transactions: CollectionConfig = {
       },
     },
     {
+      name: 'logisticsProvider',
+      type: 'relationship',
+      relationTo: 'tenants',
+      hasMany: false,
+      admin: {
+        description: 'Logistics provider selected by buyer (optional). If not set, seller must select one before completion.',
+      },
+    },
+    {
       name: 'relatedOrders',
       type: 'ui',
       admin: {

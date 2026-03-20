@@ -292,6 +292,7 @@ export const transactionsRouter = createTRPCRouter({
       z.object({
         transactionId: z.string(),
         mtnTransactionId: z.string().min(1, "Transaction ID is required"),
+        logisticsProviderId: z.string().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -341,14 +342,21 @@ export const transactionsRouter = createTRPCRouter({
         });
       }
 
+      // Update transaction with logistics provider if provided
+      const updateData: any = {
+        mtnTransactionId: input.mtnTransactionId,
+        status: "awaiting_verification",
+      };
+
+      if (input.logisticsProviderId) {
+        updateData.logisticsProvider = input.logisticsProviderId;
+      }
+
       // Update transaction
       await ctx.db.update({
         collection: "transactions",
         id: input.transactionId,
-        data: {
-          mtnTransactionId: input.mtnTransactionId,
-          status: "awaiting_verification",
-        },
+        data: updateData,
       });
 
       return {

@@ -478,5 +478,14 @@ export const Orders: CollectionConfig = {
         description: "Currency (Rwandan Francs)"
       }
     },
+    {
+      name: "logisticsProvider",
+      type: "relationship",
+      relationTo: "tenants",
+      hasMany: false,
+      admin: {
+        description: "Logistics provider selected by buyer (optional). If not set, seller can select one during payment verification."
+      }
+    },
   ],
 };

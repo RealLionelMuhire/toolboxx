@@ -680,6 +680,10 @@ export interface Transaction {
    * Whether the tenant has viewed this transaction
    */
   viewedByTenant?: boolean | null;
+  /**
+   * Logistics provider selected by buyer (optional). If not set, seller must select one before completion.
+   */
+  logisticsProvider?: (string | null) | Tenant;
   updatedAt: string;
   createdAt: string;
 }
@@ -784,6 +788,10 @@ export interface Order {
    * Currency (Rwandan Francs)
    */
   currency?: string | null;
+  /**
+   * Logistics provider assigned to this order
+   */
+  logisticsProvider?: (string | null) | Tenant;
   updatedAt: string;
   createdAt: string;
 }

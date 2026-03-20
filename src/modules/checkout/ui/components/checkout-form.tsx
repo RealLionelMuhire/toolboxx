@@ -17,6 +17,13 @@ interface CheckoutFormProps {
   totalAmount: number
   onSubmitAction: (formData: CheckoutFormData) => void
   isSubmitting?: boolean
+  logisticsProviders?: Array<{
+    id: string
+    name: string
+    slug: string
+    logisticsContactPhone?: string | null
+    logisticsServices?: Array<{service?: string | null}> | null
+  }>
 }
 
 export interface CheckoutFormData {
@@ -27,13 +34,15 @@ export interface CheckoutFormData {
   addressLine1: string
   city: string
   country: string
+  logisticsProviderId?: string | null
 }
 
 export function CheckoutForm({ 
   cartItems, 
   totalAmount, 
   onSubmitAction, 
-  isSubmitting 
+  isSubmitting,
+  logisticsProviders = []
 }: CheckoutFormProps) {
   const [formData, setFormData] = useState<CheckoutFormData>({
     email: "",
@@ -43,6 +52,7 @@ export function CheckoutForm({
     addressLine1: "",
     city: "",
     country: "Rwanda",
+    logisticsProviderId: null,
   })
 
   const [errors, setErrors] = useState<Partial<Record<keyof CheckoutFormData, string>>>({})
@@ -302,6 +312,74 @@ export function CheckoutForm({
                       )}
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Logistics Provider Selection */}
+              {logisticsProviders.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">
+                    📦 Delivery Partner (Optional)
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Select a logistics provider or let the seller choose one
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <label className="flex items-center space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50" htmlFor="no-logistics">
+                      <input
+                        type="radio"
+                        id="no-logistics"
+                        name="logistics"
+                        checked={!formData.logisticsProviderId}
+                        onChange={() => setFormData(prev => ({ ...prev, logisticsProviderId: null }))}
+                        disabled={isSubmitting}
+                        className="h-4 w-4 text-primary"
+                      />
+                      <span className="font-medium text-sm">
+                        I'll decide later (seller will choose)
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="space-y-2">
+                    {logisticsProviders.map((provider) => (
+                      <label key={provider.id} className="flex items-start space-x-2 p-3 border rounded-lg cursor-pointer hover:bg-gray-50" htmlFor={`logistics-${provider.id}`}>
+                        <input
+                          type="radio"
+                          id={`logistics-${provider.id}`}
+                          name="logistics"
+                          value={provider.id}
+                          checked={formData.logisticsProviderId === provider.id}
+                          onChange={() => setFormData(prev => ({ ...prev, logisticsProviderId: provider.id }))}
+                          disabled={isSubmitting}
+                          className="h-4 w-4 text-primary mt-0.5"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-sm">{provider.name}</p>
+                          {provider.logisticsContactPhone && (
+                            <p className="text-xs text-muted-foreground">{provider.logisticsContactPhone}</p>
+                          )}
+                          {provider.logisticsServices && provider.logisticsServices.length > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              Services: {provider.logisticsServices.map((s: any) => s.service).filter(Boolean).join(', ')}
+                            </p>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {logisticsProviders.length === 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold border-b pb-2">
+                    📦 Delivery Partner
+                  </h3>
+                  <p className="text-sm text-yellow-700 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                    ℹ️ No logistics providers available at the moment. The seller will help arrange delivery.
+                  </p>
                 </div>
               )}
 

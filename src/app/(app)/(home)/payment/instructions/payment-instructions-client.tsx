@@ -22,6 +22,7 @@ export function PaymentInstructionsClient() {
   const [mtnTransactionId, setMtnTransactionId] = useState("");
   const [copied, setCopied] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [selectedLogisticsId, setSelectedLogisticsId] = useState<string | null>(null);
 
   const trpc = useTRPC();
   const clearCart = useCartStore((state) => state.clearCart);
@@ -36,6 +37,15 @@ export function PaymentInstructionsClient() {
     trpc.transactions.getStatus.queryOptions(
       { transactionId: transactionId || "" },
       { enabled: !!transactionId }
+    )
+  );
+
+  // Get logistics providers (only if buyer didn't select one)
+  const showLogisticsSelection = transaction && !transaction.logisticsProvider;
+  const { data: logisticsProviders } = useQuery(
+    trpc.tenants.getLogisticsProviders.queryOptions(
+      { query: "", limit: 100 },
+      { enabled: showLogisticsSelection }
     )
   );
 
@@ -89,9 +99,16 @@ export function PaymentInstructionsClient() {
       return;
     }
 
+    // If logistics selection is shown and required, validate it
+    if (showLogisticsSelection && !selectedLogisticsId && !transaction.logisticsProvider) {
+      toast.error("Please select a logistics provider or indicate no delivery needed");
+      return;
+    }
+
     submitMutation.mutate({
       transactionId,
       mtnTransactionId: mtnTransactionId.trim(),
+      logisticsProviderId: selectedLogisticsId || undefined,
     });
   };
 
@@ -292,6 +309,76 @@ export function PaymentInstructionsClient() {
                 Check your SMS from Mobile Money for the transaction ID
               </p>
             </div>
+
+            {/* Logistics Provider Selection (only if buyer didn't select one) */}
+            {showLogisticsSelection && (
+              <div className="space-y-4 bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                <h3 className="font-semibold text-blue-900">
+                  📦 Select a Delivery Partner (Seller will confirm)
+                </h3>
+                <p className="text-sm text-blue-800">
+                  Choose a logistics provider or indicate no delivery is needed. You can finalize this after payment verification.
+                </p>
+                
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2 p-3 border border-blue-300 rounded bg-white cursor-pointer hover:bg-blue-50" htmlFor="no-logistics-payment">
+                    <input
+                      type="radio"
+                      id="no-logistics-payment"
+                      name="payment-logistics"
+                      checked={!selectedLogisticsId}
+                      onChange={() => setSelectedLogisticsId(null)}
+                      className="h-4 w-4 text-primary"
+                    />
+                    <span className="text-sm font-medium">
+                      I'll decide later (seller will help arrange)
+                    </span>
+                  </label>
+                </div>
+
+                {logisticsProviders && logisticsProviders.length > 0 ? (
+                  <div className="space-y-2">
+                    {logisticsProviders.map((provider) => (
+                      <label key={provider.id} className="flex items-start space-x-2 p-3 border border-blue-300 rounded bg-white cursor-pointer hover:bg-blue-50" htmlFor={`payment-logistics-${provider.id}`}>
+                        <input
+                          type="radio"
+                          id={`payment-logistics-${provider.id}`}
+                          name="payment-logistics"
+                          value={provider.id}
+                          checked={selectedLogisticsId === provider.id}
+                          onChange={() => setSelectedLogisticsId(provider.id)}
+                          className="h-4 w-4 text-primary mt-0.5"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{provider.name}</p>
+                          {provider.logisticsContactPhone && (
+                            <p className="text-xs text-gray-600">{provider.logisticsContactPhone}</p>
+                          )}
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-yellow-700 bg-yellow-50 p-2 rounded border border-yellow-200">
+                    ℹ️ No verified logistics providers currently available
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Show selected logistics (if buyer already selected one) */}
+            {transaction?.logisticsProvider && (
+              <div className="space-y-2 bg-green-50 border border-green-200 p-4 rounded-lg">
+                <h3 className="font-semibold text-green-900">
+                  ✅ Delivery Partner Assigned
+                </h3>
+                <p className="text-sm text-green-800">
+                  {typeof transaction.logisticsProvider === 'object' 
+                    ? transaction.logisticsProvider.name 
+                    : 'Logistics provider assigned'}
+                </p>
+              </div>
+            )}
 
             <Button
               type="button"

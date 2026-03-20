@@ -48,6 +48,13 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
     ids: productIds,
   }));
 
+  const { data: logisticsProviders, isLoading: isLoadingLogistics } = useQuery(
+    trpc.tenants.getLogisticsProviders.queryOptions({
+      query: "",
+      limit: 100,
+    })
+  );
+
   const purchase = useMutation(trpc.checkout.initiatePayment.mutationOptions({
     onMutate: () => {
       setStates({ success: false, cancel: false });
@@ -90,6 +97,7 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         city: formData.city,
         country: formData.country,
       } : undefined,
+      logisticsProviderId: formData.logisticsProviderId || undefined,
     });
   };
 
@@ -175,6 +183,7 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         }, 0)}
         onSubmitAction={handleCheckoutSubmit}
         isSubmitting={purchase.isPending}
+        logisticsProviders={logisticsProviders || []}
       />
 
       {states.cancel && (
