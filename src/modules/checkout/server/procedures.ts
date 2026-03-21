@@ -42,6 +42,12 @@ export const checkoutRouter = createTRPCRouter({
       )
     )
     .mutation(async ({ ctx, input }) => {
+      console.log("[Checkout::initiatePayment] Mutation called", {
+        tenantSlug: input.tenantSlug,
+        itemCount: input.items.length,
+        deliveryType: input.deliveryType,
+      });
+
       // 1. Extract product IDs from items
       const productIds = input.items.map(item => item.productId);
       
@@ -136,6 +142,13 @@ export const checkoutRouter = createTRPCRouter({
       const expiryDate = new Date();
       expiryDate.setHours(expiryDate.getHours() + 48);
       
+      console.log("[Checkout::initiatePayment] Creating transaction...", {
+        customerId: ctx.session.user.id,
+        tenantId: tenant.id,
+        totalAmount,
+        itemCount: products.docs.length,
+      });
+
       const transaction = await ctx.db.create({
         collection: "transactions",
         data: {
@@ -165,6 +178,20 @@ export const checkoutRouter = createTRPCRouter({
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
       });
+
+      console.log("[Checkout::initiatePayment] Transaction created successfully", {
+        transactionId: transaction.id,
+        paymentReference: transaction.paymentReference,
+      });
+
+      // Verify transaction ID exists before returning
+      if (!transaction.id) {
+        console.error("[Checkout::initiatePayment] ERROR: Transaction created but no ID returned", { transaction });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Transaction creation failed: no ID returned",
+        });
+      }
 
       // 7. Return payment instructions
       return {

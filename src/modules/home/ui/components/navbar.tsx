@@ -79,12 +79,14 @@ const publicNavbarItems: NavbarItem[] = [
   { href: "/about", children: "About" },
   { href: "/features", children: "Features" },
   { href: "/pricing", children: "Pricing" },
+  { href: "/delivery-partners", children: "Delivery Partners" },
   { href: "/contact", children: "Contact" },
 ];
 
 const customerNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
   { href: "/tenders", children: "Tenders" },
+  { href: "/delivery-partners", children: "Delivery Partners" },
   { href: "/orders", children: "My Purchases" },
   { href: "/library", children: (
     <>
@@ -105,6 +107,7 @@ const myStoreBaseItems: NavbarItem[] = [
 const tenantNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
   { href: "/tenders", children: "Tenders" },
+  { href: "/delivery-partners", children: "Delivery Partners" },
   { href: "/verify-payments", children: "Transactions" },
   { href: "/my-store", children: (
     <>

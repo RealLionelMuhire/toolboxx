@@ -58,10 +58,43 @@ export const BuyNowButton = ({
     trpc.checkout.initiatePayment.mutationOptions({
       onSuccess: (data) => {
         setDialogOpen(false);
+        
+        // Verify transactionId exists
+        if (!data?.transactionId) {
+          console.error("[BuyNowButton] Missing transactionId in response:", data);
+          toast.error("Payment initialization failed. Please try again.");
+          return;
+        }
+        
+        // Log successful payment initiation (for debugging)
+        console.log("[BuyNowButton] Payment initiated with transactionId:", data.transactionId);
+        
         // Redirect to payment instructions page
-        router.push(`/payment/instructions?transactionId=${data.transactionId}`);
+        const paymentUrl = `/payment/instructions?transactionId=${data.transactionId}`;
+        console.log("[BuyNowButton] Redirecting to:", paymentUrl);
+        
+        try {
+          router.push(paymentUrl);
+        } catch (error) {
+          console.error("[BuyNowButton] Router push failed, using window.location as fallback:", error);
+          // Fallback: use window.location if router.push fails
+          window.location.href = paymentUrl;
+        }
+
+        // Additional fallback: ensure navigation happens even if router is delayed
+        setTimeout(() => {
+          console.log("[BuyNowButton] Verifying navigation to payment page...");
+          if (window.location.href.includes('/payment/instructions')) {
+            console.log("[BuyNowButton] Navigation successful");
+          } else {
+            console.warn("[BuyNowButton] Navigation may have failed, attempting window.location fallback");
+            window.location.href = paymentUrl;
+          }
+        }, 500);
       },
       onError: (error) => {
+        console.error("[BuyNowButton] Mutation error:", error);
+        
         if (error.data?.code === "UNAUTHORIZED") {
           // Redirect to login page with return URL immediately (no toast to avoid flash)
           setDialogOpen(false);
@@ -71,7 +104,9 @@ export const BuyNowButton = ({
           router.push(loginUrl);
           // Don't show toast - redirect happens immediately
         } else {
-          toast.error(error.message);
+          const errorMessage = error.message || "Payment initialization failed. Please try again.";
+          console.error("[BuyNowButton] Error message:", errorMessage);
+          toast.error(errorMessage);
         }
       },
     })

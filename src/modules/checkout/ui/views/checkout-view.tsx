@@ -60,10 +60,41 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
       setStates({ success: false, cancel: false });
     },
     onSuccess: (data) => {
+      // Verify transactionId exists
+      if (!data?.transactionId) {
+        console.error("[CheckoutView] Missing transactionId in response:", data);
+        toast.error("Payment initialization failed. Please try again.");
+        return;
+      }
+      
+      console.log("[CheckoutView] Payment initiated with transactionId:", data.transactionId);
+      
       // Redirect to payment instructions page
-      router.push(`/payment/instructions?transactionId=${data.transactionId}`);
+      const paymentUrl = `/payment/instructions?transactionId=${data.transactionId}`;
+      console.log("[CheckoutView] Redirecting to:", paymentUrl);
+      
+      try {
+        router.push(paymentUrl);
+      } catch (error) {
+        console.error("[CheckoutView] Router push failed, using window.location as fallback:", error);
+        // Fallback: use window.location if router.push fails
+        window.location.href = paymentUrl;
+      }
+
+      // Additional fallback: ensure navigation happens even if router is delayed
+      setTimeout(() => {
+        console.log("[CheckoutView] Verifying navigation to payment page...");
+        if (window.location.href.includes('/payment/instructions')) {
+          console.log("[CheckoutView] Navigation successful");
+        } else {
+          console.warn("[CheckoutView] Navigation may have failed, attempting window.location fallback");
+          window.location.href = paymentUrl;
+        }
+      }, 500);
     },
     onError: (error) => {
+      console.error("[CheckoutView] Mutation error:", error);
+      
       if (error.data?.code === "UNAUTHORIZED") {
         // Redirect to login page with return URL immediately (no toast to avoid flash)
         const checkoutPath = `/tenants/${tenantSlug}/checkout`;
@@ -73,7 +104,9 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         router.push(loginUrl);
         // Don't show toast - redirect happens immediately
       } else {
-        toast.error(error.message);
+        const errorMessage = error.message || "Payment initialization failed. Please try again.";
+        console.error("[CheckoutView] Error message:", errorMessage);
+        toast.error(errorMessage);
       }
     },
   }));
