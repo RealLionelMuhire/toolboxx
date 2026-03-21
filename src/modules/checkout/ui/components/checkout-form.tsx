@@ -35,6 +35,7 @@ export interface CheckoutFormData {
   city: string
   country: string
   logisticsProviderId?: string | null
+  needsLogisticsHimself: boolean
 }
 
 export function CheckoutForm({ 
@@ -53,6 +54,7 @@ export function CheckoutForm({
     city: "",
     country: "Rwanda",
     logisticsProviderId: null,
+    needsLogisticsHimself: false,
   })
 
   const [errors, setErrors] = useState<Partial<Record<keyof CheckoutFormData, string>>>({})
@@ -382,6 +384,23 @@ export function CheckoutForm({
                   </p>
                 </div>
               )}
+
+              {/* Needs Logistics Himself Checkbox */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="needsLogisticsHimself"
+                    checked={formData.needsLogisticsHimself}
+                    onChange={(e) => setFormData(prev => ({ ...prev, needsLogisticsHimself: e.target.checked }))}
+                    className="h-4 w-4 text-primary"
+                    disabled={isSubmitting}
+                  />
+                  <Label htmlFor="needsLogisticsHimself" className="font-normal cursor-pointer">
+                    I need to arrange logistics myself (I'll be redirected to logistics providers after payment)
+                  </Label>
+                </div>
+              </div>
 
               {/* Submit Button */}
               <Button

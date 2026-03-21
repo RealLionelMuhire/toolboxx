@@ -684,6 +684,10 @@ export interface Transaction {
    * Logistics provider selected by buyer (optional). If not set, seller must select one before completion.
    */
   logisticsProvider?: (string | null) | Tenant;
+  /**
+   * Whether the buyer indicated they need to arrange logistics themselves
+   */
+  needsLogisticsHimself?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }

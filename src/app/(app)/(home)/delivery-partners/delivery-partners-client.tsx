@@ -98,6 +98,13 @@ export function DeliveryPartnersClient() {
                         Unverified
                       </Badge>
                     )}
+                    <Badge
+                      variant="outline"
+                      className="whitespace-nowrap bg-blue-50 text-blue-700 border-blue-200"
+                    >
+                      <Truck className="h-3 w-3 mr-1" />
+                      Logistics Provider
+                    </Badge>
                   </div>
                 </CardHeader>
 
@@ -173,15 +180,16 @@ export function DeliveryPartnersClient() {
                     )}
                   </div>
 
-                  {/* View Profile Button */}
+                  {/* Contact Button */}
                   <Button
                     className="w-full mt-2"
                     variant="outline"
                     asChild
                   >
-                    <Link href={`/tenants/${partner.slug}`}>
-                      View Full Profile
-                    </Link>
+                    <a href={partner.logisticsContactPhone ? `tel:${partner.logisticsContactPhone}` : `mailto:${partner.logisticsContactEmail || ''}`}>
+                      <Phone className="h-4 w-4 mr-2" />
+                      Contact
+                    </a>
                   </Button>
                 </CardContent>
               </Card>
@@ -208,7 +216,7 @@ export function DeliveryPartnersClient() {
               ✓ Verified partners have completed our verification process and are trusted by our community.
             </p>
             <p>
-              ✓ Click "View Full Profile" to see more details about any delivery partner.
+              ✓ Click "Contact" to call or email the logistics provider directly.
             </p>
           </CardContent>
         </Card>

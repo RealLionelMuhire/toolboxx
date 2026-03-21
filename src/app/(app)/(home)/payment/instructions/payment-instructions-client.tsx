@@ -63,12 +63,23 @@ export function PaymentInstructionsClient() {
           clearCart(tenantSlug);
         }
         
-        toast.success("Transaction ID submitted! Redirecting to your orders...");
+        toast.success("Transaction ID submitted! Redirecting...");
         
-        // Immediate redirect to orders page with from=payment parameter
-        setTimeout(() => {
-          router.push("/orders?from=payment");
-        }, 500); // Brief delay to show success message
+        // Check if buyer needs to arrange logistics themselves
+        const needsLogisticsHimself = transaction?.needsLogisticsHimself;
+        
+        if (needsLogisticsHimself) {
+          // Redirect to delivery partners page
+          const deliveryPartnersUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/delivery-partners`;
+          setTimeout(() => {
+            router.push(deliveryPartnersUrl);
+          }, 500);
+        } else {
+          // Default: redirect to orders page
+          setTimeout(() => {
+            router.push("/orders?from=payment");
+          }, 500);
+        }
       },
       onError: (error) => {
         toast.error(error.message);

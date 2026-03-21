@@ -375,6 +375,14 @@ export const Transactions: CollectionConfig = {
       },
     },
     {
+      name: 'needsLogisticsHimself',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description: 'Whether the buyer indicated they need to arrange logistics themselves',
+      },
+    },
+    {
       name: 'relatedOrders',
       type: 'ui',
       admin: {

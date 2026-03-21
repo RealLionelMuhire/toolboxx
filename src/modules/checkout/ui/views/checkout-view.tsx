@@ -131,6 +131,7 @@ export const CheckoutView = ({ tenantSlug }: CheckoutViewProps) => {
         country: formData.country,
       } : undefined,
       logisticsProviderId: formData.logisticsProviderId || undefined,
+      needsLogisticsHimself: formData.needsLogisticsHimself,
     });
   };
 
