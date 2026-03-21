@@ -116,11 +116,14 @@ export const BuyNowButton = ({
     // Check authentication before opening dialog
     if (!session?.user) {
       // Redirect to login with current product page as return URL
+      console.warn("[BuyNowButton] User not authenticated. Redirecting to login.");
       const loginUrl = `/sign-in?redirect=${encodeURIComponent(pathname)}`;
       router.prefetch(loginUrl);
       router.push(loginUrl);
       return;
     }
+    
+    console.log("[BuyNowButton] User authenticated:", session.user.email);
     
     // User is authenticated, open the checkout dialog
     setDialogOpen(true);

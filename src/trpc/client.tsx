@@ -57,6 +57,10 @@ export function TRPCReactProvider(
             return fetch(input, {
               ...(init || {}),
               credentials: 'include', // Include cookies for auth
+              headers: {
+                ...(init?.headers || {}),
+                'Content-Type': 'application/json',
+              },
             } as RequestInit);
           },
         }),

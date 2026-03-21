@@ -51,6 +51,13 @@ export const protectedProcedure = baseProcedure.use(async ({ ctx, next }) => {
   const session = await ctx.db.auth({ headers });
 
   if (!session.user) {
+    // Log authentication failure for debugging
+    console.error('[protectedProcedure] Authentication failed:', {
+      hasCookie: headers.has('cookie'),
+      cookieValue: headers.get('cookie')?.substring(0, 50) + '...',
+      authorization: headers.has('authorization'),
+    });
+    
     throw new TRPCError({
       code: "UNAUTHORIZED",
       message: "Not authenticated",
