@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,6 +110,39 @@ export function DeliveryPartnersClient() {
                 </CardHeader>
 
                 <CardContent className="space-y-4">
+                  {/* Vehicle Image */}
+                  {partner.vehicleImage && (
+                    <div className="relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
+                      <Image
+                        src={typeof partner.vehicleImage === 'string' ? partner.vehicleImage : partner.vehicleImage.url}
+                        alt={partner.name}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                  )}
+
+                  {/* Vehicle Description */}
+                  {partner.vehicleDescription && (
+                    <div>
+                      <h4 className="font-semibold text-sm mb-1">Vehicle</h4>
+                      <p className="text-sm text-muted-foreground">
+                        {partner.vehicleDescription}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Delivery Pricing */}
+                  {partner.deliveryPricing && (
+                    <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
+                      <h4 className="font-semibold text-sm mb-1 text-amber-900">Pricing</h4>
+                      <p className="text-sm text-amber-800 whitespace-pre-wrap">
+                        {partner.deliveryPricing}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Services */}
                   {partner.logisticsServices && partner.logisticsServices.length > 0 && (
                     <div>

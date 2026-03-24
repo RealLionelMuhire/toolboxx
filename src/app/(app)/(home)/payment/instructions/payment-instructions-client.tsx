@@ -70,9 +70,8 @@ export function PaymentInstructionsClient() {
         
         if (needsLogisticsHimself) {
           // Redirect to delivery partners page
-          const deliveryPartnersUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/delivery-partners`;
           setTimeout(() => {
-            router.push(deliveryPartnersUrl);
+            router.push("/deliverypartners");
           }, 500);
         } else {
           // Default: redirect to orders page

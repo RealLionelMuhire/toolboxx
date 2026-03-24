@@ -101,6 +101,66 @@ export const tenantsRouter = createTRPCRouter({
     return tenant;
   }),
 
+  // Update logistics provider profile
+  updateLogisticsProfile: protectedProcedure
+    .input(
+      z.object({
+        vehicleDescription: z.string().optional(),
+        deliveryPricing: z.string().optional(),
+        vehicleImageId: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      // Get current user's tenant
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+      });
+
+      if (!userData.tenants?.[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No tenant found for user",
+        });
+      }
+
+      const tenantRel = userData.tenants[0].tenant as string | { id: string };
+      const tenantId = typeof tenantRel === "string" ? tenantRel : tenantRel?.id;
+
+      // Get tenant to verify it's a logistics provider
+      const tenant = await ctx.db.findByID({
+        collection: "tenants",
+        id: tenantId,
+      });
+
+      if (tenant.category !== "logistics") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only logistics providers can update logistics profile",
+        });
+      }
+
+      // Update tenant with new logistics info
+      const updateData: any = {};
+      if (input.vehicleDescription !== undefined) {
+        updateData.vehicleDescription = input.vehicleDescription;
+      }
+      if (input.deliveryPricing !== undefined) {
+        updateData.deliveryPricing = input.deliveryPricing;
+      }
+      if (input.vehicleImageId !== undefined) {
+        updateData.vehicleImage = input.vehicleImageId;
+      }
+
+      const updatedTenant = await ctx.db.update({
+        collection: "tenants",
+        id: tenantId,
+        data: updateData,
+      });
+
+      return updatedTenant;
+    }),
+
   // Super admin verify tenant
   verifyTenant: protectedProcedure
     .input(verifyTenantSchema)

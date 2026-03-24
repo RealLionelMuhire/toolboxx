@@ -301,6 +301,34 @@ export const Tenants: CollectionConfig = {
       },
     },
     {
+      name: "vehicleImage",
+      type: "upload",
+      relationTo: "media",
+      required: false,
+      admin: {
+        condition: (data) => data.category === 'logistics',
+        description: "Photo of your vehicle/machine used for delivery",
+      },
+    },
+    {
+      name: "vehicleDescription",
+      type: "textarea",
+      required: false,
+      admin: {
+        condition: (data) => data.category === 'logistics',
+        description: "Description of your vehicle type, capacity, and condition (e.g., Toyota Hiace, 2.5 ton capacity, good condition)",
+      },
+    },
+    {
+      name: "deliveryPricing",
+      type: "textarea",
+      required: false,
+      admin: {
+        condition: (data) => data.category === 'logistics',
+        description: "Your delivery pricing structure (e.g., Base fee: 5000 RWF, Per km: 100 RWF, Minimum distance: 5km)",
+      },
+    },
+    {
       name: "currency",
       type: "select",
       required: true,

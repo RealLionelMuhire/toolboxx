@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
+import { LogisticsProviderProfile } from '../components/logistics-provider-profile'
 import { 
   Package, 
   ShoppingBag, 
@@ -274,6 +275,9 @@ export function DashboardView() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Logistics Provider Profile - Only show for logistics providers */}
+          <LogisticsProviderProfile />
         </div>
       </div>
     </div>

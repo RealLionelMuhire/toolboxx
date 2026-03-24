@@ -257,6 +257,18 @@ export interface Tenant {
    */
   logisticsDetails?: string | null;
   /**
+   * Photo of vehicle/machine used for delivery
+   */
+  vehicleImage?: (string | null) | Media;
+  /**
+   * Description of vehicle type, capacity, and condition
+   */
+  vehicleDescription?: string | null;
+  /**
+   * Delivery pricing structure and rates
+   */
+  deliveryPricing?: string | null;
+  /**
    * Currency for all transactions in your store
    */
   currency: 'USD' | 'RWF' | 'UGX' | 'TZS' | 'BIF' | 'KSH';

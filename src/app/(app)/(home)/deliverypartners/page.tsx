@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { DeliveryPartnersClient } from "./delivery-partners-client";
+import { DeliveryPartnersClient } from "./deliverypartners-client";
 
 export const metadata: Metadata = {
   title: "Delivery Partners | Toolbay",
