@@ -14,6 +14,11 @@ const params = {
       clearOnDefault: true,
     })
     .withDefault([]),
+  tenantTypes: parseAsArrayOf(parseAsString)
+    .withOptions({
+      clearOnDefault: true,
+    })
+    .withDefault([]),
   minPrice: parseAsString
     .withOptions({
       clearOnDefault: true,

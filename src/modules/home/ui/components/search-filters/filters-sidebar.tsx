@@ -33,6 +33,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const TENANT_TYPE_OPTIONS = [
+  { label: "Retailer", value: "retailer" },
+  { label: "Wholesale", value: "wholesale" },
+  { label: "Industry", value: "industry" },
+  { label: "Renter", value: "renter" },
+  { label: "Logistics", value: "logistics" },
+];
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -102,6 +110,7 @@ export const FiltersSidebar = ({
       cursor: 1,
       limit: 1,
       categories: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+      tenantTypes: filters.tenantTypes?.length ? filters.tenantTypes : undefined,
       minPrice: filters.minPrice || undefined,
       maxPrice: filters.maxPrice || undefined,
       tags: filters.tags || undefined,
@@ -138,6 +147,7 @@ export const FiltersSidebar = ({
   const onClear = () => {
     setFilters({
       categories: [],
+      tenantTypes: [],
       minPrice: "",
       maxPrice: "",
       tags: [],
@@ -418,6 +428,37 @@ export const FiltersSidebar = ({
                   })}
                 </div>
               )}
+            </ProductFilter>
+
+            <ProductFilter
+              title="Tenant Type"
+              isOpen={openFilter === "tenantType"}
+              onToggle={() => setOpenFilter(openFilter === "tenantType" ? null : "tenantType")}
+            >
+              <div className="space-y-2">
+                {TENANT_TYPE_OPTIONS.map((type) => (
+                  <div key={type.value} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`tenant-type-${type.value}`}
+                      checked={filters.tenantTypes?.includes(type.value) || false}
+                      onCheckedChange={(checked) => {
+                        const current = filters.tenantTypes || [];
+                        if (checked) {
+                          onChange("tenantTypes", [...current, type.value]);
+                        } else {
+                          onChange(
+                            "tenantTypes",
+                            current.filter((value) => value !== type.value),
+                          );
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`tenant-type-${type.value}`} className="text-sm font-normal cursor-pointer">
+                      {type.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
             </ProductFilter>
 
             <ProductFilter

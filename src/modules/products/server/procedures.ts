@@ -313,6 +313,7 @@ export const productsRouter = createTRPCRouter({
         unit: z.array(z.string()).nullable().optional(),
         sort: z.enum(sortValues).nullable().optional(),
         tenantSlug: z.string().nullable().optional(),
+        tenantTypes: z.array(z.string()).nullable().optional(),
         // Location filtering
         locationCountry: z.string().optional(),
         locationProvince: z.string().optional(),
@@ -378,7 +379,15 @@ export const productsRouter = createTRPCRouter({
         where["tenant.slug"] = {
           equals: input.tenantSlug,
         };
-      } else {
+      }
+
+      if (input.tenantTypes && input.tenantTypes.length > 0) {
+        where["tenant.category"] = {
+          in: input.tenantTypes,
+        };
+      }
+
+      if (!input.tenantSlug) {
         // If we are loading products for public storefront (no tenantSlug)
         // Make sure to not load products set to "isPrivate: true" (using reverse not_equals logic)
         // These products are exclusively private to the tenant store
