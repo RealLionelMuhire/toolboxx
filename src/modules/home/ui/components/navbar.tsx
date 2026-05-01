@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell, Calculator } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -79,6 +79,12 @@ const publicNavbarItems: NavbarItem[] = [
   { href: "/about", children: "About" },
   { href: "/features", children: "Features" },
   { href: "/pricing", children: "Pricing" },
+  { href: "/calculators", children: (
+    <>
+      <Calculator className="h-4 w-4" />
+      <span>Calculators</span>
+    </>
+  ) },
   { href: "/deliverypartners", children: "Delivery Partners" },
   { href: "/contact", children: "Contact" },
 ];
@@ -92,6 +98,12 @@ const customerNavbarItems: NavbarItem[] = [
     <>
       <BookmarkCheck className="h-4 w-4" />
       <span>Library</span>
+    </>
+  ) },
+  { href: "/calculators", children: (
+    <>
+      <Calculator className="h-4 w-4" />
+      <span>Calculators</span>
     </>
   ) },
   { href: "/cart", children: "My Cart" },
@@ -120,6 +132,12 @@ const tenantNavbarItems: NavbarItem[] = [
     <>
       <BookmarkCheck className="h-4 w-4" />
       <span>Library</span>
+    </>
+  ) },
+  { href: "/calculators", children: (
+    <>
+      <Calculator className="h-4 w-4" />
+      <span>Calculators</span>
     </>
   ) },
   // { 
