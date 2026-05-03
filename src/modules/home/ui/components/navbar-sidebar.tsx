@@ -84,7 +84,7 @@ export const NavbarSidebar = ({
                   className="w-full text-left p-4 active:bg-black active:text-white flex items-center justify-between text-base font-medium touch-manipulation"
                 >
                   <span className="flex items-center gap-2">
-                    <Store className="h-4 w-4" />
+                    {item.icon ? item.icon : <Store className="h-4 w-4" />}
                     {item.children}
                   </span>
                   {expandedItems.has(item.href) ? (

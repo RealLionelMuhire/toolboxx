@@ -10,7 +10,7 @@ import Image from "next/image";
 
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { toast } from "sonner";
 import { OptimizedLink } from "@/components/optimized-link";
 import { 
@@ -34,6 +34,7 @@ const poppins = Poppins({
 export interface NavbarItem {
   href: string;
   children: React.ReactNode;
+  icon?: React.ReactNode;
   subItems?: NavbarItem[];
 };
 
@@ -79,12 +80,15 @@ const publicNavbarItems: NavbarItem[] = [
   { href: "/about", children: "About" },
   { href: "/features", children: "Features" },
   { href: "/pricing", children: "Pricing" },
-  { href: "/calculators", children: (
-    <>
-      <Calculator className="h-4 w-4" />
-      <span>Calculators</span>
-    </>
-  ) },
+  { 
+    href: "/calculators", 
+    children: "Calculators",
+    icon: <Calculator className="h-4 w-4" />,
+    subItems: [
+      { href: "/calculators/estimators", children: "Estimators" },
+      { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
+    ]
+  },
   { href: "/deliverypartners", children: "Delivery Partners" },
   { href: "/contact", children: "Contact" },
 ];
@@ -100,12 +104,15 @@ const customerNavbarItems: NavbarItem[] = [
       <span>Library</span>
     </>
   ) },
-  { href: "/calculators", children: (
-    <>
-      <Calculator className="h-4 w-4" />
-      <span>Calculators</span>
-    </>
-  ) },
+  { 
+    href: "/calculators", 
+    children: "Calculators",
+    icon: <Calculator className="h-4 w-4" />,
+    subItems: [
+      { href: "/calculators/estimators", children: "Estimators" },
+      { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
+    ]
+  },
   { href: "/cart", children: "My Cart" },
 ];
 
@@ -134,12 +141,15 @@ const tenantNavbarItems: NavbarItem[] = [
       <span>Library</span>
     </>
   ) },
-  { href: "/calculators", children: (
-    <>
-      <Calculator className="h-4 w-4" />
-      <span>Calculators</span>
-    </>
-  ) },
+  { 
+    href: "/calculators", 
+    children: "Calculators",
+    icon: <Calculator className="h-4 w-4" />,
+    subItems: [
+      { href: "/calculators/estimators", children: "Estimators" },
+      { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
+    ]
+  },
   // { 
   //   href: "#", 
   //   children: "Store Menu",
@@ -166,18 +176,16 @@ const NavbarDropdownItem = ({
   
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="outline"
-          className={cn(
-            "bg-transparent hover:bg-transparent rounded-full hover:border-primary border-transparent px-2.5 text-sm whitespace-nowrap gap-1",
-            isAnySubItemActive && "bg-black text-white hover:bg-black hover:text-white",
-          )}
-        >
-          <Store className="h-4 w-4" />
-          {item.children}
-          <ChevronDown className="h-3 w-3" />
-        </Button>
+      <DropdownMenuTrigger
+        className={cn(
+          buttonVariants({ variant: "outline" }),
+          "bg-transparent hover:bg-transparent rounded-full hover:border-primary border-transparent px-2.5 text-sm whitespace-nowrap gap-1",
+          isAnySubItemActive && "bg-black text-white hover:bg-black hover:text-white",
+        )}
+      >
+        {item.icon || <Store className="h-4 w-4" />}
+        {item.children}
+        <ChevronDown className="h-3 w-3" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="center" className="w-48">
         {subItems?.map((subItem) => (
