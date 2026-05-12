@@ -7,6 +7,8 @@ import { ConcreteCalculator } from "@/modules/calculators/ui/components/concrete
 import { PlasterCalculator } from "@/modules/calculators/ui/components/plaster-calculator";
 import { TileCalculator } from "@/modules/calculators/ui/components/tile-calculator";
 import { TileCostCalculator } from "@/modules/calculators/ui/components/tile-cost-calculator";
+import { StairGraniteCalculator } from "@/modules/calculators/ui/components/stair-granite-calculator";
+import { SlabEstimateCalculator } from "@/modules/calculators/ui/components/slab-estimate-calculator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calculator } from "lucide-react";
 
@@ -27,6 +29,10 @@ export default function EstimatorsPage() {
         return <TileCalculator />;
       case "tile-cost":
         return <TileCostCalculator />;
+      case "stair-granite":
+        return <StairGraniteCalculator />;
+      case "slab":
+        return <SlabEstimateCalculator />;
       default:
         return <ConcreteCalculator />;
     }
@@ -58,6 +64,8 @@ export default function EstimatorsPage() {
                 <SelectItem value="plaster">Plaster Materials</SelectItem>
                 <SelectItem value="tile">Tile Square Footage</SelectItem>
                 <SelectItem value="tile-cost">Tile/Marble Cost for Rooms</SelectItem>
+                <SelectItem value="stair-granite">Stair Granite & Railing Cost</SelectItem>
+                <SelectItem value="slab">Slab Estimate & Steel Details</SelectItem>
               </SelectContent>
             </Select>
           </div>
