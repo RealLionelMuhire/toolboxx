@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { BrickMasonryCalculator } from "@/modules/calculators/ui/components/brick-masonry-calculator";
 import { BrickQuantityCalculator } from "@/modules/calculators/ui/components/brick-quantity-calculator";
 import { ConcreteCalculator } from "@/modules/calculators/ui/components/concrete-calculator";
@@ -69,8 +70,23 @@ export default function EstimatorsPage() {
   };
 
   return (
-    <div className="bg-muted/30 min-h-[calc(100vh-64px)] pb-12 pt-8 lg:pt-24 px-4 sm:px-6 lg:px-8">
+    <div className="bg-muted/30 min-h-[calc(100vh-64px)] pb-12 pt-8 lg:pt-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
+        <div className="flex gap-4 mb-8 border-b">
+          <Link 
+            href="/calculators/estimators"
+            className="px-4 py-3 text-sm font-medium border-b-2 border-primary text-primary"
+          >
+            Engineering Estimators
+          </Link>
+          <Link 
+            href="/calculators/bar-bending-schedules"
+            className="px-4 py-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30 transition-colors"
+          >
+            Bar Bending Schedules (BBS)
+          </Link>
+        </div>
+
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">

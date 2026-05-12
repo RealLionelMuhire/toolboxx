@@ -38,6 +38,8 @@ export const LabourCostCalculator = () => {
 
   const handleCalculate = () => {
     const work = WORK_TYPES.find(w => w.id === selectedWorkId) || WORK_TYPES[0];
+    if (!work) return;
+
     const Q = parseFloat(quantity) || 0;
     
     const skilledNos = Q * work.skilled;

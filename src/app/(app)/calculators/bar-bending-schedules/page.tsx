@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { StirrupSpacingCalculator } from "@/modules/calculators/ui/components/bbs/stirrup-spacing-calculator";
 import { FootingBBSCalculator } from "@/modules/calculators/ui/components/bbs/footing-bbs-calculator";
 import { CrankBeamCalculator } from "@/modules/calculators/ui/components/bbs/crank-beam-calculator";
@@ -40,8 +41,23 @@ export default function BBSPage() {
   };
 
   return (
-    <div className="bg-muted/30 min-h-[calc(100vh-64px)] pb-12 pt-8 lg:pt-24 px-4 sm:px-6 lg:px-8">
+    <div className="bg-muted/30 min-h-[calc(100vh-64px)] pb-12 pt-8 lg:pt-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
+        <div className="flex gap-4 mb-8 border-b">
+          <Link 
+            href="/calculators/estimators"
+            className="px-4 py-3 text-sm font-medium border-b-2 border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30 transition-colors"
+          >
+            Engineering Estimators
+          </Link>
+          <Link 
+            href="/calculators/bar-bending-schedules"
+            className="px-4 py-3 text-sm font-medium border-b-2 border-primary text-primary"
+          >
+            Bar Bending Schedules (BBS)
+          </Link>
+        </div>
+
         <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
