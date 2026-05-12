@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { StirrupSpacingCalculator } from "@/modules/calculators/ui/components/bbs/stirrup-spacing-calculator";
 import { FootingBBSCalculator } from "@/modules/calculators/ui/components/bbs/footing-bbs-calculator";
+import { CrankBeamCalculator } from "@/modules/calculators/ui/components/bbs/crank-beam-calculator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Ruler } from "lucide-react";
 
@@ -15,6 +16,8 @@ export default function BBSPage() {
         return <StirrupSpacingCalculator />;
       case "footing-bbs":
         return <FootingBBSCalculator />;
+      case "crank-beam":
+        return <CrankBeamCalculator />;
       case "placeholder":
         return (
           <div className="py-12 text-center text-muted-foreground flex flex-col items-center justify-center space-y-3 bg-card border rounded-lg shadow-sm">
@@ -52,6 +55,7 @@ export default function BBSPage() {
               <SelectContent>
                 <SelectItem value="stirrup-spacing">Stirrup Spacing in Beam</SelectItem>
                 <SelectItem value="footing-bbs">BBS of Footing</SelectItem>
+                <SelectItem value="crank-beam">BBS of Crank Beam</SelectItem>
                 <SelectItem value="placeholder">More coming soon...</SelectItem>
               </SelectContent>
             </Select>
