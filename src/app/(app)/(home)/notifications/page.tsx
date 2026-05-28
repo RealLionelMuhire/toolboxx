@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDistanceToNow } from "date-fns";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Notification } from "@/payload-types";
 
 export default function NotificationsPage() {
@@ -101,17 +101,22 @@ export default function NotificationsPage() {
     })
   );
 
-  // Mark all unseen as seen when page loads
+  // Mark all unseen as seen once when the page first loads with data.
+  // A ref guard ensures this fires only once per mount, preventing the
+  // infinite loop caused by mutation → invalidation → re-render → re-fire.
+  const hasMarkedSeen = useRef(false);
   useEffect(() => {
+    if (hasMarkedSeen.current) return;
     if (unseenCount && unseenCount.count > 0 && data?.docs) {
       const unseenIds = data.docs
         .filter((n) => !n.seen)
         .map((n) => n.id);
       if (unseenIds.length > 0) {
+        hasMarkedSeen.current = true;
         markAsSeen.mutate({ notificationIds: unseenIds });
       }
     }
-  }, [unseenCount, data, markAsSeen]);
+  }, [unseenCount, data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const notifications = data?.docs || [];
 

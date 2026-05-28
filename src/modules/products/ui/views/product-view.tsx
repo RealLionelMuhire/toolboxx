@@ -6,7 +6,7 @@ import { Fragment, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
-import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp, Eye, Maximize2, Phone, Loader2 } from "lucide-react";
+import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp, Eye, Maximize2, Phone, Loader2, MapPin } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
@@ -227,7 +227,28 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
             <div className="order-2 lg:order-2">
               {/* Product Title */}
               <div className="p-4 lg:p-6">
-                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-3">{data.name}</h1>
+                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">{data.name}</h1>
+                
+                {/* Product Location */}
+                {(() => {
+                  const p = data as any;
+                  // Build human-readable location from structured fields
+                  const parts: string[] = [];
+                  if (p.locationCityOrArea) parts.push(p.locationCityOrArea);
+                  if (p.locationDistrict) parts.push(p.locationDistrict);
+                  if (p.locationProvince) parts.push(p.locationProvince);
+                  if (p.locationCountry) parts.push(p.locationCountry);
+                  // Fall back to the auto-generated location string
+                  const locationStr = parts.length > 0 ? parts.join(", ") : (p.location || null);
+                  if (!locationStr) return null;
+                  return (
+                    <div className="flex items-center gap-1.5 mb-3 text-sm text-gray-500">
+                      <MapPin className="h-4 w-4 shrink-0 text-orange-500" />
+                      <span>{locationStr}</span>
+                    </div>
+                  );
+                })()}
+
                 
                 {/* Price and Rating Row */}
                 <div className="flex flex-wrap items-center gap-4 mb-4">

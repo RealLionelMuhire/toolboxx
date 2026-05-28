@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useForm, Controller, UseFormReturn } from "react-hook-form";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, ChevronDown, ChevronRight } from "lucide-react";
+import { Loader2, ChevronDown, ChevronRight, AlertTriangle } from "lucide-react";
 import dynamic from "next/dynamic";
 
 import { useTRPC } from "@/trpc/client";
@@ -18,6 +18,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,6 +89,37 @@ export const ProductFormDialog = ({
   const hasSubmittedRef = useRef(false);
   const hasPopulatedRef = useRef(false); // Track if we've populated the form in edit mode
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+
+  // Draft key scoped by mode (and productId in edit mode)
+  const draftKey = mode === "edit" && productId
+    ? `product-draft-edit-${productId}`
+    : "product-draft-create";
+
+  const saveDraft = (values: Partial<ProductFormData>) => {
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(values));
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const loadDraft = (): Partial<ProductFormData> | null => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {
+      // ignore
+    }
+  };
 
   const form = useForm<ProductFormData>({
     defaultValues: {
@@ -94,7 +135,7 @@ export const ProductFormDialog = ({
     },
   });
 
-  const { register, handleSubmit, setValue, watch, getValues, control, reset, formState: { errors } } = form;
+  const { register, handleSubmit, setValue, watch, getValues, control, reset, formState: { errors, isDirty } } = form;
 
   // Fetch product data if editing
   const { data: productData, isLoading: isLoadingProduct } = useQuery({
@@ -276,6 +317,7 @@ export const ProductFormDialog = ({
       toast.success("Product created successfully!");
       invalidateProductQueries();
       hasSubmittedRef.current = true; // Mark as submitted to prevent cleanup
+      clearDraft();
       onClose();
       reset();
     },
@@ -291,6 +333,7 @@ export const ProductFormDialog = ({
         toast.success("Product updated successfully!");
         invalidateProductQueries();
         hasSubmittedRef.current = true; // Mark as submitted to prevent cleanup
+        clearDraft();
         onClose();
       },
       onError: (error) => {
@@ -298,6 +341,30 @@ export const ProductFormDialog = ({
       },
     })
   );
+
+  // Attempt to close — show confirmation if form has unsaved changes
+  const handleRequestClose = () => {
+    if (isDirty && !hasSubmittedRef.current) {
+      setShowExitConfirm(true);
+    } else {
+      onClose();
+    }
+  };
+
+  // Discard changes and close
+  const handleDiscard = () => {
+    clearDraft();
+    setShowExitConfirm(false);
+    onClose();
+  };
+
+  // Save to localStorage draft and close
+  const handleSaveDraft = () => {
+    saveDraft(getValues());
+    toast.success("Draft saved! Your progress has been stored.");
+    setShowExitConfirm(false);
+    onClose();
+  };
 
   const onSubmit = (data: ProductFormData) => {
     // Automatically set the first gallery image as the main product image
@@ -450,8 +517,51 @@ export const ProductFormDialog = ({
     return parentCategories;
   }, [categories, currentCategoryData]);
 
+  // Load draft into form when dialog opens in create mode
+  useEffect(() => {
+    if (open && mode === "create") {
+      const draft = loadDraft();
+      if (draft && Object.keys(draft).length > 0) {
+        // Merge draft into defaults
+        reset({
+          category: [],
+          quantity: 0,
+          unit: "unit",
+          minOrderQuantity: 1,
+          lowStockThreshold: 10,
+          allowBackorder: false,
+          refundPolicy: "30-day",
+          isPrivate: false,
+          gallery: [],
+          ...draft,
+        });
+        toast.info("Draft restored — your previous progress has been loaded.", {
+          action: {
+            label: "Discard draft",
+            onClick: () => {
+              clearDraft();
+              reset({
+                category: [],
+                quantity: 0,
+                unit: "unit",
+                minOrderQuantity: 1,
+                lowStockThreshold: 10,
+                allowBackorder: false,
+                refundPolicy: "30-day",
+                isPrivate: false,
+                gallery: [],
+              });
+            },
+          },
+        });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode]);
+
   return (
-    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
+    <>
+    <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleRequestClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
@@ -976,7 +1086,7 @@ export const ProductFormDialog = ({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={onClose}
+                  onClick={handleRequestClose}
                 >
                   Cancel
                 </Button>
@@ -995,6 +1105,45 @@ export const ProductFormDialog = ({
         )}
       </DialogContent>
     </Dialog>
+
+    {/* Unsaved Changes Confirmation */}
+    <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            Unsaved Changes
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            You have unsaved changes to this product. What would you like to do?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+          {/* Keep editing */}
+          <AlertDialogCancel asChild>
+            <Button variant="outline" onClick={() => setShowExitConfirm(false)}>
+              Keep Editing
+            </Button>
+          </AlertDialogCancel>
+
+          {/* Save draft */}
+          <Button
+            variant="secondary"
+            onClick={handleSaveDraft}
+          >
+            Save Draft
+          </Button>
+
+          {/* Discard */}
+          <AlertDialogAction asChild>
+            <Button variant="destructive" onClick={handleDiscard}>
+              Discard Changes
+            </Button>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 };
 
