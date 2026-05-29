@@ -86,7 +86,7 @@ export default buildConfig({
   }),
   sharp,
   plugins: [
-    payloadCloudPlugin(),
+    payloadCloudPlugin({ storage: false }),
     // Temporarily disable multi-tenant plugin to test
     // multiTenantPlugin({
     //   collections: {
@@ -106,9 +106,13 @@ export default buildConfig({
           prefix: 'media',
           disablePayloadAccessControl: true,
           generateFileURL: ({ filename, prefix }) => {
-            const base = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '')
+            const r2Url = process.env.R2_PUBLIC_URL || process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+            if (!r2Url) {
+              console.warn('[Payload] R2_PUBLIC_URL is not set. Media URLs will be relative and may break Next.js Image component.');
+            }
+            const base = (r2Url || '').replace(/\/$/, '')
             const path = prefix ? `${prefix}/${filename}` : filename
-            return `${base}/${path}`
+            return base ? `${base}/${path}` : `/media/${filename}`
           },
         },
       },
