@@ -43,8 +43,8 @@ echo "🎯 Hostname: ${HOSTNAME:-0.0.0.0}"
 export HOSTNAME=0.0.0.0
 
 # Cap Node.js heap to prevent silent OOM crashes.
-# On a 1GB Droplet use 512. On a 2GB Droplet use 1024.
-MEM_LIMIT=${NODE_MEM_LIMIT:-512}
+# On a 1GB Droplet use 512. On a 2GB Droplet use 1024. On 4GB+ use 2048.
+MEM_LIMIT=${NODE_MEM_LIMIT:-1024}
 
 echo "🎯 Executing: node --max-old-space-size=${MEM_LIMIT} server.js"
 
