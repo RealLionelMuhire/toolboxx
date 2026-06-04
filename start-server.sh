@@ -39,11 +39,15 @@ echo "✅ Starting Next.js server..."
 echo "🎯 Port: ${PORT}"
 echo "🎯 Hostname: ${HOSTNAME:-0.0.0.0}"
 
-# Set HOSTNAME to 0.0.0.0 to listen on all interfaces (required for Render)
+# Set HOSTNAME to 0.0.0.0 to listen on all interfaces (required for DO/Render/Railway)
 export HOSTNAME=0.0.0.0
 
-echo "🎯 Executing: node server.js"
+# Cap Node.js heap to prevent silent OOM crashes.
+# On a 1GB Droplet use 512. On a 2GB Droplet use 1024.
+MEM_LIMIT=${NODE_MEM_LIMIT:-512}
+
+echo "🎯 Executing: node --max-old-space-size=${MEM_LIMIT} server.js"
 
 # The Dockerfile copies standalone output to /app root
 # So server.js is at /app/server.js (copied from .next/standalone/server.js)
-exec node server.js
+exec node --max-old-space-size=${MEM_LIMIT} server.js

@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPayloadSingleton } from "@/lib/payload-singleton";
 import { headers as getHeaders } from "next/headers";
 
+// Set DEBUG_MEDIA=true in .env to re-enable diagnostic logging in production
+const DEBUG = process.env.DEBUG_MEDIA === 'true';
+const dbg = (...args: unknown[]) => { if (DEBUG) console.log(...args); };
+
 export async function GET(request: NextRequest) {
   try {
     const payload = await getPayloadSingleton();
@@ -10,13 +14,8 @@ export async function GET(request: NextRequest) {
     // Check authentication
     const session = await payload.auth({ headers });
 
-    // Diagnostic logging for session
-    console.log('[Media GET] Session:', {
-      hasUser: !!session.user,
-      userId: session.user?.id,
-      userRoles: session.user?.roles,
-      userEmail: session.user?.email,
-    });
+    // Diagnostic logging (set DEBUG_MEDIA=true to enable)
+    dbg('[Media GET] Session:', { hasUser: !!session.user, userId: session.user?.id });
 
     if (!session.user) {
       console.error('[Media GET] Unauthorized - no user in session');
@@ -42,7 +41,7 @@ export async function GET(request: NextRequest) {
     // If only one ID, use findByID for more reliable results
     if (ids.length === 1) {
       try {
-        console.log('[Media GET] Querying single ID:', ids[0]);
+        dbg('[Media GET] Querying single ID:', ids[0]);
 
         const doc = await payload.findByID({
           collection: "media",
@@ -50,11 +49,7 @@ export async function GET(request: NextRequest) {
           overrideAccess: true, // Bypass access control - we already verified auth
         });
 
-        console.log('[Media GET] Found document:', {
-          id: doc.id,
-          filename: doc.filename,
-          hasUrl: !!doc.url,
-        });
+        dbg('[Media GET] Found document:', { id: doc.id, filename: doc.filename });
 
         sortedDocs = [doc];
       } catch (error) {
@@ -63,7 +58,7 @@ export async function GET(request: NextRequest) {
       }
     } else {
       // For multiple IDs, use find with where clause
-      console.log('[Media GET] Querying multiple IDs:', ids.length);
+      dbg('[Media GET] Querying multiple IDs:', ids.length);
 
       const result = await payload.find({
         collection: "media",
@@ -77,21 +72,14 @@ export async function GET(request: NextRequest) {
         overrideAccess: true, // Bypass access control - we already verified auth
       });
 
-      console.log('[Media GET] Query result:', {
-        totalDocs: result.docs.length,
-        foundIds: result.docs.map(d => d.id),
-        requestedIds: ids,
-      });
+      dbg('[Media GET] Query result:', { totalDocs: result.docs.length });
 
       // Sort docs to match the order of IDs in the request
       sortedDocs = ids
         .map(id => result.docs.find(doc => doc.id === id))
         .filter(Boolean); // Remove any undefined values
 
-      console.log('[Media GET] After sorting:', {
-        count: sortedDocs.length,
-        expected: ids.length,
-      });
+      dbg('[Media GET] After sorting:', { count: sortedDocs.length, expected: ids.length });
     }
 
     const responseData = {
@@ -105,10 +93,7 @@ export async function GET(request: NextRequest) {
       }))
     };
 
-    console.log('[Media GET] Returning response:', {
-      count: responseData.docs.length,
-      expected: ids.length,
-    });
+    dbg('[Media GET] Returning response:', { count: responseData.docs.length });
 
     return NextResponse.json(responseData, {
       headers: {
@@ -332,12 +317,7 @@ export async function DELETE(request: NextRequest) {
     // Check authentication
     const session = await payload.auth({ headers });
 
-    // Diagnostic logging for session
-    console.log('[Media DELETE] Session:', {
-      hasUser: !!session.user,
-      userId: session.user?.id,
-      userRoles: session.user?.roles,
-    });
+    dbg('[Media DELETE] Session:', { hasUser: !!session.user, userId: session.user?.id });
 
     if (!session.user) {
       console.error('[Media DELETE] Unauthorized');
@@ -357,7 +337,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const cleanId = id.trim();
-    console.log('[Media DELETE] Attempting to delete ID:', cleanId);
+    dbg('[Media DELETE] Attempting to delete ID:', cleanId);
 
     // Verify media exists and user has access
     try {
@@ -367,10 +347,7 @@ export async function DELETE(request: NextRequest) {
         overrideAccess: true, // Bypass access control - we already verified auth
       });
 
-      console.log('[Media DELETE] Found media:', {
-        id: media.id,
-        filename: media.filename,
-      });
+      dbg('[Media DELETE] Found media:', { id: media.id, filename: media.filename });
     } catch (findError) {
       console.error('[Media DELETE] Media not found:', cleanId, findError);
       return NextResponse.json({
@@ -380,7 +357,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete the media using Payload's local API
-    console.log('[Media DELETE] Executing delete...');
+    dbg('[Media DELETE] Executing delete...');
 
     await payload.delete({
       collection: "media",
@@ -388,7 +365,7 @@ export async function DELETE(request: NextRequest) {
       overrideAccess: true, // Bypass access control - we already verified auth
     });
 
-    console.log('[Media DELETE] Delete successful:', cleanId);
+    dbg('[Media DELETE] Delete successful:', cleanId);
 
     return NextResponse.json({
       success: true,
