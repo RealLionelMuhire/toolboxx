@@ -1,16 +1,11 @@
 services:
   app:
-    # On the Droplet we pull the pre-built image from GitHub Container Registry.
-    # The build happens on GitHub Actions (7GB RAM) — never on the Droplet itself.
-    # Replace YOUR_GITHUB_USERNAME/toolboxx with your actual repo path.
+    # When deploying via GitHub Actions CI: image is pre-built and pulled from registry
+    # When deploying manually on the Droplet via deploy.sh: built locally
     image: ghcr.io/reallionelmuhire/toolboxx:latest
-
-    # Keep the build section commented out so `docker compose up --build`
-    # doesn't accidentally trigger a local compile on the Droplet.
-    # Uncomment ONLY for local development builds:
-    # build:
-    #   context: .
-    #   dockerfile: Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile
 
     ports:
       - "${PORT:-3000}:${PORT:-3000}"
