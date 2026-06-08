@@ -102,6 +102,7 @@ export function LogisticsProviderProfile() {
         const uploadResponse = await fetch("/api/media", {
           method: "POST",
           body: fileFormData,
+          credentials: "include", // Ensure Payload session cookie is sent
         });
 
         if (!uploadResponse.ok) {

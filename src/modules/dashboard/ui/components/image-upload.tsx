@@ -336,8 +336,9 @@ export const ImageUpload = ({
         resolve(null);
       });
 
-      // Send the request
+      // Send the request — withCredentials ensures the Payload session cookie is included
       xhr.open("POST", "/api/media");
+      xhr.withCredentials = true;
       xhr.send(formData);
     });
   };

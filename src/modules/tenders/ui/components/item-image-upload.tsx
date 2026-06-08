@@ -16,6 +16,7 @@ async function uploadFile(file: File): Promise<string | null> {
   const res = await fetch('/api/media', {
     method: 'POST',
     body: formData,
+    credentials: 'include', // Ensure Payload session cookie is sent
   })
 
   if (!res.ok) {
