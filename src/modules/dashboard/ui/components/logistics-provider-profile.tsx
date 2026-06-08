@@ -99,10 +99,9 @@ export function LogisticsProviderProfile() {
         fileFormData.append("file", selectedImageFile);
         fileFormData.append("alt", "Vehicle photo");
 
-        const uploadResponse = await fetch("/api/media", {
+        const uploadResponse = await fetch("/api/upload", {
           method: "POST",
           body: fileFormData,
-          credentials: "include", // Ensure Payload session cookie is sent
         });
 
         if (!uploadResponse.ok) {

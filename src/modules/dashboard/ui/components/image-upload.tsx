@@ -267,7 +267,7 @@ export const ImageUpload = ({
               toast.success(`${fileName} uploaded successfully`);
               resolve(data.doc.id);
             } else {
-              console.error("Non-JSON response from /api/media:", xhr.responseText);
+              console.error("Non-JSON response from /api/upload:", xhr.responseText);
               setUploadProgress(prev => 
                 prev.map(p => 
                   p.fileName === fileName 
@@ -336,9 +336,8 @@ export const ImageUpload = ({
         resolve(null);
       });
 
-      // Send the request — withCredentials ensures the Payload session cookie is included
-      xhr.open("POST", "/api/media");
-      xhr.withCredentials = true;
+      // POST to our server-side upload proxy (bypasses Payload CSRF)
+      xhr.open("POST", "/api/upload");
       xhr.send(formData);
     });
   };

@@ -30,10 +30,9 @@ async function uploadFile(file: File): Promise<string | null> {
   formData.append('file', file)
   formData.append('alt', file.name.replace(/\.[^/.]+$/, '') || file.name)
 
-  const res = await fetch('/api/media', {
+  const res = await fetch('/api/upload', {
     method: 'POST',
     body: formData,
-    credentials: 'include', // Ensure Payload session cookie is sent
   })
 
   if (!res.ok) {
