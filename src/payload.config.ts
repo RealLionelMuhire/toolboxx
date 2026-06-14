@@ -3,7 +3,7 @@ import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { s3Storage } from '@payloadcms/storage-s3'
-import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
+// import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import { resendAdapter } from '@/lib/email/resend-adapter'
 // import { multiTenantPlugin } from "@payloadcms/plugin-multi-tenant";
 import path from 'path'
@@ -45,24 +45,13 @@ export default buildConfig({
       afterNavLinks: ['@/components/admin/UserVerificationBadge'],
     },
   },
-  // Use SMTP/Nodemailer for email delivery
-  email: nodemailerAdapter({
-    defaultFromAddress: process.env.SMTP_FROM_EMAIL || 'noreply@toolbay.store',
+  // Use Resend for email delivery (free: 3,000 emails/month, 100/day)
+  // Docs: https://resend.com — verify domain to send from noreply@toolbay.net
+  // On localhost without a verified domain, use fromAddress: 'onboarding@resend.dev'
+  email: resendAdapter({
+    apiKey: process.env.RESEND_API_KEY || '',
+    defaultFromAddress: process.env.SMTP_FROM_EMAIL || 'onboarding@resend.dev',
     defaultFromName: process.env.SMTP_FROM_NAME || 'Toolbay',
-    // Skip verification to prevent blocking server startup
-    skipVerify: true,
-    transportOptions: {
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false, // Use TLS
-      connectionTimeout: 5000, // 5 second connection timeout
-      greetingTimeout: 5000,
-      socketTimeout: 10000,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    },
   }),
   collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions, Notifications, Tenders, TenderBids],
   editor: lexicalEditor(),
