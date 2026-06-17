@@ -1,8 +1,9 @@
 services:
   app:
+    container_name: ${CONTAINER_NAME:-toolboxx-app-1}
     # When deploying via GitHub Actions CI: image is pre-built and pulled from registry
     # When deploying manually on the Droplet via deploy.sh: built locally
-    image: ghcr.io/reallionelmuhire/toolboxx:latest
+    image: ${IMAGE_NAME:-ghcr.io/reallionelmuhire/toolboxx:latest}
     build:
       context: .
       dockerfile: Dockerfile
