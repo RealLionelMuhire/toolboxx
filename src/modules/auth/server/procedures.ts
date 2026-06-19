@@ -164,11 +164,9 @@ export const authRouter = createTRPCRouter({
       
       Promise.race([emailPromise, timeoutPromise]).catch((error) => {
         console.error("[register] Failed to send verification email:", error);
-        console.error("[register] SMTP Config check:", {
-          host: process.env.SMTP_HOST || 'NOT SET',
-          port: process.env.SMTP_PORT || 'NOT SET',
-          user: process.env.SMTP_USER || 'NOT SET',
-          pass: process.env.SMTP_PASS ? 'SET' : 'NOT SET',
+        console.error("[register] Resend config check:", {
+          apiKey: process.env.RESEND_API_KEY ? 'SET' : 'NOT SET',
+          fromEmail: process.env.SMTP_FROM_EMAIL || 'NOT SET',
         });
       });
 
@@ -376,15 +374,14 @@ export const authRouter = createTRPCRouter({
 
       const user = userData.docs[0];
 
-      // TEMPORARILY DISABLED: Email verification check
-      // TODO: Re-enable once email delivery is fixed
-      // if (user && user.emailVerified === false) {
-      //   await clearAuthCookie(ctx.db.config.cookiePrefix);
-      //   throw new TRPCError({
-      //     code: "FORBIDDEN",
-      //     message: "Please verify your email before logging in. Check your inbox for the verification link.",
-      //   });
-      // }
+      // Enforce email verification — existing users were pre-verified via migration script
+      if (user && user.emailVerified === false) {
+        await clearAuthCookie(ctx.db.config.cookiePrefix);
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Please verify your email before logging in. Check your inbox for the verification link.",
+        });
+      }
 
       await generateAuthCookie({
         prefix: ctx.db.config.cookiePrefix,
