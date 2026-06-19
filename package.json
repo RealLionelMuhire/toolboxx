@@ -19,6 +19,7 @@
     "generate:types": "PAYLOAD_DISABLE_TELEMETRY=true node ./node_modules/payload/bin.js --disable-transpile generate:types",
     "generate:importmap": "PAYLOAD_DISABLE_TELEMETRY=true node ./node_modules/payload/bin.js --disable-transpile generate:importmap",
     "db:fresh": "node scripts/reset-db.mjs",
+    "db:verify-users": "node scripts/auto-verify-existing-users.mjs",
     "storage:audit": "node scripts/audit-media-storage.mjs",
     "storage:migrate": "node scripts/migrate-vercel-blob-to-r2.mjs",
     "storage:fix-filenames": "node scripts/fix-r2-media-filenames.mjs",

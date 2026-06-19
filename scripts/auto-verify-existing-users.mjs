@@ -2,80 +2,88 @@
 
 /**
  * Migration Script: Auto-verify all existing users
- * 
- * This script sets emailVerified to true for all existing users who don't have
- * the emailVerified field set. This ensures backward compatibility - existing
- * users won't need to verify their email, only new signups will.
- * 
- * Run this once after deploying the email verification feature:
- * node scripts/auto-verify-existing-users.mjs
+ *
+ * Sets emailVerified = true for all users who don't have it set yet.
+ * Ensures backward compatibility — existing users won't need to re-verify.
+ * Run this ONCE before enforcing email verification on login.
+ *
+ * Run: node scripts/auto-verify-existing-users.mjs
  */
 
-import { getPayload } from 'payload';
-import config from '../src/payload.config.ts';
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { MongoClient } from 'mongodb';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+// Also try .env.production if .env doesn't have DATABASE_URI
+if (!process.env.DATABASE_URI) {
+  dotenv.config({ path: path.resolve(__dirname, '../.env.production') });
+}
+
+const DATABASE_URI = process.env.DATABASE_URI;
+
+if (!DATABASE_URI) {
+  console.error('❌ DATABASE_URI is not set. Check your .env or .env.production file.');
+  process.exit(1);
+}
 
 async function autoVerifyExistingUsers() {
   console.log('🚀 Starting migration: Auto-verify existing users...\n');
 
+  const client = new MongoClient(DATABASE_URI);
+
   try {
-    const payload = await getPayload({ config });
-    
-    console.log('📊 Fetching all users...');
-    
-    // Get all users
-    const allUsers = await payload.find({
-      collection: 'users',
-      limit: 10000, // Adjust if you have more users
-    });
+    await client.connect();
+    console.log('✅ Connected to MongoDB\n');
 
-    console.log(`✅ Found ${allUsers.totalDocs} users\n`);
+    const db = client.db();
+    const usersCollection = db.collection('users');
 
-    let verifiedCount = 0;
-    let alreadyVerifiedCount = 0;
-    let errorCount = 0;
+    // Find all users that are not yet verified
+    const unverifiedUsers = await usersCollection.find({
+      $or: [
+        { emailVerified: { $exists: false } },
+        { emailVerified: false },
+        { emailVerified: null },
+      ],
+    }).toArray();
 
-    // Process each user
-    for (const user of allUsers.docs) {
-      try {
-        // Check if emailVerified field exists and is already true
-        if (user.emailVerified === true) {
-          console.log(`⏭️  Skipping ${user.email} - already verified`);
-          alreadyVerifiedCount++;
-          continue;
-        }
+    console.log(`📊 Found ${unverifiedUsers.length} users to verify\n`);
 
-        // Update user to set emailVerified to true
-        await payload.update({
-          collection: 'users',
-          id: user.id,
-          data: {
-            emailVerified: true,
-            verificationToken: null,
-            verificationExpires: null,
-          },
-        });
-
-        console.log(`✅ Verified ${user.email}`);
-        verifiedCount++;
-      } catch (error) {
-        console.error(`❌ Error verifying ${user.email}:`, error.message);
-        errorCount++;
-      }
+    if (unverifiedUsers.length === 0) {
+      console.log('✨ All users are already verified. Nothing to do.\n');
+      return;
     }
 
-    console.log('\n📈 Migration Summary:');
-    console.log(`   Total Users: ${allUsers.totalDocs}`);
-    console.log(`   ✅ Newly Verified: ${verifiedCount}`);
-    console.log(`   ⏭️  Already Verified: ${alreadyVerifiedCount}`);
-    console.log(`   ❌ Errors: ${errorCount}`);
+    // Bulk update — set emailVerified = true, clear any pending tokens
+    const result = await usersCollection.updateMany(
+      {
+        $or: [
+          { emailVerified: { $exists: false } },
+          { emailVerified: false },
+          { emailVerified: null },
+        ],
+      },
+      {
+        $set: { emailVerified: true },
+        $unset: { verificationToken: '', verificationExpires: '' },
+      }
+    );
+
+    console.log('📈 Migration Summary:');
+    console.log(`   ✅ Users verified: ${result.modifiedCount}`);
     console.log('\n✨ Migration completed successfully!\n');
 
-    process.exit(0);
   } catch (error) {
     console.error('\n❌ Migration failed:', error);
     process.exit(1);
+  } finally {
+    await client.close();
   }
 }
 
-// Run the migration
 autoVerifyExistingUsers();
