@@ -10,19 +10,7 @@
  * Run: node scripts/auto-verify-existing-users.mjs
  */
 
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { MongoClient } from 'mongodb';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
-// Also try .env.production if .env doesn't have DATABASE_URI
-if (!process.env.DATABASE_URI) {
-  dotenv.config({ path: path.resolve(__dirname, '../.env.production') });
-}
 
 const DATABASE_URI = process.env.DATABASE_URI;
 
