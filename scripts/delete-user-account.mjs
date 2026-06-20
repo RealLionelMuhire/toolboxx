@@ -7,11 +7,11 @@
 
 import { MongoClient } from 'mongodb';
 
-// MongoDB connection string — pass via env or hardcode for one-off runs
-const MONGODB_URI = process.env.DATABASE_URI || "mongodb+srv://Leo:H4ckGeJLJANoaT6O@ticoai.wwfr4.mongodb.net/toolboxx?retryWrites=true&w=majority&appName=TicoAI";
+// MongoDB connection string — pass via env: DATABASE_URI=... node scripts/delete-user-account.mjs
+const MONGODB_URI = process.env.DATABASE_URI;
 
 // Email to delete — pass via env: EMAIL_TO_DELETE=foo@bar.com node scripts/delete-user-account.mjs
-const EMAIL_TO_DELETE = process.env.EMAIL_TO_DELETE || "leomuhire8@gmail.com";
+const EMAIL_TO_DELETE = process.env.EMAIL_TO_DELETE;
 
 async function deleteUserAccount() {
   const client = new MongoClient(MONGODB_URI);

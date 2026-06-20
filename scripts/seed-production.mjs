@@ -21,8 +21,8 @@ import dotenv from 'dotenv';
 import { execSync } from 'child_process';
 import readline from 'readline';
 
-// Production database URI
-const PRODUCTION_DB_URI = "mongodb+srv://toolbay01_db_user:DbDKPVyf0Kikfhi2@toolbayproductioncluste.aq3gvoz.mongodb.net/?appName=ToolbayProductionCluster";
+// Production database URI — pass via env: DATABASE_URI=... node scripts/seed-production.mjs
+const PRODUCTION_DB_URI = process.env.DATABASE_URI;
 
 const rl = readline.createInterface({
   input: process.stdin,
