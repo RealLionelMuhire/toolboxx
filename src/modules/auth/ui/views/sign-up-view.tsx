@@ -68,10 +68,9 @@ export const SignUpView = () => {
     },
     onSuccess: async (data) => {
       toast.success(data.message);
-      // Invalidate queries to refresh auth state
       await queryClient.invalidateQueries();
-      // Redirect to homepage as authenticated user
-      router.push("/");
+      // Redirect to email verification pending page
+      router.push("/verify-email-pending");
       router.refresh();
     },
   }));
@@ -83,10 +82,9 @@ export const SignUpView = () => {
     },
     onSuccess: async (data) => {
       toast.success(data.message);
-      // Invalidate queries to refresh auth state
       await queryClient.invalidateQueries();
-      // Redirect to homepage as authenticated user
-      router.push("/");
+      // Redirect to email verification pending page
+      router.push("/verify-email-pending");
       router.refresh();
     },
   }));
