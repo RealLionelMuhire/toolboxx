@@ -5,7 +5,7 @@
 
 import { MongoClient } from 'mongodb'
 
-const MONGODB_URI = "mongodb+srv://Leo:H4ckGeJLJANoaT6O@ticoai.wwfr4.mongodb.net/toolboxx?retryWrites=true&w=majority&appName=TicoAI"
+const MONGODB_URI = process.env.DATABASE_URI
 
 async function debugUserIds() {
   const client = new MongoClient(MONGODB_URI)

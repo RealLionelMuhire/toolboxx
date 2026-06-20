@@ -7,11 +7,11 @@
 
 import { MongoClient } from 'mongodb';
 
-// MongoDB connection string
-const MONGODB_URI = "mongodb+srv://Leo:H4ckGeJLJANoaT6O@ticoai.wwfr4.mongodb.net/toolboxx?retryWrites=true&w=majority&appName=TicoAI";
+// MongoDB connection string — pass via env: DATABASE_URI=... node scripts/delete-user-account.mjs
+const MONGODB_URI = process.env.DATABASE_URI;
 
-// Email to delete
-const EMAIL_TO_DELETE = "leomuhire8@gmail.com";
+// Email to delete — pass via env: EMAIL_TO_DELETE=foo@bar.com node scripts/delete-user-account.mjs
+const EMAIL_TO_DELETE = process.env.EMAIL_TO_DELETE;
 
 async function deleteUserAccount() {
   const client = new MongoClient(MONGODB_URI);
@@ -21,7 +21,7 @@ async function deleteUserAccount() {
     await client.connect();
     console.log('✅ Connected successfully');
 
-    const db = client.db('toolboxx');
+    const db = client.db(); // Use default DB from the connection URI
     
     // Find the user first
     console.log(`\n🔍 Searching for user with email: ${EMAIL_TO_DELETE}`);
