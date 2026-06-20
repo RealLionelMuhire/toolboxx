@@ -28,6 +28,28 @@ export const authRouter = createTRPCRouter({
 
     return session;
   }),
+
+  /**
+   * Poll to check if the current logged-in user's email is verified.
+   * Reads directly from the database so it always reflects the latest state.
+   */
+  checkVerification: baseProcedure.query(async ({ ctx }) => {
+    const headers = await getHeaders();
+    const session = await ctx.db.auth({ headers });
+
+    if (!session?.user?.email) {
+      return { verified: false };
+    }
+
+    const result = await ctx.db.find({
+      collection: "users",
+      where: { email: { equals: session.user.email } },
+      limit: 1,
+    });
+
+    const user = result.docs[0];
+    return { verified: user?.emailVerified === true };
+  }),
   
   /**
    * Register a new tenant (seller) account
