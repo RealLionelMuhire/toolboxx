@@ -69,8 +69,8 @@ export const SignUpView = () => {
     onSuccess: async (data) => {
       toast.success(data.message);
       await queryClient.invalidateQueries();
-      // Redirect to email verification pending page
-      router.push("/verify-email-pending");
+      // Redirect to email verification pending page with email param
+      router.push(`/verify-email-pending?email=${encodeURIComponent(data.user?.email || tenantForm.getValues("email"))}`);
       router.refresh();
     },
   }));
@@ -83,8 +83,8 @@ export const SignUpView = () => {
     onSuccess: async (data) => {
       toast.success(data.message);
       await queryClient.invalidateQueries();
-      // Redirect to email verification pending page
-      router.push("/verify-email-pending");
+      // Redirect to email verification pending page with email param
+      router.push(`/verify-email-pending?email=${encodeURIComponent(data.user?.email || clientForm.getValues("email"))}`);
       router.refresh();
     },
   }));

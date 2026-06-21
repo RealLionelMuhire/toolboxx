@@ -1,26 +1,29 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 
-export default function VerifyEmailPendingPage() {
+function VerifyEmailPendingContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const email = searchParams.get("email") || undefined;
   const trpc = useTRPC();
 
   // Poll every 3 seconds to check if the user has verified their email
   const { data } = useQuery({
-    ...trpc.auth.checkVerification.queryOptions(),
+    ...trpc.auth.checkVerification.queryOptions({ email: email || "" }),
     refetchInterval: 3000,       // re-check every 3 seconds
     refetchIntervalInBackground: true, // keep polling even if tab is not focused
+    enabled: !!email,
   });
 
-  // Auto-redirect to home as soon as verified
+  // Auto-redirect to sign in as soon as verified
   useEffect(() => {
     if (data?.verified) {
-      router.push("/");
+      router.push("/sign-in?verified=true");
       router.refresh();
     }
   }, [data?.verified, router]);
@@ -121,5 +124,13 @@ export default function VerifyEmailPendingPage() {
         }}
       />
     </div>
+  );
+}
+
+export default function VerifyEmailPendingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F4F4F0] flex items-center justify-center">Loading...</div>}>
+      <VerifyEmailPendingContent />
+    </Suspense>
   );
 }
