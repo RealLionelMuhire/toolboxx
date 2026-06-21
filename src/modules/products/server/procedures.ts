@@ -1482,4 +1482,39 @@ export const productsRouter = createTRPCRouter({
         return {};
       }
     }),
+
+  // Request sponsorship for a product
+  requestSponsorship: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // Find the product first to verify ownership
+      const product = await ctx.db.findByID({
+        collection: "products",
+        id: input.id,
+      });
+
+      if (!product) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Product not found" });
+      }
+
+      // Verify the user owns the tenant that owns this product
+      const tenantId = typeof product.tenant === 'string' ? product.tenant : product.tenant?.id;
+      const userTenants = ctx.session.user.tenants?.map(t => typeof t.tenant === 'string' ? t.tenant : t.tenant?.id) || [];
+      
+      if (!userTenants.includes(tenantId)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "You don't have permission to modify this product" });
+      }
+
+      // Update the sponsorship status bypassing standard access control
+      await ctx.db.update({
+        collection: "products",
+        id: input.id,
+        data: {
+          sponsorshipStatus: "pending",
+          sponsorshipRequestedAt: new Date().toISOString(),
+        },
+      });
+
+      return { success: true };
+    }),
 });

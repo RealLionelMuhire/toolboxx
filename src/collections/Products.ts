@@ -418,6 +418,34 @@ export const Products: CollectionConfig = {
       },
     },
     {
+      name: "sponsorshipStatus",
+      type: "select",
+      defaultValue: "none",
+      options: [
+        { label: "None", value: "none" },
+        { label: "Pending", value: "pending" },
+        { label: "Approved", value: "approved" },
+        { label: "Rejected", value: "rejected" },
+      ],
+      index: true,
+      access: {
+        update: ({ req }) => isSuperAdmin(req.user), // Only super admins can update this field directly
+      },
+      admin: {
+        description: "Sponsorship status of the product. Only super admins can manually change this.",
+        position: "sidebar",
+      },
+    },
+    {
+      name: "sponsorshipRequestedAt",
+      type: "date",
+      admin: {
+        description: "When the sponsorship was requested",
+        position: "sidebar",
+        readOnly: true,
+      },
+    },
+    {
       name: "viewCount",
       type: "number",
       defaultValue: 0,

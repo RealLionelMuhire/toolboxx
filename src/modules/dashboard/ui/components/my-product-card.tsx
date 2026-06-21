@@ -3,7 +3,11 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { StarIcon, EyeOffIcon, ArchiveIcon, Edit2Icon, Trash2Icon, PackageXIcon } from "lucide-react";
+import { StarIcon, EyeOffIcon, ArchiveIcon, Edit2Icon, Trash2Icon, PackageXIcon, RocketIcon } from "lucide-react";
+
+import { useTRPC } from "@/trpc/client";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import { formatCurrency, generateTenantURL } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,6 +27,7 @@ interface MyProductCardProps {
   isArchived?: boolean;
   stockStatus?: string;
   quantity?: number;
+  sponsorshipStatus?: string;
   viewMode?: "grid" | "list";
   onEdit?: (id: string) => void;
   onDelete?: (id: string, name: string) => void;
@@ -42,6 +47,7 @@ export const MyProductCard = ({
   isArchived,
   stockStatus,
   quantity,
+  sponsorshipStatus = "none",
   viewMode = "grid",
   onEdit,
   onDelete,
@@ -75,6 +81,24 @@ export const MyProductCard = ({
     : imageUrl
     ? [{ url: imageUrl, alt: name }]
     : [{ url: "/placeholder.png", alt: name }];
+
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const requestSponsorship = useMutation(trpc.products.requestSponsorship.mutationOptions({
+    onSuccess: () => {
+      toast.success("Sponsorship requested successfully!");
+      queryClient.invalidateQueries(trpc.products.getMyProducts.infiniteQueryFilter());
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to request sponsorship");
+    }
+  }));
+
+  const handleRequestSponsorship = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    requestSponsorship.mutate({ id });
+  };
 
   // Render list view
   if (viewMode === "list") {
@@ -199,6 +223,28 @@ export const MyProductCard = ({
               <Trash2Icon className="size-3 xs:size-3.5 sm:mr-1" />
               <span className="hidden sm:inline">Delete</span>
             </Button>
+          )}
+          {(sponsorshipStatus === "none" || sponsorshipStatus === "rejected") && (
+            <Button
+              onClick={handleRequestSponsorship}
+              disabled={requestSponsorship.isPending}
+              variant="outline"
+              size="sm"
+              className="whitespace-nowrap px-1.5 xs:px-2 sm:px-3 md:px-4 text-orange-600 hover:text-orange-700 hover:bg-orange-50 text-xs xs:text-sm"
+            >
+              <RocketIcon className="size-3 xs:size-3.5 sm:mr-1" />
+              <span className="hidden sm:inline">Promote</span>
+            </Button>
+          )}
+          {sponsorshipStatus === "pending" && (
+            <div className="text-center px-1.5 xs:px-2 py-1 bg-orange-100 text-orange-600 text-xs rounded-md border border-orange-200">
+              Pending
+            </div>
+          )}
+          {sponsorshipStatus === "approved" && (
+            <div className="text-center px-1.5 xs:px-2 py-1 bg-green-100 text-green-700 text-xs rounded-md border border-green-200">
+              Sponsored
+            </div>
           )}
         </div>
       </div>
@@ -325,6 +371,31 @@ export const MyProductCard = ({
               <Trash2Icon className="size-3.5 mr-1" />
               Delete
             </Button>
+          )}
+        </div>
+        
+        <div className="mt-2 flex">
+          {(sponsorshipStatus === "none" || sponsorshipStatus === "rejected") && (
+            <Button
+              onClick={handleRequestSponsorship}
+              disabled={requestSponsorship.isPending}
+              variant="outline"
+              size="sm"
+              className="w-full text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200"
+            >
+              <RocketIcon className="size-3.5 mr-1" />
+              Request Sponsorship
+            </Button>
+          )}
+          {sponsorshipStatus === "pending" && (
+            <div className="w-full text-center py-1.5 bg-orange-100 text-orange-600 text-xs sm:text-sm font-medium rounded-md border border-orange-200">
+              Sponsorship Pending Approval
+            </div>
+          )}
+          {sponsorshipStatus === "approved" && (
+            <div className="w-full text-center py-1.5 bg-green-100 text-green-700 text-xs sm:text-sm font-medium rounded-md border border-green-200">
+              ✨ Sponsored Product
+            </div>
           )}
         </div>
       </div>
