@@ -398,15 +398,14 @@ export const authRouter = createTRPCRouter({
 
       const user = userData.docs[0];
 
-      // TEMPORARILY DISABLED: Email verification check
-      // TODO: Re-enable once email delivery is fixed
-      // if (user && user.emailVerified === false) {
-      //   await clearAuthCookie(ctx.db.config.cookiePrefix);
-      //   throw new TRPCError({
-      //     code: "FORBIDDEN",
-      //     message: "Please verify your email before logging in. Check your inbox for the verification link.",
-      //   });
-      // }
+      // Enforce email verification — existing users were pre-verified via migration script
+      if (user && user.emailVerified === false) {
+        await clearAuthCookie(ctx.db.config.cookiePrefix);
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Please verify your email before logging in. Check your inbox for the verification link.",
+        });
+      }
 
       await generateAuthCookie({
         prefix: ctx.db.config.cookiePrefix,
