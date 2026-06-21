@@ -21,12 +21,13 @@ function VerifyEmailPendingContent() {
   });
 
   // Auto-redirect to sign in as soon as verified
+  const isVerified = (data as { verified?: boolean })?.verified;
   useEffect(() => {
-    if (data?.verified) {
+    if (isVerified) {
       router.push("/sign-in?verified=true");
       router.refresh();
     }
-  }, [data?.verified, router]);
+  }, [isVerified, router]);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 min-h-screen">
