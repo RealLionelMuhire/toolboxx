@@ -29,6 +29,7 @@ import { PushSubscriptions } from './collections/PushSubscriptions'
 import { Notifications } from './collections/Notifications'
 import { Tenders } from './collections/Tenders'
 import { TenderBids } from './collections/TenderBids'
+import { Sponsorships } from './collections/Sponsorships'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -53,7 +54,7 @@ export default buildConfig({
     defaultFromAddress: process.env.SMTP_FROM_EMAIL || 'onboarding@resend.dev',
     defaultFromName: process.env.SMTP_FROM_NAME || 'Toolbay',
   }),
-  collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions, Notifications, Tenders, TenderBids],
+  collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions, Notifications, Tenders, TenderBids, Sponsorships],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

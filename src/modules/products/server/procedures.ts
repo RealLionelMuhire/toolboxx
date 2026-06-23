@@ -1485,7 +1485,10 @@ export const productsRouter = createTRPCRouter({
 
   // Request sponsorship for a product
   requestSponsorship: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ 
+      id: z.string(),
+      durationDays: z.number().min(1).max(365).default(7)
+    }))
     .mutation(async ({ ctx, input }) => {
       // Find the product first to verify ownership
       const product = await ctx.db.findByID({
@@ -1499,20 +1502,45 @@ export const productsRouter = createTRPCRouter({
 
       // Verify the user owns the tenant that owns this product
       const tenantId = typeof product.tenant === 'string' ? product.tenant : product.tenant?.id;
-      const userTenants = ctx.session.user.tenants?.map(t => typeof t.tenant === 'string' ? t.tenant : t.tenant?.id) || [];
+      const userTenants = (ctx.session.user.tenants || [])
+        .map(t => typeof t.tenant === 'string' ? t.tenant : t.tenant?.id)
+        .filter(Boolean) as string[];
       
-      if (!userTenants.includes(tenantId)) {
+      if (!tenantId || !userTenants.includes(tenantId)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "You don't have permission to modify this product" });
       }
 
-      // Update the sponsorship status bypassing standard access control
-      await ctx.db.update({
-        collection: "products",
-        id: input.id,
-        data: {
-          sponsorshipStatus: "pending",
-          sponsorshipRequestedAt: new Date().toISOString(),
+      // Check if a pending or active sponsorship already exists
+      const existingSponsorships = await ctx.db.find({
+        collection: "sponsorships" as any,
+        where: {
+          and: [
+            { product: { equals: input.id } },
+            { status: { in: ["pending", "active"] } }
+          ]
         },
+        limit: 1,
+      });
+
+      if (existingSponsorships.docs.length > 0) {
+        throw new TRPCError({ code: "CONFLICT", message: "A sponsorship request is already pending or active for this product" });
+      }
+
+      // Calculate requested dates
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + input.durationDays);
+
+      // Create a new sponsorship request
+      await ctx.db.create({
+        collection: "sponsorships" as any,
+        data: {
+          product: input.id,
+          tenant: tenantId,
+          status: "pending",
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+        } as any,
       });
 
       return { success: true };

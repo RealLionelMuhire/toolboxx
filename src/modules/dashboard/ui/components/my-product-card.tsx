@@ -11,6 +11,22 @@ import { toast } from "sonner";
 
 import { formatCurrency, generateTenantURL } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { ImageCarousel } from "./image-carousel";
 
 interface MyProductCardProps {
@@ -94,10 +110,21 @@ export const MyProductCard = ({
     }
   }));
 
-  const handleRequestSponsorship = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    requestSponsorship.mutate({ id });
+  const [isSponsorshipDialogOpen, setIsSponsorshipDialogOpen] = useState(false);
+  const [sponsorshipDuration, setSponsorshipDuration] = useState("7");
+  const [customDuration, setCustomDuration] = useState("14");
+
+  const handleRequestSponsorshipSubmit = () => {
+    let days = parseInt(sponsorshipDuration);
+    if (sponsorshipDuration === "custom") {
+      days = parseInt(customDuration);
+      if (isNaN(days) || days < 1) {
+        toast.error("Please enter a valid number of days");
+        return;
+      }
+    }
+    requestSponsorship.mutate({ id, durationDays: days });
+    setIsSponsorshipDialogOpen(false);
   };
 
   // Render list view
@@ -226,7 +253,11 @@ export const MyProductCard = ({
           )}
           {(sponsorshipStatus === "none" || sponsorshipStatus === "rejected") && (
             <Button
-              onClick={handleRequestSponsorship}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsSponsorshipDialogOpen(true);
+              }}
               disabled={requestSponsorship.isPending}
               variant="outline"
               size="sm"
@@ -377,7 +408,11 @@ export const MyProductCard = ({
         <div className="mt-2 flex">
           {(sponsorshipStatus === "none" || sponsorshipStatus === "rejected") && (
             <Button
-              onClick={handleRequestSponsorship}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsSponsorshipDialogOpen(true);
+              }}
               disabled={requestSponsorship.isPending}
               variant="outline"
               size="sm"
@@ -399,6 +434,54 @@ export const MyProductCard = ({
           )}
         </div>
       </div>
+
+      <Dialog open={isSponsorshipDialogOpen} onOpenChange={setIsSponsorshipDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
+          <DialogHeader>
+            <DialogTitle>Request Sponsorship</DialogTitle>
+            <DialogDescription>
+              Choose how long you want to sponsor "{name}".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Duration</label>
+              <Select value={sponsorshipDuration} onValueChange={setSponsorshipDuration}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">7 Days</SelectItem>
+                  <SelectItem value="14">14 Days</SelectItem>
+                  <SelectItem value="30">30 Days</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {sponsorshipDuration === "custom" && (
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">Custom Days</label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="365"
+                  value={customDuration}
+                  onChange={(e) => setCustomDuration(e.target.value)}
+                  placeholder="Enter number of days"
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSponsorshipDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRequestSponsorshipSubmit} disabled={requestSponsorship.isPending}>
+              {requestSponsorship.isPending ? "Submitting..." : "Submit Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
