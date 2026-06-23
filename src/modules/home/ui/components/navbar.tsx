@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell, Calculator } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell, Calculator, Wrench } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -95,25 +95,20 @@ const publicNavbarItems: NavbarItem[] = [
 
 const customerNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
-  { href: "/tenders", children: "Tenders" },
-  { href: "/deliverypartners", children: "Delivery Partners" },
   { href: "/orders", children: "My Purchases" },
-  { href: "/library", children: (
-    <>
-      <BookmarkCheck className="h-4 w-4" />
-      <span>Library</span>
-    </>
-  ) },
   { 
-    href: "/calculators", 
-    children: "Calculators",
-    icon: <Calculator className="h-4 w-4" />,
+    href: "#tools", 
+    children: "Tools & Resources",
+    icon: <Wrench className="h-4 w-4" />,
     subItems: [
+      { href: "/tenders", children: "Tenders" },
+      { href: "/deliverypartners", children: "Delivery Partners" },
+      { href: "/library", children: "Library" },
+      { href: "/calculators", children: "Calculators Hub" },
       { href: "/calculators/estimators", children: "Estimators" },
       { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
     ]
   },
-  { href: "/cart", children: "My Cart" },
 ];
 
 const myStoreBaseItems: NavbarItem[] = [
@@ -125,37 +120,27 @@ const myStoreBaseItems: NavbarItem[] = [
 
 const tenantNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
-  { href: "/tenders", children: "Tenders" },
-  { href: "/deliverypartners", children: "Delivery Partners" },
-  { href: "/verify-payments", children: "Transactions" },
   { href: "/my-store", children: (
     <>
       <Store className="h-4 w-4" />
       <span>My Store</span>
     </>
   ) },
+  { href: "/verify-payments", children: "Transactions" },
   { href: "/orders", children: "My Purchases" },
-  { href: "/library", children: (
-    <>
-      <BookmarkCheck className="h-4 w-4" />
-      <span>Library</span>
-    </>
-  ) },
   { 
-    href: "/calculators", 
-    children: "Calculators",
-    icon: <Calculator className="h-4 w-4" />,
+    href: "#tools", 
+    children: "Tools & Resources",
+    icon: <Wrench className="h-4 w-4" />,
     subItems: [
+      { href: "/tenders", children: "Tenders" },
+      { href: "/deliverypartners", children: "Delivery Partners" },
+      { href: "/library", children: "Library" },
+      { href: "/calculators", children: "Calculators Hub" },
       { href: "/calculators/estimators", children: "Estimators" },
       { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
     ]
   },
-  // { 
-  //   href: "#", 
-  //   children: "Store Menu",
-  //   subItems: myStoreBaseItems,
-  // },
-  { href: "/cart", children: "My Cart" },
 ];
 
 // Desktop dropdown for items with subItems
@@ -614,6 +599,26 @@ export const Navbar = () => {
       {/* Desktop Auth Buttons - Hidden on mobile */}
       {session.data?.user ? (
         <div className="hidden lg:flex items-center flex-shrink-0">
+          {/* Desktop Cart Icon with Badge */}
+          <OptimizedLink
+            href="/cart"
+            prefetch={true}
+            className={cn(
+              "relative border-l border-t-0 border-b-0 border-r-0 px-4 h-full flex items-center justify-center hover:bg-muted transition-colors",
+              pathname.startsWith('/cart') && "bg-muted"
+            )}
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {cartItemCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute top-2 right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px] rounded-full pointer-events-none"
+              >
+                {cartItemCount > 99 ? "99+" : cartItemCount}
+              </Badge>
+            )}
+          </OptimizedLink>
+
           {/* Notifications Bell with Badge */}
           <OptimizedLink
             href="/notifications"
