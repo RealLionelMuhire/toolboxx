@@ -6,7 +6,7 @@ import Image from "next/image";
 import { StarIcon, EyeOffIcon, ArchiveIcon, Edit2Icon, Trash2Icon, PackageXIcon, RocketIcon } from "lucide-react";
 
 import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { formatCurrency, generateTenantURL } from "@/lib/utils";
@@ -128,7 +128,8 @@ export const MyProductCard = ({
   const [targetAgeMax, setTargetAgeMax] = useState("65");
   const [budgetAmount, setBudgetAmount] = useState("2000");
 
-  const siteSettings = trpc.products.getSiteSettings.useQuery(undefined, {
+  const siteSettings = useQuery({
+    ...trpc.products.getSiteSettings.queryOptions(),
     enabled: isSponsorshipDialogOpen,
   });
 
