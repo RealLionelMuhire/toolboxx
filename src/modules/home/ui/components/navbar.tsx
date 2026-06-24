@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell, Calculator, Wrench } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell, Calculator, Wrench, User } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +19,10 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 
@@ -104,9 +108,15 @@ const customerNavbarItems: NavbarItem[] = [
       { href: "/tenders", children: "Tenders" },
       { href: "/deliverypartners", children: "Delivery Partners" },
       { href: "/library", children: "Library" },
-      { href: "/calculators", children: "Calculators Hub" },
-      { href: "/calculators/estimators", children: "Estimators" },
-      { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
+      { 
+        href: "#calculators", 
+        children: "Calculators",
+        icon: <Calculator className="h-4 w-4 mr-2" />,
+        subItems: [
+          { href: "/calculators/estimators", children: "Estimators" },
+          { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
+        ]
+      }
     ]
   },
 ];
@@ -136,9 +146,15 @@ const tenantNavbarItems: NavbarItem[] = [
       { href: "/tenders", children: "Tenders" },
       { href: "/deliverypartners", children: "Delivery Partners" },
       { href: "/library", children: "Library" },
-      { href: "/calculators", children: "Calculators Hub" },
-      { href: "/calculators/estimators", children: "Estimators" },
-      { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
+      { 
+        href: "#calculators", 
+        children: "Calculators",
+        icon: <Calculator className="h-4 w-4 mr-2" />,
+        subItems: [
+          { href: "/calculators/estimators", children: "Estimators" },
+          { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
+        ]
+      }
     ]
   },
 ];
@@ -172,20 +188,49 @@ const NavbarDropdownItem = ({
         {item.children}
         <ChevronDown className="h-3 w-3" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="center" className="w-48">
-        {subItems?.map((subItem) => (
-          <DropdownMenuItem key={subItem.href} asChild>
-            <Link 
-              href={subItem.href}
-              className={cn(
-                "cursor-pointer",
-                pathname === subItem.href && "bg-accent"
-              )}
-            >
-              {subItem.children}
-            </Link>
-          </DropdownMenuItem>
-        ))}
+      <DropdownMenuContent align="center" className="w-56 bg-black text-white border-gray-800 p-2 rounded-xl shadow-2xl mt-2">
+        {subItems?.map((subItem) => {
+          if (subItem.subItems && subItem.subItems.length > 0) {
+            return (
+              <DropdownMenuSub key={subItem.href}>
+                <DropdownMenuSubTrigger className="focus:bg-orange-500 focus:text-black data-[state=open]:bg-orange-500 data-[state=open]:text-black hover:bg-orange-500 hover:text-black rounded-lg transition-colors cursor-pointer p-3 mb-1 font-medium text-sm flex items-center">
+                  {subItem.icon}
+                  {subItem.children}
+                </DropdownMenuSubTrigger>
+                <DropdownMenuPortal>
+                  <DropdownMenuSubContent className="w-56 bg-black text-white border-gray-800 p-2 rounded-xl shadow-2xl">
+                    {subItem.subItems.map((nested) => (
+                      <DropdownMenuItem key={nested.href} asChild className="focus:bg-orange-500 focus:text-black hover:bg-orange-500 hover:text-black rounded-lg transition-colors cursor-pointer p-3 mb-1">
+                        <Link 
+                          href={nested.href}
+                          className={cn(
+                            "w-full font-medium text-sm",
+                            pathname === nested.href && "text-orange-500"
+                          )}
+                        >
+                          {nested.children}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuPortal>
+              </DropdownMenuSub>
+            );
+          }
+          return (
+            <DropdownMenuItem key={subItem.href} asChild className="focus:bg-orange-500 focus:text-black hover:bg-orange-500 hover:text-black rounded-lg transition-colors cursor-pointer p-3 mb-1">
+              <Link 
+                href={subItem.href}
+                className={cn(
+                  "w-full font-medium text-sm",
+                  pathname === subItem.href && "text-orange-500" // Highlight text instead of background for active state to not conflict with hover
+                )}
+              >
+                {subItem.children}
+              </Link>
+            </DropdownMenuItem>
+          );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );
@@ -598,91 +643,87 @@ export const Navbar = () => {
 
       {/* Desktop Auth Buttons - Hidden on mobile */}
       {session.data?.user ? (
-        <div className="hidden lg:flex items-center flex-shrink-0">
-          {/* Desktop Cart Icon with Badge */}
-          <OptimizedLink
-            href="/cart"
-            prefetch={true}
-            className={cn(
-              "relative border-l border-t-0 border-b-0 border-r-0 px-4 h-full flex items-center justify-center hover:bg-muted transition-colors",
-              pathname.startsWith('/cart') && "bg-muted"
-            )}
-          >
-            <ShoppingCart className="h-5 w-5" />
-            {cartItemCount > 0 && (
-              <Badge
-                variant="destructive"
-                className="absolute top-2 right-2 h-5 w-5 flex items-center justify-center p-0 text-[10px] rounded-full pointer-events-none"
+        <div className="hidden lg:flex items-center flex-shrink-0 px-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="relative h-10 w-10 rounded-full bg-black text-white border-transparent hover:bg-orange-500 hover:text-black transition-colors focus-visible:ring-0"
               >
-                {cartItemCount > 99 ? "99+" : cartItemCount}
-              </Badge>
-            )}
-          </OptimizedLink>
+                <User className="h-5 w-5" />
+                {((cartItemCount > 0) || (unseenNotifications && unseenNotifications.count > 0) || (unreadData && unreadData.totalUnread > 0)) && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 h-3 w-3 flex items-center justify-center p-0 rounded-full pointer-events-none border border-white"
+                  />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 bg-black text-white border-gray-800 p-2 rounded-xl shadow-2xl mt-2">
+              <DropdownMenuItem asChild className="focus:bg-orange-500 focus:text-black hover:bg-orange-500 hover:text-black rounded-lg transition-colors cursor-pointer p-3 mb-1">
+                <Link href="/cart" className="w-full flex items-center gap-3">
+                  <ShoppingCart className="h-5 w-5" />
+                  <span className="font-medium text-sm">My Cart</span>
+                  {cartItemCount > 0 && (
+                    <Badge variant="destructive" className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
+                      {cartItemCount > 99 ? "99+" : cartItemCount}
+                    </Badge>
+                  )}
+                </Link>
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem asChild className="focus:bg-orange-500 focus:text-black hover:bg-orange-500 hover:text-black rounded-lg transition-colors cursor-pointer p-3 mb-1">
+                <Link href="/notifications" className="w-full flex items-center gap-3">
+                  <Bell className="h-5 w-5" />
+                  <span className="font-medium text-sm">Notifications</span>
+                  {unseenNotifications && unseenNotifications.count > 0 && (
+                    <Badge variant="destructive" className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
+                      {unseenNotifications.count > 99 ? "99+" : unseenNotifications.count}
+                    </Badge>
+                  )}
+                </Link>
+              </DropdownMenuItem>
 
-          {/* Notifications Bell with Badge */}
-          <OptimizedLink
-            href="/notifications"
-            prefetch={true}
-            className={cn(
-              "relative border-l border-t-0 border-b-0 border-r-0 px-4 h-full flex items-center justify-center hover:bg-muted transition-colors",
-              pathname.startsWith('/notifications') && "bg-muted"
-            )}
-          >
-            <Bell className="h-5 w-5" />
-            {unseenNotifications && unseenNotifications.count > 0 && (
-              <Badge
-                variant="destructive"
-                className="absolute top-2 right-2 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full pointer-events-none"
+              <DropdownMenuItem asChild className="focus:bg-orange-500 focus:text-black hover:bg-orange-500 hover:text-black rounded-lg transition-colors cursor-pointer p-3 mb-1">
+                <Link href="/chat" className="w-full flex items-center gap-3">
+                  <MessageCircle className="h-5 w-5" />
+                  <span className="font-medium text-sm">Messages</span>
+                  {(unreadData?.totalUnread || 0) > 0 && (
+                    <Badge variant="destructive" className="ml-auto flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
+                      {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
+                    </Badge>
+                  )}
+                </Link>
+              </DropdownMenuItem>
+              
+              <div className="flex items-center justify-between p-2 mb-1 rounded-lg">
+                <div className="flex items-center gap-3 w-full">
+                  <NotificationIndicator userId={session.data.user.id} />
+                  <span className="font-medium text-sm text-gray-300">Push Settings</span>
+                </div>
+              </div>
+              
+              <DropdownMenuSeparator className="bg-gray-800 my-2" />
+              
+              <DropdownMenuItem asChild className="focus:bg-orange-500 focus:text-black hover:bg-orange-500 hover:text-black rounded-lg transition-colors cursor-pointer p-3 mb-1">
+                <Link href={session.data.user.roles?.includes('super-admin') ? "/admin" : session.data.user.roles?.includes('tenant') ? "/dashboard" : "/my-account"} className="w-full flex items-center gap-3">
+                  <Store className="h-5 w-5" />
+                  <span className="font-medium text-sm">{session.data.user.roles?.includes('super-admin') ? "Admin Dashboard" : session.data.user.roles?.includes('tenant') ? "Dashboard" : "Account"}</span>
+                </Link>
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator className="bg-gray-800 my-2" />
+              
+              <DropdownMenuItem 
+                onClick={handleLogout} 
+                disabled={logout.isPending}
+                className="focus:bg-red-600 focus:text-white hover:bg-red-600 hover:text-white text-red-500 rounded-lg transition-colors cursor-pointer w-full flex items-center gap-3 p-3 mt-1"
               >
-                {unseenNotifications.count > 99 ? "99+" : unseenNotifications.count}
-              </Badge>
-            )}
-          </OptimizedLink>
-          
-          {/* Notification Indicator (for push settings) */}
-          <div className="border-l border-t-0 border-b-0 border-r-0 h-full flex items-center justify-center px-2">
-            <NotificationIndicator userId={session.data.user.id} />
-          </div>
-          
-          {/* Chat Icon with Badge */}
-          <OptimizedLink
-            href="/chat"
-            prefetch={true}
-            className={cn(
-              "relative border-l border-t-0 border-b-0 border-r-0 px-4 h-full flex items-center justify-center hover:bg-muted transition-colors",
-              pathname.startsWith('/chat') && "bg-muted"
-            )}
-          >
-            <MessageCircle className="h-5 w-5" />
-            {(unreadData?.totalUnread || 0) > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute top-4 right-1 h-5 min-w-5 px-1.5 flex items-center justify-center text-xs rounded-full pointer-events-none"
-              >
-                {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
-              </Badge>
-            )}
-          </OptimizedLink>
-
-          <Button
-            asChild
-            className="border-l border-t-0 border-b-0 border-r-0 px-6 h-full rounded-none bg-black text-white hover:bg-orange-400 hover:text-black transition-colors text-sm whitespace-nowrap"
-          >
-            <Link 
-              href={session.data.user.roles?.includes('super-admin') ? "/admin" : session.data.user.roles?.includes('tenant') ? "/dashboard" : "/my-account"}
-              prefetch={true}
-            >
-              {session.data.user.roles?.includes('super-admin') ? "Admin" : session.data.user.roles?.includes('tenant') ? "Dashboard" : "Account"}
-            </Link>
-          </Button>
-          <Button
-            onClick={handleLogout}
-            disabled={logout.isPending}
-            className="border-l border-t-0 border-b-0 border-r-0 px-6 h-full rounded-none bg-red-600 text-white hover:bg-red-700 transition-colors text-sm flex items-center gap-2 whitespace-nowrap"
-          >
-            <LogOut className="h-4 w-4" />
-            {logout.isPending ? "Logging out..." : "Logout"}
-          </Button>
+                <LogOut className="h-5 w-5" />
+                <span className="font-medium text-sm">{logout.isPending ? "Logging out..." : "Logout"}</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       ) : (
         <div className="hidden lg:flex flex-shrink-0">
