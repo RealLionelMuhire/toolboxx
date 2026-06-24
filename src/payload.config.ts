@@ -30,6 +30,7 @@ import { Notifications } from './collections/Notifications'
 import { Tenders } from './collections/Tenders'
 import { TenderBids } from './collections/TenderBids'
 import { Sponsorships } from './collections/Sponsorships'
+import { SiteSettings } from './globals/SiteSettings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -55,6 +56,7 @@ export default buildConfig({
     defaultFromName: process.env.SMTP_FROM_NAME || 'Toolbay',
   }),
   collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions, Notifications, Tenders, TenderBids, Sponsorships],
+  globals: [SiteSettings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

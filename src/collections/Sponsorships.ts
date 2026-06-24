@@ -129,6 +129,73 @@ export const Sponsorships: CollectionConfig = {
       }
     },
     {
+      name: "targetLocationType",
+      type: "select",
+      options: [
+        { label: "Default Product Location", value: "default_product_location" },
+        { label: "Custom Location", value: "custom_location" },
+      ],
+      defaultValue: "default_product_location",
+      admin: {
+        description: "Whether to target the product's location or a custom area.",
+      }
+    },
+    {
+      name: "locationCountry",
+      type: "text",
+      admin: {
+        condition: (data) => data.targetLocationType === "custom_location",
+      }
+    },
+    {
+      name: "locationProvince",
+      type: "text",
+      admin: {
+        condition: (data) => data.targetLocationType === "custom_location",
+      }
+    },
+    {
+      name: "locationDistrict",
+      type: "text",
+      admin: {
+        condition: (data) => data.targetLocationType === "custom_location",
+      }
+    },
+    {
+      name: "locationCityOrArea",
+      type: "text",
+      admin: {
+        condition: (data) => data.targetLocationType === "custom_location",
+      }
+    },
+    {
+      name: "targetGender",
+      type: "select",
+      options: [
+        { label: "All", value: "all" },
+        { label: "Men", value: "men" },
+        { label: "Women", value: "women" },
+      ],
+      defaultValue: "all",
+    },
+    {
+      name: "targetAgeMin",
+      type: "number",
+      defaultValue: 18,
+    },
+    {
+      name: "targetAgeMax",
+      type: "number",
+      defaultValue: 65,
+    },
+    {
+      name: "momoCode",
+      type: "text",
+      admin: {
+        description: "Mobile Money Code added by Admin for the user to pay. Users can view this code.",
+      }
+    },
+    {
       name: "adminNotes",
       type: "textarea",
       admin: {

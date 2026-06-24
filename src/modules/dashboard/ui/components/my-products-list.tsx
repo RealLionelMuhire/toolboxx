@@ -90,6 +90,7 @@ export const MyProductsList = ({ searchQuery, viewMode = "grid", onEdit, onDelet
               stockStatus={product.stockStatus}
               quantity={product.quantity}
               sponsorshipStatus={(product as any).sponsorshipStatus || "none"}
+              pendingMomoCode={(product as any).pendingMomoCode || null}
               viewMode={viewMode}
               onEdit={onEdit}
               onDelete={onDelete}

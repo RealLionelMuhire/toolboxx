@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { formatCurrency, generateTenantURL } from "@/lib/utils";
+import { COUNTRIES, getCountryByCode, getProvinceByCode } from "@/lib/location-data";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -44,6 +45,7 @@ interface MyProductCardProps {
   stockStatus?: string;
   quantity?: number;
   sponsorshipStatus?: string;
+  pendingMomoCode?: string | null;
   viewMode?: "grid" | "list";
   onEdit?: (id: string) => void;
   onDelete?: (id: string, name: string) => void;
@@ -64,6 +66,7 @@ export const MyProductCard = ({
   stockStatus,
   quantity,
   sponsorshipStatus = "none",
+  pendingMomoCode = null,
   viewMode = "grid",
   onEdit,
   onDelete,
@@ -114,6 +117,15 @@ export const MyProductCard = ({
   const [sponsorshipDuration, setSponsorshipDuration] = useState("7");
   const [customDuration, setCustomDuration] = useState("14");
 
+  const [targetLocationType, setTargetLocationType] = useState<"default_product_location" | "custom_location">("default_product_location");
+  const [locationCountry, setLocationCountry] = useState("");
+  const [locationProvince, setLocationProvince] = useState("");
+  const [locationDistrict, setLocationDistrict] = useState("");
+  const [locationCityOrArea, setLocationCityOrArea] = useState("");
+  const [targetGender, setTargetGender] = useState<"all" | "men" | "women">("all");
+  const [targetAgeMin, setTargetAgeMin] = useState("18");
+  const [targetAgeMax, setTargetAgeMax] = useState("65");
+
   const handleRequestSponsorshipSubmit = () => {
     let days = parseInt(sponsorshipDuration);
     if (sponsorshipDuration === "custom") {
@@ -123,7 +135,24 @@ export const MyProductCard = ({
         return;
       }
     }
-    requestSponsorship.mutate({ id, durationDays: days });
+    
+    if (targetLocationType === "custom_location" && !locationCountry) {
+      toast.error("Please select a target country");
+      return;
+    }
+
+    requestSponsorship.mutate({ 
+      id, 
+      durationDays: days,
+      targetLocationType,
+      locationCountry: targetLocationType === "custom_location" ? locationCountry : undefined,
+      locationProvince: targetLocationType === "custom_location" ? locationProvince : undefined,
+      locationDistrict: targetLocationType === "custom_location" ? locationDistrict : undefined,
+      locationCityOrArea: targetLocationType === "custom_location" ? locationCityOrArea : undefined,
+      targetGender,
+      targetAgeMin: parseInt(targetAgeMin) || 18,
+      targetAgeMax: parseInt(targetAgeMax) || 65,
+    });
     setIsSponsorshipDialogOpen(false);
   };
 
@@ -423,8 +452,13 @@ export const MyProductCard = ({
             </Button>
           )}
           {sponsorshipStatus === "pending" && (
-            <div className="w-full text-center py-1.5 bg-orange-100 text-orange-600 text-xs sm:text-sm font-medium rounded-md border border-orange-200">
-              Sponsorship Pending Approval
+            <div className="w-full text-center py-1.5 px-2 bg-orange-100 text-orange-600 text-xs sm:text-sm font-medium rounded-md border border-orange-200 flex flex-col gap-1 items-center justify-center">
+              <span>Sponsorship Pending Approval</span>
+              {pendingMomoCode && (
+                <span className="bg-white/60 px-2 py-0.5 rounded text-[11px] font-bold mt-0.5">
+                  Momo Payment Code: {pendingMomoCode}
+                </span>
+              )}
             </div>
           )}
           {sponsorshipStatus === "approved" && (
@@ -436,7 +470,7 @@ export const MyProductCard = ({
       </div>
 
       <Dialog open={isSponsorshipDialogOpen} onOpenChange={setIsSponsorshipDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]" onClick={(e) => e.stopPropagation()}>
+        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
           <DialogHeader>
             <DialogTitle>Request Sponsorship</DialogTitle>
             <DialogDescription>
@@ -471,6 +505,81 @@ export const MyProductCard = ({
                 />
               </div>
             )}
+
+            <div className="flex flex-col gap-2 mt-2 border-t pt-4">
+              <label className="text-sm font-semibold">Target Audience</label>
+              
+              {/* Location Type */}
+              <div className="flex flex-col gap-1.5 mt-1">
+                <label className="text-xs text-gray-500">Location</label>
+                <Select value={targetLocationType} onValueChange={(v: any) => setTargetLocationType(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default_product_location">Same as Product Location</SelectItem>
+                    <SelectItem value="custom_location">Custom Location</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Custom Location Selectors */}
+              {targetLocationType === "custom_location" && (
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <Select value={locationCountry} onValueChange={(v) => { setLocationCountry(v); setLocationProvince(""); setLocationDistrict(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Country" /></SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(c => <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+
+                  {locationCountry && (
+                    <Select value={locationProvince} onValueChange={(v) => { setLocationProvince(v); setLocationDistrict(""); }}>
+                      <SelectTrigger><SelectValue placeholder="Province/Region" /></SelectTrigger>
+                      <SelectContent>
+                        {getCountryByCode(locationCountry)?.provinces.map(p => <SelectItem key={p.code} value={p.code}>{p.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {locationProvince && (
+                    <Select value={locationDistrict} onValueChange={setLocationDistrict}>
+                      <SelectTrigger><SelectValue placeholder="District" /></SelectTrigger>
+                      <SelectContent>
+                        {getProvinceByCode(locationCountry, locationProvince)?.districts.map(d => <SelectItem key={d.code} value={d.code}>{d.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {locationProvince && (
+                    <Input placeholder="City or Area" value={locationCityOrArea} onChange={(e) => setLocationCityOrArea(e.target.value)} />
+                  )}
+                </div>
+              )}
+
+              {/* Gender */}
+              <div className="flex flex-col gap-1.5 mt-2">
+                <label className="text-xs text-gray-500">Gender</label>
+                <Select value={targetGender} onValueChange={(v: any) => setTargetGender(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Genders</SelectItem>
+                    <SelectItem value="men">Men</SelectItem>
+                    <SelectItem value="women">Women</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Age Range */}
+              <div className="flex flex-col gap-1.5 mt-2">
+                <label className="text-xs text-gray-500">Age Range</label>
+                <div className="flex items-center gap-2">
+                  <Input type="number" min="0" value={targetAgeMin} onChange={e => setTargetAgeMin(e.target.value)} placeholder="Min Age" />
+                  <span className="text-sm text-gray-500">to</span>
+                  <Input type="number" max="120" value={targetAgeMax} onChange={e => setTargetAgeMax(e.target.value)} placeholder="Max Age" />
+                </div>
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsSponsorshipDialogOpen(false)}>

@@ -39,6 +39,7 @@ interface ProductCardProps {
   priority?: boolean; // For above-the-fold images
   totalSold?: number;
   viewCount?: number;
+  sponsorshipStatus?: "pending" | "approved" | "rejected" | "none";
 };
 
 export const ProductCard = ({
@@ -66,6 +67,7 @@ export const ProductCard = ({
   priority = false,
   totalSold = 0,
   viewCount = 0,
+  sponsorshipStatus = "none",
 }: ProductCardProps) => {
   const router = useRouter();
   const trpc = useTRPC();
@@ -306,8 +308,13 @@ export const ProductCard = ({
             />
           )}
           
-          {/* Stock Status Badge - Floating */}
-          <div className="absolute top-2 right-2 z-10">
+          {/* Stock Status Badge & Sponsored Tag - Floating */}
+          <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
+            {sponsorshipStatus === "approved" && (
+              <div className="flex items-center bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-sm border border-orange-200">
+                <span className="text-[9px] font-bold text-orange-600 tracking-wider uppercase">Sponsored</span>
+              </div>
+            )}
             <StockStatusBadge 
               stockStatus={stockStatus} 
               quantity={stockStatus === "low_stock" ? quantity : undefined} 
@@ -477,8 +484,13 @@ export const ProductCard = ({
           />
         )}
         
-        {/* Stock Status Badge - Floating */}
-        <div className="absolute top-3 right-3 z-10">
+        {/* Stock Status Badge & Sponsored Tag - Floating */}
+        <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+          {sponsorshipStatus === "approved" && (
+            <div className="flex items-center bg-white/95 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm border border-orange-200">
+              <span className="text-[10px] font-bold text-orange-600 tracking-wider uppercase">Sponsored</span>
+            </div>
+          )}
           <StockStatusBadge 
             stockStatus={stockStatus} 
             quantity={stockStatus === "low_stock" ? quantity : undefined} 
