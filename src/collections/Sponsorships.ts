@@ -196,6 +196,13 @@ export const Sponsorships: CollectionConfig = {
       }
     },
     {
+      name: "budgetAmount",
+      type: "number",
+      admin: {
+        description: "Amount the user is willing to pay (in RWF)",
+      }
+    },
+    {
       name: "adminNotes",
       type: "textarea",
       admin: {

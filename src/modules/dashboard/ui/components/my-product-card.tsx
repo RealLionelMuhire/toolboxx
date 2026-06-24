@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { ImageCarousel } from "./image-carousel";
 
 interface MyProductCardProps {
@@ -125,6 +126,11 @@ export const MyProductCard = ({
   const [targetGender, setTargetGender] = useState<"all" | "men" | "women">("all");
   const [targetAgeMin, setTargetAgeMin] = useState("18");
   const [targetAgeMax, setTargetAgeMax] = useState("65");
+  const [budgetAmount, setBudgetAmount] = useState("2000");
+
+  const siteSettings = trpc.products.getSiteSettings.useQuery(undefined, {
+    enabled: isSponsorshipDialogOpen,
+  });
 
   const handleRequestSponsorshipSubmit = () => {
     let days = parseInt(sponsorshipDuration);
@@ -152,6 +158,7 @@ export const MyProductCard = ({
       targetGender,
       targetAgeMin: parseInt(targetAgeMin) || 18,
       targetAgeMax: parseInt(targetAgeMax) || 65,
+      budgetAmount: parseInt(budgetAmount) || 2000,
     });
     setIsSponsorshipDialogOpen(false);
   };
@@ -579,6 +586,41 @@ export const MyProductCard = ({
                   <Input type="number" max="120" value={targetAgeMax} onChange={e => setTargetAgeMax(e.target.value)} placeholder="Max Age" />
                 </div>
               </div>
+
+              {/* Budget Amount */}
+              <div className="flex flex-col gap-1.5 mt-2 border-t pt-3">
+                <label className="text-sm font-semibold">Budget</label>
+                <p className="text-xs text-gray-500 mb-2">Slide to select how much you are willing to pay</p>
+                
+                <div className="px-2">
+                  <Slider 
+                    min={2000} 
+                    max={25000} 
+                    step={500} 
+                    value={[parseInt(budgetAmount) || 2000]} 
+                    onValueChange={(values) => {
+                      if (values[0] !== undefined) {
+                        setBudgetAmount(values[0].toString());
+                      }
+                    }} 
+                    className="py-2"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-2">
+                    <span>2,000 RWF</span>
+                    <span className="font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">{formatCurrency(parseInt(budgetAmount) || 2000)} RWF</span>
+                    <span>25,000 RWF</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Payment Instructions */}
+              {siteSettings.data?.paymentMomoCode && (
+                <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-md">
+                  <p className="text-sm text-orange-800 font-medium text-center">
+                    Pay using Mobile Money: <span className="font-bold text-lg block mt-1">{siteSettings.data.paymentMomoCode}</span>
+                  </p>
+                </div>
+              )}
             </div>
           </div>
           <DialogFooter>

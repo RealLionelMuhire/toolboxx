@@ -22,5 +22,12 @@ export const SiteSettings: GlobalConfig = {
       min: 1,
       max: 50,
     },
+    {
+      name: "paymentMomoCode",
+      type: "text",
+      admin: {
+        description: "The Mobile Money code (e.g. 078...) shown to users when they request a product sponsorship.",
+      }
+    }
   ],
 };

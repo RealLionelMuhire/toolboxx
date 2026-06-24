@@ -1561,7 +1561,8 @@ export const productsRouter = createTRPCRouter({
       locationCityOrArea: z.string().optional(),
       targetGender: z.enum(["all", "men", "women"]).default("all"),
       targetAgeMin: z.number().min(0).max(100).default(18),
-      targetAgeMax: z.number().min(0).max(120).default(65)
+      targetAgeMax: z.number().min(0).max(120).default(65),
+      budgetAmount: z.number().min(2000).max(25000).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       // Find the product first to verify ownership
@@ -1622,9 +1623,25 @@ export const productsRouter = createTRPCRouter({
           targetGender: input.targetGender,
           targetAgeMin: input.targetAgeMin,
           targetAgeMax: input.targetAgeMax,
+          budgetAmount: input.budgetAmount,
         } as any,
       });
 
       return { success: true };
+    }),
+
+  // Get global site settings (for Momo Code, etc)
+  getSiteSettings: baseProcedure
+    .query(async ({ ctx }) => {
+      try {
+        const settings = await ctx.db.findGlobal({
+          slug: "site-settings" as any as never,
+        });
+        return {
+          paymentMomoCode: (settings as any)?.paymentMomoCode || null,
+        };
+      } catch (error) {
+        return { paymentMomoCode: null };
+      }
     }),
 });
