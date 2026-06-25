@@ -21,6 +21,7 @@ export const Tenders: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['tenderNumber', 'title', 'type', 'status', 'createdBy', 'createdAt'],
     listSearchableFields: ['title', 'tenderNumber'],
+    hidden: ({ user }) => !isSuperAdmin(user),
   },
   access: {
     read: ({ req }) => {

@@ -9,6 +9,7 @@ export const SiteSettings: GlobalConfig = {
   },
   admin: {
     group: "Settings",
+    hidden: ({ user }) => !isSuperAdmin(user),
   },
   fields: [
     {

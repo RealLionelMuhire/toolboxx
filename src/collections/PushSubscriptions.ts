@@ -5,6 +5,10 @@ export const PushSubscriptions: CollectionConfig = {
   admin: {
     useAsTitle: 'endpoint',
     defaultColumns: ['user', 'endpoint', 'createdAt', 'isActive'],
+    hidden: ({ user }) => {
+      if (!user) return true;
+      return !user.roles?.includes('super-admin');
+    },
   },
   access: {
     read: ({ req: { user } }) => {

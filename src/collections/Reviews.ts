@@ -12,6 +12,7 @@ export const Reviews: CollectionConfig = {
   },
   admin: {
     useAsTitle: "description",
+    hidden: ({ user }) => !isSuperAdmin(user),
   },
   fields: [
     {

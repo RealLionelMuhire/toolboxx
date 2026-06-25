@@ -7,6 +7,7 @@ export const Sponsorships: CollectionConfig = {
     useAsTitle: "id",
     defaultColumns: ["product", "tenant", "status", "startDate", "endDate"],
     group: "Store Management",
+    hidden: ({ user }) => !isSuperAdmin(user),
   },
   access: {
     read: ({ req }) => {

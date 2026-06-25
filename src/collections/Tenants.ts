@@ -80,8 +80,8 @@ export const Tenants: CollectionConfig = {
   admin: {
     useAsTitle: 'slug',
     description: '🏪 Tenant Management - Super Admin Guide: (1) Review RDB Certificate, (2) Set Verification Status, (3) Check Is Verified, (4) Add Notes, (5) Enable Merchant Capabilities',
-    // Ensure admin can see the collection
-    hidden: false,
+    // Ensure only super admins can see the collection in the sidebar
+    hidden: ({ user }) => !isSuperAdmin(user),
     // Optimize admin panel performance
     pagination: {
       defaultLimit: 25, // Reduce default items per page

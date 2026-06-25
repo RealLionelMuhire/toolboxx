@@ -6,6 +6,7 @@ export const Notifications: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'type', 'user', 'seen', 'createdAt'],
     listSearchableFields: ['title', 'message'],
+    hidden: ({ user }) => !user?.roles?.includes('super-admin'),
   },
   access: {
     read: ({ req: { user } }) => {
