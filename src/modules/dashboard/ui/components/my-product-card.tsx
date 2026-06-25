@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { ImageCarousel } from "./image-carousel";
 
@@ -154,6 +155,10 @@ export const MyProductCard = ({
   const [targetAgeMin, setTargetAgeMin] = useState("18");
   const [targetAgeMax, setTargetAgeMax] = useState("65");
   const [budgetAmount, setBudgetAmount] = useState("2000");
+  const [paymentMessage, setPaymentMessage] = useState("");
+
+  const selectedDays = sponsorshipDuration === "custom" ? (parseInt(customDuration) || 1) : parseInt(sponsorshipDuration);
+  const totalAmount = (parseInt(budgetAmount) || 2000) * selectedDays;
 
   const siteSettings = useQuery({
     ...trpc.products.getSiteSettings.queryOptions(),
@@ -175,6 +180,11 @@ export const MyProductCard = ({
       return;
     }
 
+    if (!paymentMessage.trim()) {
+      toast.error("Please paste your payment confirmation message");
+      return;
+    }
+
     requestSponsorship.mutate({ 
       id, 
       durationDays: days,
@@ -187,6 +197,7 @@ export const MyProductCard = ({
       targetAgeMin: parseInt(targetAgeMin) || 18,
       targetAgeMax: parseInt(targetAgeMax) || 65,
       budgetAmount: parseInt(budgetAmount) || 2000,
+      paymentMessage,
     });
     setIsSponsorshipDialogOpen(false);
   };
@@ -609,7 +620,12 @@ export const MyProductCard = ({
       </div>
 
       <Dialog open={isSponsorshipDialogOpen} onOpenChange={setIsSponsorshipDialogOpen}>
-        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <DialogContent 
+          className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto" 
+          onClick={(e) => e.stopPropagation()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>Request Sponsorship</DialogTitle>
             <DialogDescription>
@@ -721,8 +737,8 @@ export const MyProductCard = ({
 
               {/* Budget Amount */}
               <div className="flex flex-col gap-1.5 mt-2 border-t pt-3">
-                <label className="text-sm font-semibold">Budget</label>
-                <p className="text-xs text-gray-500 mb-2">Slide to select how much you are willing to pay</p>
+                <label className="text-sm font-semibold">Daily Budget</label>
+                <p className="text-xs text-gray-500 mb-2">Slide to select how much you are willing to pay per day</p>
                 
                 <div className="px-2">
                   <Slider 
@@ -739,18 +755,37 @@ export const MyProductCard = ({
                   />
                   <div className="flex justify-between text-xs text-gray-500 mt-2">
                     <span>2,000 RWF</span>
-                    <span className="font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">{formatCurrency(parseInt(budgetAmount) || 2000)} RWF</span>
+                    <span className="font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">{formatCurrency(parseInt(budgetAmount) || 2000)} RWF/day</span>
                     <span>25,000 RWF</span>
                   </div>
                 </div>
+
+                <div className="flex justify-between items-center mt-3 pt-2 border-t">
+                  <span className="text-sm font-bold text-gray-700">Total Amount ({selectedDays} days):</span>
+                  <span className="text-lg font-black text-orange-600">{formatCurrency(totalAmount)} RWF</span>
+                </div>
               </div>
               
-              {/* Payment Instructions */}
+              {/* Payment Instructions & Message */}
               {siteSettings.data?.paymentMomoCode && (
-                <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-md">
-                  <p className="text-sm text-orange-800 font-medium text-center">
-                    Pay using Mobile Money: <span className="font-bold text-lg block mt-1">{siteSettings.data.paymentMomoCode}</span>
-                  </p>
+                <div className="mt-3 p-4 bg-orange-50 border border-orange-200 rounded-md space-y-3">
+                  <div className="text-sm text-orange-800 font-medium text-center">
+                    To pay, dial this code on your phone:
+                    <div className="bg-white px-3 py-2 mt-2 rounded border border-orange-200 font-bold text-lg text-center cursor-pointer select-all">
+                      *182*8*1*{siteSettings.data.paymentMomoCode}*{totalAmount}#
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-1.5 pt-2 border-t border-orange-200/50">
+                    <label className="text-xs font-semibold text-orange-900">Payment Confirmation Message</label>
+                    <p className="text-[10px] text-orange-700">Please paste the SMS confirmation you received from Mobile Money</p>
+                    <Textarea 
+                      value={paymentMessage}
+                      onChange={(e) => setPaymentMessage(e.target.value)}
+                      placeholder="Paste your Mobile Money SMS message here..."
+                      className="text-xs min-h-[60px] bg-white border-orange-200 focus-visible:ring-orange-500"
+                    />
+                  </div>
                 </div>
               )}
             </div>

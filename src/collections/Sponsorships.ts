@@ -203,6 +203,13 @@ export const Sponsorships: CollectionConfig = {
       }
     },
     {
+      name: "paymentMessage",
+      type: "textarea",
+      admin: {
+        description: "Payment confirmation message from the user (e.g. Mobile Money SMS)",
+      }
+    },
+    {
       name: "adminNotes",
       type: "textarea",
       admin: {

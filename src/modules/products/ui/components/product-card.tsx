@@ -309,7 +309,7 @@ export const ProductCard = ({
           )}
           
           {/* Stock Status Badge & Sponsored Tag - Floating */}
-          <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-1">
+          <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 z-10 flex flex-col items-end gap-0.5 sm:gap-1 scale-75 sm:scale-100 origin-top-right">
             {sponsorshipStatus === "approved" && (
               <div className="flex items-center bg-white/95 backdrop-blur-sm px-2 py-0.5 rounded-full shadow-sm border border-orange-200">
                 <span className="text-[9px] font-bold text-orange-600 tracking-wider uppercase">Sponsored</span>
@@ -485,7 +485,7 @@ export const ProductCard = ({
         )}
         
         {/* Stock Status Badge & Sponsored Tag - Floating */}
-        <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-1.5">
+        <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 flex flex-col items-end gap-1 sm:gap-1.5 scale-75 sm:scale-100 origin-top-right">
           {sponsorshipStatus === "approved" && (
             <div className="flex items-center bg-white/95 backdrop-blur-sm px-2 py-1 rounded-full shadow-sm border border-orange-200">
               <span className="text-[10px] font-bold text-orange-600 tracking-wider uppercase">Sponsored</span>

@@ -643,7 +643,37 @@ export const Navbar = () => {
 
       {/* Desktop Auth Buttons - Hidden on mobile */}
       {session.data?.user ? (
-        <div className="hidden lg:flex items-center flex-shrink-0 px-4">
+        <div className="hidden lg:flex items-center gap-5 flex-shrink-0 px-4">
+          {/* Cart Icon */}
+          <Link href="/cart" className="relative text-gray-700 hover:text-orange-500 transition-colors">
+            <ShoppingCart className="h-6 w-6" />
+            {cartItemCount > 0 && (
+              <Badge variant="destructive" className="absolute -top-1.5 -right-1.5 h-4 w-4 flex items-center justify-center p-0 text-[10px] rounded-full">
+                {cartItemCount > 99 ? "99+" : cartItemCount}
+              </Badge>
+            )}
+          </Link>
+
+          {/* Messages Icon */}
+          <Link href="/chat" className="relative text-gray-700 hover:text-orange-500 transition-colors">
+            <MessageCircle className="h-6 w-6" />
+            {(unreadData?.totalUnread || 0) > 0 && (
+              <Badge variant="destructive" className="absolute -top-1.5 -right-1.5 h-4 w-4 flex items-center justify-center p-0 text-[10px] rounded-full">
+                {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
+              </Badge>
+            )}
+          </Link>
+
+          {/* Notifications Icon */}
+          <Link href="/notifications" className="relative text-gray-700 hover:text-orange-500 transition-colors">
+            <Bell className="h-6 w-6" />
+            {unseenNotifications && unseenNotifications.count > 0 && (
+              <Badge variant="destructive" className="absolute -top-1.5 -right-1.5 h-4 w-4 flex items-center justify-center p-0 text-[10px] rounded-full">
+                {unseenNotifications.count > 99 ? "99+" : unseenNotifications.count}
+              </Badge>
+            )}
+          </Link>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button 

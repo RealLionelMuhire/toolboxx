@@ -1563,6 +1563,7 @@ export const productsRouter = createTRPCRouter({
       targetAgeMin: z.number().min(0).max(100).default(18),
       targetAgeMax: z.number().min(0).max(120).default(65),
       budgetAmount: z.number().min(2000).max(25000).optional(),
+      paymentMessage: z.string().min(1, "Please paste your payment confirmation message"),
     }))
     .mutation(async ({ ctx, input }) => {
       // Find the product first to verify ownership
@@ -1624,6 +1625,7 @@ export const productsRouter = createTRPCRouter({
           targetAgeMin: input.targetAgeMin,
           targetAgeMax: input.targetAgeMax,
           budgetAmount: input.budgetAmount,
+          paymentMessage: input.paymentMessage,
         } as any,
       });
 
