@@ -13,6 +13,8 @@ interface ImageUploadProps {
   onChange: (value: string[]) => void;
   maxImages?: number;
   maxVideoSize?: number; // in MB
+  productName?: string; // Used to auto-rename files for SEO
+  tenantLocation?: string; // Used to auto-rename files for local SEO
 }
 
 interface UploadedFile {
@@ -34,6 +36,8 @@ export const ImageUpload = ({
   onChange,
   maxImages = 24,
   maxVideoSize = 60, // 60MB for 1-minute video
+  productName,
+  tenantLocation,
 }: ImageUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -226,8 +230,11 @@ export const ImageUpload = ({
       }
 
       const formData = new FormData();
-      formData.append("file", file, file.name); // Explicitly set filename
-      formData.append("alt", fileName.replace(/\.[^/.]+$/, "")); // Remove extension
+      formData.append("file", file, fileName); // Explicitly set filename
+      
+      // Use the formatted filename (without extension) as alt text
+      const cleanAlt = fileName.replace(/\.[^/.]+$/, "").replace(/-[a-z0-9]{4}$/, "").replace(/-/g, " ");
+      formData.append("alt", cleanAlt);
 
       const xhr = new XMLHttpRequest();
 
@@ -374,6 +381,16 @@ export const ImageUpload = ({
 
         let processedFile = file;
         const originalFileName = file.name;
+        
+        // Generate SEO-friendly filename if productName is provided
+        let uploadFileName = originalFileName;
+        if (productName && productName.trim().length > 0) {
+          const ext = originalFileName.split('.').pop() || 'jpg';
+          const safeName = productName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+          const safeLocation = tenantLocation ? `-${tenantLocation.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '')}` : '';
+          const shortId = Math.random().toString(36).substring(2, 6);
+          uploadFileName = `${safeName}${safeLocation}-${shortId}.${ext}`;
+        }
 
         // Optimize image before uploading (skip videos and small images)
         if (isImage) {
@@ -395,13 +412,13 @@ export const ImageUpload = ({
               // Only show toast if there was significant reduction
               const reductionPercent = ((originalSize - processedFile.size) / originalSize) * 100;
               if (reductionPercent > 10) {
-                toast.info(`${originalFileName} optimized: ${(originalSize / 1024).toFixed(0)}KB → ${(processedFile.size / 1024).toFixed(0)}KB (${reductionPercent.toFixed(0)}% smaller)`);
+                toast.info(`Image optimized: ${(originalSize / 1024).toFixed(0)}KB → ${(processedFile.size / 1024).toFixed(0)}KB (${reductionPercent.toFixed(0)}% smaller)`);
               }
 
               // Update to uploading status
               setUploadProgress(prev => 
                 prev.map(p => 
-                  p.fileName === originalFileName 
+                  p.fileName === uploadFileName 
                     ? { ...p, status: 'uploading' }
                     : p
                 )
@@ -409,11 +426,11 @@ export const ImageUpload = ({
             } catch (error) {
               console.error('Image optimization error:', error);
               // If optimization fails, continue with original file
-              toast.warning(`Could not optimize ${originalFileName}, uploading original`);
+              toast.warning(`Could not optimize image, uploading original`);
               
               // Add to progress with uploading status
               setUploadProgress(prev => [...prev, {
-                fileName: originalFileName,
+                fileName: uploadFileName,
                 progress: 0,
                 status: 'uploading'
               }]);
@@ -422,7 +439,7 @@ export const ImageUpload = ({
             // Small image - skip optimization, upload directly
             console.log(`Skipping optimization for ${originalFileName} (${fileSizeKB.toFixed(0)}KB - already small)`);
             setUploadProgress(prev => [...prev, {
-              fileName: originalFileName,
+              fileName: uploadFileName,
               progress: 0,
               status: 'uploading'
             }]);
@@ -430,14 +447,14 @@ export const ImageUpload = ({
         } else {
           // Video - add to progress directly (no client-side compression for videos)
           setUploadProgress(prev => [...prev, {
-            fileName: originalFileName,
+            fileName: uploadFileName,
             progress: 0,
             status: 'uploading'
           }]);
         }
 
         // Upload with progress tracking
-        const mediaId = await uploadSingleFile(processedFile, originalFileName);
+        const mediaId = await uploadSingleFile(processedFile, uploadFileName);
         
         if (mediaId) {
           newMediaIds.push(mediaId);

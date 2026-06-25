@@ -9,6 +9,7 @@ import dynamic from "next/dynamic";
 
 import { useTRPC } from "@/trpc/client";
 import { LocationSelector } from "@/components/location-selector";
+import { getCountryByCode } from "@/lib/location-data";
 import { Form } from "@/components/ui/form";
 import {
   Dialog,
@@ -90,6 +91,7 @@ export const ProductFormDialog = ({
   const hasPopulatedRef = useRef(false); // Track if we've populated the form in edit mode
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [showCreateAnother, setShowCreateAnother] = useState(false);
 
   // Draft key scoped by mode (and productId in edit mode)
   const draftKey = mode === "edit" && productId
@@ -151,6 +153,42 @@ export const ProductFormDialog = ({
     staleTime: 60 * 1000,
     enabled: open,
   });
+
+  // Fetch tenant data to get location for SEO filename
+  const { data: tenantData } = useQuery({
+    ...trpc.tenants.getCurrentTenant.queryOptions(),
+    staleTime: 5 * 60 * 1000,
+    enabled: open,
+  });
+
+  const tenantLocation = useMemo(() => {
+    if (!tenantData) return "";
+    
+    // Convert short codes (like 'rw', 'kc') back to full names (like 'Rwanda', 'Kigali City') for better SEO
+    let countryName = "";
+    let provinceName = "";
+    
+    if (tenantData.locationCountry) {
+      const country = getCountryByCode(tenantData.locationCountry);
+      if (country) {
+        countryName = country.name;
+        if (tenantData.locationProvince) {
+          const province = country.provinces.find(p => p.code === tenantData.locationProvince);
+          if (province) {
+            provinceName = province.name;
+          } else {
+            provinceName = tenantData.locationProvince; // fallback
+          }
+        }
+      } else {
+        countryName = tenantData.locationCountry; // fallback
+      }
+    }
+
+    // Best practice for Local SEO: City/Province + Country (full names)
+    const parts = [provinceName, countryName].filter(Boolean);
+    return parts.join("-");
+  }, [tenantData]);
 
   // Populate form when editing - wait for BOTH product data AND categories to load
   // Only populate when productData matches current productId (avoids mixing products when switching)
@@ -318,8 +356,7 @@ export const ProductFormDialog = ({
       invalidateProductQueries();
       hasSubmittedRef.current = true; // Mark as submitted to prevent cleanup
       clearDraft();
-      onClose();
-      reset();
+      setShowCreateAnother(true);
     },
     onError: (error) => {
       toast.error(error.message || "Failed to create product");
@@ -829,35 +866,49 @@ export const ProductFormDialog = ({
                 </p>
               </div>
 
-              {/* 2. Product Photos & Videos */}
-              <div>
-                <Label>Product Photos & Videos *</Label>
-                <ImageUpload
-                  key={mode === "edit" ? `edit-${productId}` : "create"}
-                  value={watch("gallery") || []}
-                  onChange={(value) => setValue("gallery", value)}
-                  maxImages={24}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Upload up to 24 images. First image will be used as the main product image.
-                </p>
-                {errors.gallery && (
-                  <p className="text-sm text-red-600 mt-1">{errors.gallery.message as string}</p>
-                )}
-              </div>
-
-              {/* 3. Product Name */}
+              {/* 2. Product Name (Moved up) */}
               <div>
                 <Label htmlFor="name">Product Name *</Label>
                 <Input
                   id="name"
-                  {...register("name", { required: "Product name is required" })}
+                  {...register("name", { required: "Product name is required", minLength: { value: 3, message: "Name must be at least 3 characters" } })}
                   placeholder="Enter product name"
                 />
                 {errors.name && (
                   <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
                 )}
               </div>
+
+              {/* Disabled wrapper for the rest of the form if name is not filled */}
+              <div className={`space-y-4 transition-opacity duration-200 relative ${(!watch("name") || watch("name").trim().length < 3) ? "opacity-50 pointer-events-none" : ""}`}>
+                {(!watch("name") || watch("name").trim().length < 3) && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+                    <div className="bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-orange-200 text-center max-w-sm pointer-events-auto">
+                      <AlertTriangle className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+                      <h4 className="font-medium text-gray-900 mb-1">Product Name Required</h4>
+                      <p className="text-sm text-gray-600">Please enter a product name (at least 3 characters)</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Product Photos & Videos */}
+                <div>
+                  <Label>Product Photos & Videos *</Label>
+                  <ImageUpload
+                    key={mode === "edit" ? `edit-${productId}` : "create"}
+                    value={watch("gallery") || []}
+                    onChange={(value) => setValue("gallery", value)}
+                    maxImages={24}
+                    productName={watch("name")}
+                    tenantLocation={tenantLocation}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Upload up to 24 images. First image will be used as the main product image.
+                  </p>
+                  {errors.gallery && (
+                    <p className="text-sm text-red-600 mt-1">{errors.gallery.message as string}</p>
+                  )}
+                </div>
 
               {/* 4. Description */}
               <div>
@@ -1082,6 +1133,8 @@ export const ProductFormDialog = ({
                 </Label>
               </div>
 
+              </div>
+
               <DialogFooter>
                 <Button
                   type="button"
@@ -1140,6 +1193,60 @@ export const ProductFormDialog = ({
               Discard Changes
             </Button>
           </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    {/* Create Another Confirmation */}
+    <AlertDialog open={showCreateAnother} onOpenChange={(open) => {
+      if (!open) {
+        setShowCreateAnother(false);
+        onClose();
+        reset();
+      }
+    }}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Product Created!</AlertDialogTitle>
+          <AlertDialogDescription>
+            Your product has been successfully added to your store. Would you like to create another product?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setShowCreateAnother(false);
+              onClose();
+              reset();
+            }}
+          >
+            No, I'm done
+          </Button>
+          <Button 
+            onClick={() => {
+              setShowCreateAnother(false);
+              hasSubmittedRef.current = false;
+              reset({
+                category: [],
+                quantity: 0,
+                unit: "unit",
+                minOrderQuantity: 1,
+                lowStockThreshold: 10,
+                allowBackorder: false,
+                refundPolicy: "30-day",
+                isPrivate: false,
+                gallery: [],
+                name: "",
+                description: "",
+                price: 0,
+                useDefaultLocation: true
+              });
+              initialGalleryRef.current = [];
+            }}
+          >
+            Yes, add another
+          </Button>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
