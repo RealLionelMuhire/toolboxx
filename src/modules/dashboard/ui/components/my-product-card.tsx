@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { StarIcon, EyeOffIcon, ArchiveIcon, Edit2Icon, Trash2Icon, PackageXIcon, RocketIcon } from "lucide-react";
+import { StarIcon, EyeOffIcon, ArchiveIcon, Edit2Icon, Trash2Icon, PackageXIcon, RocketIcon, CheckIcon, XIcon, Edit3Icon } from "lucide-react";
 
 import { useTRPC } from "@/trpc/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -113,6 +113,33 @@ export const MyProductCard = ({
       toast.error(err.message || "Failed to request sponsorship");
     }
   }));
+
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+  const [editedPrice, setEditedPrice] = useState(price.toString());
+
+  const updatePriceMutation = useMutation(trpc.products.updateProduct.mutationOptions({
+    onSuccess: () => {
+      toast.success("Price updated successfully!");
+      setIsEditingPrice(false);
+      queryClient.invalidateQueries(trpc.products.getMyProducts.infiniteQueryFilter());
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to update price");
+    }
+  }));
+
+  const handleSavePrice = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const newPrice = parseFloat(editedPrice);
+    if (isNaN(newPrice) || newPrice < 0) {
+      toast.error("Please enter a valid positive price");
+      return;
+    }
+    updatePriceMutation.mutate({ id, price: newPrice });
+  };
 
   const [isSponsorshipDialogOpen, setIsSponsorshipDialogOpen] = useState(false);
   const [sponsorshipDuration, setSponsorshipDuration] = useState("7");
@@ -243,11 +270,63 @@ export const MyProductCard = ({
           )}
           
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative px-1 xs:px-1.5 sm:px-2 py-0.5 border bg-orange-400 w-fit">
-              <p className="text-xs xs:text-sm font-medium">
-                {formatCurrency(price)}
-              </p>
-            </div>
+            {isEditingPrice ? (
+              <div className="flex items-center gap-1 bg-gray-50 p-1 border rounded" onClick={e => e.stopPropagation()}>
+                <Input
+                  type="number"
+                  min="0"
+                  value={editedPrice}
+                  onChange={(e) => setEditedPrice(e.target.value)}
+                  className="w-20 h-6 text-xs p-1"
+                  autoFocus
+                />
+                <button
+                  disabled={updatePriceMutation.isPending}
+                  onClick={handleSavePrice}
+                  className="p-1 text-green-600 hover:bg-green-50 rounded"
+                >
+                  <CheckIcon className="size-3" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsEditingPrice(false);
+                    setEditedPrice(price.toString());
+                  }}
+                  className="p-1 text-red-600 hover:bg-red-50 rounded"
+                >
+                  <XIcon className="size-3" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 group/price">
+                <div 
+                  className="relative px-1 xs:px-1.5 sm:px-2 py-0.5 border bg-orange-400 w-fit cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsEditingPrice(true);
+                  }}
+                  title="Click to edit price"
+                >
+                  <p className="text-xs xs:text-sm font-medium">
+                    {formatCurrency(price)}
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsEditingPrice(true);
+                  }}
+                  className="p-1 text-gray-500 hover:text-black opacity-100 md:opacity-0 group-hover/price:opacity-100 transition-opacity"
+                  title="Quick edit price"
+                >
+                  <Edit3Icon className="size-3" />
+                </button>
+              </div>
+            )}
             {quantity !== undefined && (
               <div className={`text-xs xs:text-sm font-medium ${
                 quantity === 0 ? 'text-red-600' : 'text-gray-600'
@@ -397,11 +476,63 @@ export const MyProductCard = ({
       
       <div className="p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <div className="relative px-2 py-1 border bg-orange-400 w-fit">
-            <p className="text-sm font-medium">
-              {formatCurrency(price)}
-            </p>
-          </div>
+          {isEditingPrice ? (
+            <div className="flex items-center gap-1 bg-gray-50 p-1 border rounded" onClick={e => e.stopPropagation()}>
+              <Input
+                type="number"
+                min="0"
+                value={editedPrice}
+                onChange={(e) => setEditedPrice(e.target.value)}
+                className="w-20 h-6 text-xs p-1"
+                autoFocus
+              />
+              <button
+                disabled={updatePriceMutation.isPending}
+                onClick={handleSavePrice}
+                className="p-1 text-green-600 hover:bg-green-50 rounded"
+              >
+                <CheckIcon className="size-4" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsEditingPrice(false);
+                  setEditedPrice(price.toString());
+                }}
+                className="p-1 text-red-600 hover:bg-red-50 rounded"
+              >
+                <XIcon className="size-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 group/price">
+              <div 
+                className="relative px-2 py-1 border bg-orange-400 w-fit cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsEditingPrice(true);
+                }}
+                title="Click to edit price"
+              >
+                <p className="text-sm font-medium">
+                  {formatCurrency(price)}
+                </p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsEditingPrice(true);
+                }}
+                className="p-1 text-gray-500 hover:text-black opacity-100 md:opacity-0 group-hover/price:opacity-100 transition-opacity"
+                title="Quick edit price"
+              >
+                <Edit3Icon className="size-4" />
+              </button>
+            </div>
+          )}
           {quantity !== undefined && (
             <div className={`text-sm font-medium ${
               quantity === 0 ? 'text-red-600' : 'text-gray-600'
