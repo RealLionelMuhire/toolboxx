@@ -44,7 +44,8 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
     components: {
-      afterNavLinks: ['@/components/admin/UserVerificationBadge', '@/components/admin/BackToStoreButton'],
+      afterNavLinks: ['@/components/admin/UserVerificationBadge'],
+      actions: ['@/components/admin/BackToStoreButton'],
     },
   },
   // Use Resend for email delivery (free: 3,000 emails/month, 100/day)
