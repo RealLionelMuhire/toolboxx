@@ -402,7 +402,7 @@ export const Navbar = () => {
       ? tenantNavbarItems
       : customerNavbarItems
     : publicNavbarItems;
-  const accountHref = isTenant ? "/dashboard" : "/my-account";
+  const accountHref = isTenant ? "/admin" : "/my-account";
   const mobileStoreItems = myStoreBaseItems.map((item) => ({
     ...item,
     href: item.children === "My Account" ? accountHref : item.href,
@@ -736,7 +736,7 @@ export const Navbar = () => {
               <DropdownMenuSeparator className="bg-gray-800 my-2" />
               
               <DropdownMenuItem asChild className="focus:bg-orange-500 focus:text-black hover:bg-orange-500 hover:text-black rounded-lg transition-colors cursor-pointer p-3 mb-1">
-                <Link href={session.data.user.roles?.includes('super-admin') ? "/admin" : session.data.user.roles?.includes('tenant') ? "/dashboard" : "/my-account"} className="w-full flex items-center gap-3">
+                <Link href={session.data.user.roles?.includes('super-admin') ? "/admin" : session.data.user.roles?.includes('tenant') ? "/admin" : "/my-account"} className="w-full flex items-center gap-3">
                   <Store className="h-5 w-5" />
                   <span className="font-medium text-sm">{session.data.user.roles?.includes('super-admin') ? "Admin Dashboard" : session.data.user.roles?.includes('tenant') ? "Dashboard" : "Account"}</span>
                 </Link>
