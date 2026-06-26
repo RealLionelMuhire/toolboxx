@@ -1625,6 +1625,7 @@ export const productsRouter = createTRPCRouter({
           targetAgeMin: input.targetAgeMin,
           targetAgeMax: input.targetAgeMax,
           budgetAmount: input.budgetAmount,
+          totalAmount: (input.budgetAmount || 2000) * input.durationDays,
           paymentMessage: input.paymentMessage,
         } as any,
       });

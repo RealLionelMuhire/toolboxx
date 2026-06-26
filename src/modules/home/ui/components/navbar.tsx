@@ -797,6 +797,14 @@ export const Navbar = () => {
 
       {/* Mobile Icons - Right Side */}
         <div className="flex lg:hidden items-center gap-0 pr-0.5 flex-shrink-0">
+          <OptimizedLink
+            href="/calculators"
+            prefetch={true}
+            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
+          >
+            <Calculator className="h-[18px] w-[18px]" />
+          </OptimizedLink>
         {isTenant && (
           <OptimizedLink
             href="/my-store"

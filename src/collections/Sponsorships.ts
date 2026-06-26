@@ -5,7 +5,7 @@ export const Sponsorships: CollectionConfig = {
   slug: "sponsorships",
   admin: {
     useAsTitle: "id",
-    defaultColumns: ["product", "tenant", "status", "startDate", "endDate"],
+    defaultColumns: ["product", "tenant", "status", "budgetAmount", "totalAmount", "startDate", "endDate"],
     group: "Store Management",
     hidden: ({ user }) => !isSuperAdmin(user),
   },
@@ -200,7 +200,14 @@ export const Sponsorships: CollectionConfig = {
       name: "budgetAmount",
       type: "number",
       admin: {
-        description: "Amount the user is willing to pay (in RWF)",
+        description: "Amount the user is willing to pay per day (in RWF)",
+      }
+    },
+    {
+      name: "totalAmount",
+      type: "number",
+      admin: {
+        description: "Total amount the user has paid for the entire duration (in RWF)",
       }
     },
     {

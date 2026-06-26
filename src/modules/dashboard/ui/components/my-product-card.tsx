@@ -739,32 +739,60 @@ export const MyProductCard = ({
                 </div>
               </div>
 
-              {/* Budget Amount */}
+              {/* Budget & Visitors */}
               <div className="flex flex-col gap-1.5 mt-2 border-t pt-3">
-                <label className="text-sm font-semibold">Daily Budget</label>
-                <p className="text-xs text-gray-500 mb-2">Slide to select how much you are willing to pay per day</p>
+                <label className="text-sm font-semibold">Daily Reach & Budget</label>
+                <p className="text-xs text-gray-500 mb-2">Adjust your expected daily visitors or daily budget.</p>
                 
-                <div className="px-2">
-                  <Slider 
-                    min={2000} 
-                    max={25000} 
-                    step={500} 
-                    value={[parseInt(budgetAmount) || 2000]} 
-                    onValueChange={(values) => {
-                      if (values[0] !== undefined) {
-                        setBudgetAmount(values[0].toString());
-                      }
-                    }} 
-                    className="py-2"
-                  />
-                  <div className="flex justify-between text-xs text-gray-500 mt-2">
-                    <span>2,000 RWF</span>
-                    <span className="font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">{formatCurrency(parseInt(budgetAmount) || 2000)} RWF/day</span>
-                    <span>25,000 RWF</span>
+                <div className="px-2 space-y-5">
+                  {/* Visitors Slider */}
+                  <div>
+                    <label className="text-xs font-semibold text-blue-800 mb-1 block">Expected Daily Visitors</label>
+                    <Slider 
+                      min={0} 
+                      max={375} 
+                      step={15} 
+                      value={[Math.round(((parseInt(budgetAmount) || 2000) * 30) / 2000)]} 
+                      onValueChange={(values) => {
+                        if (values[0] !== undefined) {
+                          const v = Math.max(30, values[0]);
+                          const b = Math.round((v * 2000 / 30) / 500) * 500;
+                          setBudgetAmount(b.toString());
+                        }
+                      }} 
+                      className="py-1"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1.5">
+                      <span>0</span>
+                      <span className="font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">{Math.round(((parseInt(budgetAmount) || 2000) * 30) / 2000)} visitors/day</span>
+                      <span>375</span>
+                    </div>
+                  </div>
+
+                  {/* Money Slider */}
+                  <div>
+                    <label className="text-xs font-semibold text-orange-800 mb-1 block">Daily Budget (RWF)</label>
+                    <Slider 
+                      min={0} 
+                      max={25000} 
+                      step={500} 
+                      value={[parseInt(budgetAmount) || 2000]} 
+                      onValueChange={(values) => {
+                        if (values[0] !== undefined) {
+                          setBudgetAmount(Math.max(2000, values[0]).toString());
+                        }
+                      }} 
+                      className="py-1"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1.5">
+                      <span>0 RWF</span>
+                      <span className="font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">{formatCurrency(parseInt(budgetAmount) || 2000)} RWF/day</span>
+                      <span>25,000 RWF</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex justify-between items-center mt-3 pt-2 border-t">
+                <div className="flex justify-between items-center mt-3 pt-3 border-t">
                   <span className="text-sm font-bold text-gray-700">Total Amount ({selectedDays} days):</span>
                   <span className="text-lg font-black text-orange-600">{formatCurrency(totalAmount)} RWF</span>
                 </div>
