@@ -82,8 +82,8 @@ const NavbarItemButton = ({
 const publicNavbarItems: NavbarItem[] = [
   { href: "/", children: "Home" },
   { href: "/about", children: "About" },
-  { href: "/features", children: "Features" },
-  { href: "/pricing", children: "Pricing" },
+  // { href: "/features", children: "Features" },
+  // { href: "/pricing", children: "Pricing" },
   { 
     href: "/calculators", 
     children: "Calculators",
