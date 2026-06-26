@@ -3,14 +3,33 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { StarIcon, EyeOffIcon, ArchiveIcon, Edit2Icon, Trash2Icon, PackageXIcon, RocketIcon } from "lucide-react";
+import { StarIcon, EyeOffIcon, ArchiveIcon, Edit2Icon, Trash2Icon, PackageXIcon, RocketIcon, CheckIcon, XIcon, Edit3Icon } from "lucide-react";
 
 import { useTRPC } from "@/trpc/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { formatCurrency, generateTenantURL } from "@/lib/utils";
+import { COUNTRIES, getCountryByCode, getProvinceByCode } from "@/lib/location-data";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
 import { ImageCarousel } from "./image-carousel";
 
 interface MyProductCardProps {
@@ -28,6 +47,7 @@ interface MyProductCardProps {
   stockStatus?: string;
   quantity?: number;
   sponsorshipStatus?: string;
+  pendingMomoCode?: string | null;
   viewMode?: "grid" | "list";
   onEdit?: (id: string) => void;
   onDelete?: (id: string, name: string) => void;
@@ -48,6 +68,7 @@ export const MyProductCard = ({
   stockStatus,
   quantity,
   sponsorshipStatus = "none",
+  pendingMomoCode = null,
   viewMode = "grid",
   onEdit,
   onDelete,
@@ -94,10 +115,91 @@ export const MyProductCard = ({
     }
   }));
 
-  const handleRequestSponsorship = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    requestSponsorship.mutate({ id });
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+  const [editedPrice, setEditedPrice] = useState(price.toString());
+
+  const updatePriceMutation = useMutation(trpc.products.updateProduct.mutationOptions({
+    onSuccess: () => {
+      toast.success("Price updated successfully!");
+      setIsEditingPrice(false);
+      queryClient.invalidateQueries(trpc.products.getMyProducts.infiniteQueryFilter());
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to update price");
+    }
+  }));
+
+  const handleSavePrice = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const newPrice = parseFloat(editedPrice);
+    if (isNaN(newPrice) || newPrice < 0) {
+      toast.error("Please enter a valid positive price");
+      return;
+    }
+    updatePriceMutation.mutate({ id, price: newPrice });
+  };
+
+  const [isSponsorshipDialogOpen, setIsSponsorshipDialogOpen] = useState(false);
+  const [sponsorshipDuration, setSponsorshipDuration] = useState("7");
+  const [customDuration, setCustomDuration] = useState("14");
+
+  const [targetLocationType, setTargetLocationType] = useState<"default_product_location" | "custom_location">("default_product_location");
+  const [locationCountry, setLocationCountry] = useState("");
+  const [locationProvince, setLocationProvince] = useState("");
+  const [locationDistrict, setLocationDistrict] = useState("");
+  const [locationCityOrArea, setLocationCityOrArea] = useState("");
+  const [targetGender, setTargetGender] = useState<"all" | "men" | "women">("all");
+  const [targetAgeMin, setTargetAgeMin] = useState("18");
+  const [targetAgeMax, setTargetAgeMax] = useState("65");
+  const [budgetAmount, setBudgetAmount] = useState("2000");
+  const [paymentMessage, setPaymentMessage] = useState("");
+
+  const selectedDays = sponsorshipDuration === "custom" ? (parseInt(customDuration) || 1) : parseInt(sponsorshipDuration);
+  const totalAmount = (parseInt(budgetAmount) || 2000) * selectedDays;
+
+  const siteSettings = useQuery({
+    ...trpc.products.getSiteSettings.queryOptions(),
+    enabled: isSponsorshipDialogOpen,
+  });
+
+  const handleRequestSponsorshipSubmit = () => {
+    let days = parseInt(sponsorshipDuration);
+    if (sponsorshipDuration === "custom") {
+      days = parseInt(customDuration);
+      if (isNaN(days) || days < 1) {
+        toast.error("Please enter a valid number of days");
+        return;
+      }
+    }
+    
+    if (targetLocationType === "custom_location" && !locationCountry) {
+      toast.error("Please select a target country");
+      return;
+    }
+
+    if (!paymentMessage.trim()) {
+      toast.error("Please paste your payment confirmation message");
+      return;
+    }
+
+    requestSponsorship.mutate({ 
+      id, 
+      durationDays: days,
+      targetLocationType,
+      locationCountry: targetLocationType === "custom_location" ? locationCountry : undefined,
+      locationProvince: targetLocationType === "custom_location" ? locationProvince : undefined,
+      locationDistrict: targetLocationType === "custom_location" ? locationDistrict : undefined,
+      locationCityOrArea: targetLocationType === "custom_location" ? locationCityOrArea : undefined,
+      targetGender,
+      targetAgeMin: parseInt(targetAgeMin) || 18,
+      targetAgeMax: parseInt(targetAgeMax) || 65,
+      budgetAmount: parseInt(budgetAmount) || 2000,
+      paymentMessage,
+    });
+    setIsSponsorshipDialogOpen(false);
   };
 
   // Render list view
@@ -179,11 +281,63 @@ export const MyProductCard = ({
           )}
           
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative px-1 xs:px-1.5 sm:px-2 py-0.5 border bg-orange-400 w-fit">
-              <p className="text-xs xs:text-sm font-medium">
-                {formatCurrency(price)}
-              </p>
-            </div>
+            {isEditingPrice ? (
+              <div className="flex items-center gap-1 bg-gray-50 p-1 border rounded" onClick={e => e.stopPropagation()}>
+                <Input
+                  type="number"
+                  min="0"
+                  value={editedPrice}
+                  onChange={(e) => setEditedPrice(e.target.value)}
+                  className="w-20 h-6 text-xs p-1"
+                  autoFocus
+                />
+                <button
+                  disabled={updatePriceMutation.isPending}
+                  onClick={handleSavePrice}
+                  className="p-1 text-green-600 hover:bg-green-50 rounded"
+                >
+                  <CheckIcon className="size-3" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsEditingPrice(false);
+                    setEditedPrice(price.toString());
+                  }}
+                  className="p-1 text-red-600 hover:bg-red-50 rounded"
+                >
+                  <XIcon className="size-3" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 group/price">
+                <div 
+                  className="relative px-1 xs:px-1.5 sm:px-2 py-0.5 border bg-orange-400 w-fit cursor-pointer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsEditingPrice(true);
+                  }}
+                  title="Click to edit price"
+                >
+                  <p className="text-xs xs:text-sm font-medium">
+                    {formatCurrency(price)}
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setIsEditingPrice(true);
+                  }}
+                  className="p-1 text-gray-500 hover:text-black opacity-100 md:opacity-0 group-hover/price:opacity-100 transition-opacity"
+                  title="Quick edit price"
+                >
+                  <Edit3Icon className="size-3" />
+                </button>
+              </div>
+            )}
             {quantity !== undefined && (
               <div className={`text-xs xs:text-sm font-medium ${
                 quantity === 0 ? 'text-red-600' : 'text-gray-600'
@@ -200,6 +354,7 @@ export const MyProductCard = ({
             <Button
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onEdit(id);
               }}
               variant="outline"
@@ -214,6 +369,7 @@ export const MyProductCard = ({
             <Button
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onDelete(id, name);
               }}
               variant="outline"
@@ -226,7 +382,11 @@ export const MyProductCard = ({
           )}
           {(sponsorshipStatus === "none" || sponsorshipStatus === "rejected") && (
             <Button
-              onClick={handleRequestSponsorship}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsSponsorshipDialogOpen(true);
+              }}
               disabled={requestSponsorship.isPending}
               variant="outline"
               size="sm"
@@ -329,11 +489,63 @@ export const MyProductCard = ({
       
       <div className="p-4">
         <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <div className="relative px-2 py-1 border bg-orange-400 w-fit">
-            <p className="text-sm font-medium">
-              {formatCurrency(price)}
-            </p>
-          </div>
+          {isEditingPrice ? (
+            <div className="flex items-center gap-1 bg-gray-50 p-1 border rounded" onClick={e => e.stopPropagation()}>
+              <Input
+                type="number"
+                min="0"
+                value={editedPrice}
+                onChange={(e) => setEditedPrice(e.target.value)}
+                className="w-20 h-6 text-xs p-1"
+                autoFocus
+              />
+              <button
+                disabled={updatePriceMutation.isPending}
+                onClick={handleSavePrice}
+                className="p-1 text-green-600 hover:bg-green-50 rounded"
+              >
+                <CheckIcon className="size-4" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsEditingPrice(false);
+                  setEditedPrice(price.toString());
+                }}
+                className="p-1 text-red-600 hover:bg-red-50 rounded"
+              >
+                <XIcon className="size-4" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 group/price">
+              <div 
+                className="relative px-2 py-1 border bg-orange-400 w-fit cursor-pointer"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsEditingPrice(true);
+                }}
+                title="Click to edit price"
+              >
+                <p className="text-sm font-medium">
+                  {formatCurrency(price)}
+                </p>
+              </div>
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setIsEditingPrice(true);
+                }}
+                className="p-1 text-gray-500 hover:text-black opacity-100 md:opacity-0 group-hover/price:opacity-100 transition-opacity"
+                title="Quick edit price"
+              >
+                <Edit3Icon className="size-4" />
+              </button>
+            </div>
+          )}
           {quantity !== undefined && (
             <div className={`text-sm font-medium ${
               quantity === 0 ? 'text-red-600' : 'text-gray-600'
@@ -348,6 +560,7 @@ export const MyProductCard = ({
             <Button
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onEdit(id);
               }}
               variant="outline"
@@ -362,6 +575,7 @@ export const MyProductCard = ({
             <Button
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onDelete(id, name);
               }}
               variant="outline"
@@ -377,7 +591,11 @@ export const MyProductCard = ({
         <div className="mt-2 flex">
           {(sponsorshipStatus === "none" || sponsorshipStatus === "rejected") && (
             <Button
-              onClick={handleRequestSponsorship}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsSponsorshipDialogOpen(true);
+              }}
               disabled={requestSponsorship.isPending}
               variant="outline"
               size="sm"
@@ -388,8 +606,13 @@ export const MyProductCard = ({
             </Button>
           )}
           {sponsorshipStatus === "pending" && (
-            <div className="w-full text-center py-1.5 bg-orange-100 text-orange-600 text-xs sm:text-sm font-medium rounded-md border border-orange-200">
-              Sponsorship Pending Approval
+            <div className="w-full text-center py-1.5 px-2 bg-orange-100 text-orange-600 text-xs sm:text-sm font-medium rounded-md border border-orange-200 flex flex-col gap-1 items-center justify-center">
+              <span>Sponsorship Pending Approval</span>
+              {pendingMomoCode && (
+                <span className="bg-white/60 px-2 py-0.5 rounded text-[11px] font-bold mt-0.5">
+                  Momo Payment Code: {pendingMomoCode}
+                </span>
+              )}
             </div>
           )}
           {sponsorshipStatus === "approved" && (
@@ -399,6 +622,214 @@ export const MyProductCard = ({
           )}
         </div>
       </div>
+
+      <Dialog open={isSponsorshipDialogOpen} onOpenChange={setIsSponsorshipDialogOpen}>
+        <DialogContent 
+          className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto" 
+          onClick={(e) => e.stopPropagation()}
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>Request Sponsorship</DialogTitle>
+            <DialogDescription>
+              Choose how long you want to sponsor "{name}".
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Duration</label>
+              <Select value={sponsorshipDuration} onValueChange={setSponsorshipDuration}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select duration" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">7 Days</SelectItem>
+                  <SelectItem value="14">14 Days</SelectItem>
+                  <SelectItem value="30">30 Days</SelectItem>
+                  <SelectItem value="custom">Custom</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {sponsorshipDuration === "custom" && (
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">Custom Days</label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="365"
+                  value={customDuration}
+                  onChange={(e) => setCustomDuration(e.target.value)}
+                  placeholder="Enter number of days"
+                />
+              </div>
+            )}
+
+            <div className="flex flex-col gap-2 mt-2 border-t pt-4">
+              <label className="text-sm font-semibold">Target Audience</label>
+              
+              {/* Location Type */}
+              <div className="flex flex-col gap-1.5 mt-1">
+                <label className="text-xs text-gray-500">Location</label>
+                <Select value={targetLocationType} onValueChange={(v: any) => setTargetLocationType(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default_product_location">Same as Product Location</SelectItem>
+                    <SelectItem value="custom_location">Custom Location</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Custom Location Selectors */}
+              {targetLocationType === "custom_location" && (
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <Select value={locationCountry} onValueChange={(v) => { setLocationCountry(v); setLocationProvince(""); setLocationDistrict(""); }}>
+                    <SelectTrigger><SelectValue placeholder="Country" /></SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map(c => <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+
+                  {locationCountry && (
+                    <Select value={locationProvince} onValueChange={(v) => { setLocationProvince(v); setLocationDistrict(""); }}>
+                      <SelectTrigger><SelectValue placeholder="Province/Region" /></SelectTrigger>
+                      <SelectContent>
+                        {getCountryByCode(locationCountry)?.provinces.map(p => <SelectItem key={p.code} value={p.code}>{p.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {locationProvince && (
+                    <Select value={locationDistrict} onValueChange={setLocationDistrict}>
+                      <SelectTrigger><SelectValue placeholder="District" /></SelectTrigger>
+                      <SelectContent>
+                        {getProvinceByCode(locationCountry, locationProvince)?.districts.map(d => <SelectItem key={d.code} value={d.code}>{d.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {locationProvince && (
+                    <Input placeholder="City or Area" value={locationCityOrArea} onChange={(e) => setLocationCityOrArea(e.target.value)} />
+                  )}
+                </div>
+              )}
+
+              {/* Gender */}
+              <div className="flex flex-col gap-1.5 mt-2">
+                <label className="text-xs text-gray-500">Gender</label>
+                <Select value={targetGender} onValueChange={(v: any) => setTargetGender(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Genders</SelectItem>
+                    <SelectItem value="men">Men</SelectItem>
+                    <SelectItem value="women">Women</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Age Range */}
+              <div className="flex flex-col gap-1.5 mt-2">
+                <label className="text-xs text-gray-500">Age Range</label>
+                <div className="flex items-center gap-2">
+                  <Input type="number" min="0" value={targetAgeMin} onChange={e => setTargetAgeMin(e.target.value)} placeholder="Min Age" />
+                  <span className="text-sm text-gray-500">to</span>
+                  <Input type="number" max="120" value={targetAgeMax} onChange={e => setTargetAgeMax(e.target.value)} placeholder="Max Age" />
+                </div>
+              </div>
+
+              {/* Budget & Visitors */}
+              <div className="flex flex-col gap-1.5 mt-2 border-t pt-3">
+                <label className="text-sm font-semibold">Daily Reach & Budget</label>
+                <p className="text-xs text-gray-500 mb-2">Adjust your expected daily visitors or daily budget.</p>
+                
+                <div className="px-2 space-y-5">
+                  {/* Visitors Slider */}
+                  <div>
+                    <label className="text-xs font-semibold text-blue-800 mb-1 block">Expected Daily Visitors</label>
+                    <Slider 
+                      min={0} 
+                      max={375} 
+                      step={15} 
+                      value={[Math.round(((parseInt(budgetAmount) || 2000) * 30) / 2000)]} 
+                      onValueChange={(values) => {
+                        if (values[0] !== undefined) {
+                          const v = Math.max(30, values[0]);
+                          const b = Math.round((v * 2000 / 30) / 500) * 500;
+                          setBudgetAmount(b.toString());
+                        }
+                      }} 
+                      className="py-1"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1.5">
+                      <span>0</span>
+                      <span className="font-bold text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">{Math.round(((parseInt(budgetAmount) || 2000) * 30) / 2000)} visitors/day</span>
+                      <span>375</span>
+                    </div>
+                  </div>
+
+                  {/* Money Slider */}
+                  <div>
+                    <label className="text-xs font-semibold text-orange-800 mb-1 block">Daily Budget (RWF)</label>
+                    <Slider 
+                      min={0} 
+                      max={25000} 
+                      step={500} 
+                      value={[parseInt(budgetAmount) || 2000]} 
+                      onValueChange={(values) => {
+                        if (values[0] !== undefined) {
+                          setBudgetAmount(Math.max(2000, values[0]).toString());
+                        }
+                      }} 
+                      className="py-1"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1.5">
+                      <span>0 RWF</span>
+                      <span className="font-bold text-orange-600 bg-orange-100 px-2 py-0.5 rounded-full">{formatCurrency(parseInt(budgetAmount) || 2000)} RWF/day</span>
+                      <span>25,000 RWF</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center mt-3 pt-3 border-t">
+                  <span className="text-sm font-bold text-gray-700">Total Amount ({selectedDays} days):</span>
+                  <span className="text-lg font-black text-orange-600">{formatCurrency(totalAmount)} RWF</span>
+                </div>
+              </div>
+              
+              {/* Payment Instructions & Message */}
+              <div className="mt-3 p-4 bg-orange-50 border border-orange-200 rounded-md space-y-3">
+                <div className="text-sm text-orange-800 font-medium text-center">
+                  To pay, dial this code on your phone:
+                  <div className="bg-white px-3 py-2 mt-2 rounded border border-orange-200 font-bold text-lg text-center cursor-pointer select-all">
+                    *182*8*1*{siteSettings.data?.paymentMomoCode || "Mobilr MOney code set by the admin"}*{totalAmount}#
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-orange-200/50">
+                  <label className="text-xs font-semibold text-orange-900">Payment Confirmation Message</label>
+                  <p className="text-[10px] text-orange-700">Please paste the SMS confirmation you received from Mobile Money</p>
+                  <Textarea 
+                    value={paymentMessage}
+                    onChange={(e) => setPaymentMessage(e.target.value)}
+                    placeholder="Paste your Mobile Money SMS message here..."
+                    className="text-xs min-h-[60px] bg-white border-orange-200 focus-visible:ring-orange-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsSponsorshipDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleRequestSponsorshipSubmit} disabled={requestSponsorship.isPending}>
+              {requestSponsorship.isPending ? "Submitting..." : "Submit Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -51,9 +51,8 @@ export const Products: CollectionConfig = {
   admin: {
     useAsTitle: "name",
     description: "All tenants can create products. Products from unverified tenants will be listed without verification badge.",
-    defaultColumns: ["name", "description", "price", "category", "tenant"],
+    defaultColumns: ["name", "tenant", "sponsorshipStatus", "sponsorshipRequestedAt", "price", "category"],
     listSearchableFields: ["name", "description"],
-
   },
   hooks: {
     beforeChange: [

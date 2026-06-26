@@ -35,11 +35,8 @@ export const Users: CollectionConfig = {
   admin: {
     useAsTitle: 'email',
     hidden: ({ user }) => {
-      // Only super-admin and tenant users can access PayloadCMS admin
-      // Client (buyer) users should not see or access the admin panel
-      if (isSuperAdmin(user)) return false;
-      if (user?.roles?.includes('tenant')) return false;
-      return true; // Hide from clients and non-authenticated users
+      // Only super-admin users can access Users in PayloadCMS admin
+      return !isSuperAdmin(user);
     },
   },
   auth: {

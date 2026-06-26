@@ -710,6 +710,49 @@ export const productsRouter = createTRPCRouter({
             if (doc) finalDocs.push(doc);
           }
         }
+        
+        // --- SPONSORED PRODUCTS INJECTION ---
+        // Separate approved sponsored products from organic ones
+        const sponsoredProducts = finalDocs.filter((p: any) => p.sponsorshipStatus === 'approved');
+        const organicProducts = finalDocs.filter((p: any) => p.sponsorshipStatus !== 'approved');
+        
+        // Rebuild finalDocs with injected sponsored products
+        if (sponsoredProducts.length > 0) {
+          const interleavedDocs = [];
+          let sponsoredIndex = 0;
+          let organicIndex = 0;
+          
+          // Pattern: 1 sponsored at the very top, then 1 every N organic products
+          let INJECTION_INTERVAL = 6; 
+          try {
+            const settings = await ctx.db.findGlobal({
+              slug: "site-settings" as any as never,
+            });
+            if (settings && typeof (settings as any).sponsoredProductInjectionRate === 'number') {
+              INJECTION_INTERVAL = (settings as any).sponsoredProductInjectionRate;
+            }
+          } catch (error) {
+            console.error("Error fetching site settings for injection rate:", error);
+          }
+          while (organicIndex < organicProducts.length || sponsoredIndex < sponsoredProducts.length) {
+            const currentPosition = interleavedDocs.length;
+            
+            // Inject sponsored product at index 0 or every INJECTION_INTERVAL slots
+            if (sponsoredIndex < sponsoredProducts.length && 
+                (currentPosition === 0 || currentPosition % INJECTION_INTERVAL === 0)) {
+              interleavedDocs.push(sponsoredProducts[sponsoredIndex]);
+              sponsoredIndex++;
+            } else if (organicIndex < organicProducts.length) {
+              interleavedDocs.push(organicProducts[organicIndex]);
+              organicIndex++;
+            } else if (sponsoredIndex < sponsoredProducts.length) {
+              // If we ran out of organic products, just append the rest of sponsored ones
+              interleavedDocs.push(sponsoredProducts[sponsoredIndex]);
+              sponsoredIndex++;
+            }
+          }
+          finalDocs = interleavedDocs as typeof finalDocs;
+        }
       }
 
       return {
@@ -815,12 +858,35 @@ export const productsRouter = createTRPCRouter({
         };
       });
 
+      // Fetch pending sponsorships to get momo payment codes
+      const sponsorshipsData = await ctx.db.find({
+        collection: "sponsorships" as any,
+        pagination: false,
+        where: {
+          product: {
+            in: productIds,
+          },
+          status: {
+            equals: "pending",
+          }
+        },
+      });
+
+      const momoCodesByProduct = sponsorshipsData.docs.reduce((acc: any, sponsorship: any) => {
+        const productId = typeof sponsorship.product === 'string' ? sponsorship.product : sponsorship.product?.id;
+        if (productId && sponsorship.momoCode) {
+          acc[productId] = sponsorship.momoCode;
+        }
+        return acc;
+      }, {});
+
       return {
         ...data,
         docs: dataWithSummarizedReviews.map((doc) => ({
           ...doc,
           image: (doc as PopulatedProduct).image,
           tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null; location?: string | null },
+          pendingMomoCode: momoCodesByProduct[doc.id] || null,
         }))
       };
     }),
@@ -1485,7 +1551,20 @@ export const productsRouter = createTRPCRouter({
 
   // Request sponsorship for a product
   requestSponsorship: protectedProcedure
-    .input(z.object({ id: z.string() }))
+    .input(z.object({ 
+      id: z.string(),
+      durationDays: z.number().min(1).max(365).default(7),
+      targetLocationType: z.enum(["default_product_location", "custom_location"]).default("default_product_location"),
+      locationCountry: z.string().optional(),
+      locationProvince: z.string().optional(),
+      locationDistrict: z.string().optional(),
+      locationCityOrArea: z.string().optional(),
+      targetGender: z.enum(["all", "men", "women"]).default("all"),
+      targetAgeMin: z.number().min(0).max(100).default(18),
+      targetAgeMax: z.number().min(0).max(120).default(65),
+      budgetAmount: z.number().min(2000).max(25000).optional(),
+      paymentMessage: z.string().min(1, "Please paste your payment confirmation message"),
+    }))
     .mutation(async ({ ctx, input }) => {
       // Find the product first to verify ownership
       const product = await ctx.db.findByID({
@@ -1499,22 +1578,73 @@ export const productsRouter = createTRPCRouter({
 
       // Verify the user owns the tenant that owns this product
       const tenantId = typeof product.tenant === 'string' ? product.tenant : product.tenant?.id;
-      const userTenants = ctx.session.user.tenants?.map(t => typeof t.tenant === 'string' ? t.tenant : t.tenant?.id) || [];
+      const userTenants = (ctx.session.user.tenants || [])
+        .map(t => typeof t.tenant === 'string' ? t.tenant : t.tenant?.id)
+        .filter(Boolean) as string[];
       
-      if (!userTenants.includes(tenantId)) {
+      if (!tenantId || !userTenants.includes(tenantId)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "You don't have permission to modify this product" });
       }
 
-      // Update the sponsorship status bypassing standard access control
-      await ctx.db.update({
-        collection: "products",
-        id: input.id,
-        data: {
-          sponsorshipStatus: "pending",
-          sponsorshipRequestedAt: new Date().toISOString(),
+      // Check if a pending or active sponsorship already exists
+      const existingSponsorships = await ctx.db.find({
+        collection: "sponsorships" as any,
+        where: {
+          and: [
+            { product: { equals: input.id } },
+            { status: { in: ["pending", "active"] } }
+          ]
         },
+        limit: 1,
+      });
+
+      if (existingSponsorships.docs.length > 0) {
+        throw new TRPCError({ code: "CONFLICT", message: "A sponsorship request is already pending or active for this product" });
+      }
+
+      // Calculate requested dates
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + input.durationDays);
+
+      // Create a new sponsorship request
+      await ctx.db.create({
+        collection: "sponsorships" as any,
+        data: {
+          product: input.id,
+          tenant: tenantId,
+          status: "pending",
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
+          targetLocationType: input.targetLocationType,
+          locationCountry: input.locationCountry,
+          locationProvince: input.locationProvince,
+          locationDistrict: input.locationDistrict,
+          locationCityOrArea: input.locationCityOrArea,
+          targetGender: input.targetGender,
+          targetAgeMin: input.targetAgeMin,
+          targetAgeMax: input.targetAgeMax,
+          budgetAmount: input.budgetAmount,
+          totalAmount: (input.budgetAmount || 2000) * input.durationDays,
+          paymentMessage: input.paymentMessage,
+        } as any,
       });
 
       return { success: true };
+    }),
+
+  // Get global site settings (for Momo Code, etc)
+  getSiteSettings: baseProcedure
+    .query(async ({ ctx }) => {
+      try {
+        const settings = await ctx.db.findGlobal({
+          slug: "site-settings" as any as never,
+        });
+        return {
+          paymentMomoCode: (settings as any)?.paymentMomoCode || null,
+        };
+      } catch (error) {
+        return { paymentMomoCode: null };
+      }
     }),
 });

@@ -6,6 +6,7 @@ export const TenderBids: CollectionConfig = {
   admin: {
     useAsTitle: 'tender',
     defaultColumns: ['tender', 'submittedBy', 'status', 'amount', 'createdAt'],
+    hidden: ({ user }) => !isSuperAdmin(user),
   },
   access: {
     read: ({ req }) => {
