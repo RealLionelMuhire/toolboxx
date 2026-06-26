@@ -108,15 +108,15 @@ const customerNavbarItems: NavbarItem[] = [
       { href: "/tenders", children: "Tenders" },
       { href: "/deliverypartners", children: "Delivery Partners" },
       { href: "/library", children: "Library" },
-      { 
-        href: "#calculators", 
-        children: "Calculators",
-        icon: <Calculator className="h-4 w-4 mr-2" />,
-        subItems: [
-          { href: "/calculators/estimators", children: "Estimators" },
-          { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
-        ]
-      }
+    ]
+  },
+  { 
+    href: "/calculators", 
+    children: "Calculators",
+    icon: <Calculator className="h-4 w-4" />,
+    subItems: [
+      { href: "/calculators/estimators", children: "Estimators" },
+      { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
     ]
   },
 ];
@@ -146,15 +146,15 @@ const tenantNavbarItems: NavbarItem[] = [
       { href: "/tenders", children: "Tenders" },
       { href: "/deliverypartners", children: "Delivery Partners" },
       { href: "/library", children: "Library" },
-      { 
-        href: "#calculators", 
-        children: "Calculators",
-        icon: <Calculator className="h-4 w-4 mr-2" />,
-        subItems: [
-          { href: "/calculators/estimators", children: "Estimators" },
-          { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
-        ]
-      }
+    ]
+  },
+  { 
+    href: "/calculators", 
+    children: "Calculators",
+    icon: <Calculator className="h-4 w-4" />,
+    subItems: [
+      { href: "/calculators/estimators", children: "Estimators" },
+      { href: "/calculators/bar-bending-schedules", children: "Bar Bending Schedules" }
     ]
   },
 ];
