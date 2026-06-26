@@ -473,6 +473,16 @@ export const Navbar = () => {
         <div className="hidden lg:flex flex-shrink-0">
           <Button
             asChild
+            variant="ghost"
+            className="border-l border-t-0 border-b-0 border-r-0 px-6 h-full rounded-none bg-white hover:bg-gray-50 transition-colors text-sm"
+          >
+            <Link href="/calculators" prefetch={true} className="flex items-center gap-2">
+              <Calculator className="h-[18px] w-[18px]" />
+              Calculators
+            </Link>
+          </Button>
+          <Button
+            asChild
             variant="secondary"
             className="border-l border-t-0 border-b-0 border-r-0 px-8 h-full rounded-none bg-white hover:bg-orange-400 transition-colors text-sm"
           >
@@ -489,8 +499,16 @@ export const Navbar = () => {
             </Link>
           </Button>
         </div>
-        {/* Mobile Icons - Right Side: Sign In, Cart, Menu */}
+        {/* Mobile Icons - Right Side: Calculators, Sign In, Cart, Menu */}
         <div className="flex lg:hidden items-center gap-0 pr-0.5 flex-shrink-0">
+          <OptimizedLink
+            href="/calculators"
+            prefetch={true}
+            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
+          >
+            <Calculator className="h-[18px] w-[18px]" />
+          </OptimizedLink>
           <OptimizedLink
             href="/sign-in"
             prefetch={true}

@@ -33,6 +33,7 @@ import { default as default_2837fafbe816b12f64987280154e7abd } from '@/component
 import { S3ClientUploadHandler as S3ClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e } from '@payloadcms/storage-s3/client'
 import { ApproveSponsorshipCell as ApproveSponsorshipCell_custom } from '@/components/admin/ApproveSponsorshipCell'
 import { ApproveSponsorshipButton as ApproveSponsorshipButton_custom } from '@/components/admin/ApproveSponsorshipButton'
+import { default as default_BackToStoreButton } from '@/components/admin/BackToStoreButton'
 
 export const importMap = {
   "@/components/admin/AccountVerificationSection#default": default_1e2e402e0a627aa710399a87d12cd77b,
@@ -69,5 +70,6 @@ export const importMap = {
   "@/components/admin/UserVerificationBadge#default": default_2837fafbe816b12f64987280154e7abd,
   "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_16c82c5e25f430251a3e3ba57219ff4e,
   "@/components/admin/ApproveSponsorshipCell#ApproveSponsorshipCell": ApproveSponsorshipCell_custom,
-  "@/components/admin/ApproveSponsorshipButton#ApproveSponsorshipButton": ApproveSponsorshipButton_custom
+  "@/components/admin/ApproveSponsorshipButton#ApproveSponsorshipButton": ApproveSponsorshipButton_custom,
+  "@/components/admin/BackToStoreButton#default": default_BackToStoreButton
 }

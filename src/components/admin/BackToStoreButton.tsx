@@ -13,7 +13,7 @@ export default function BackToStoreButton() {
       zIndex: 100
     }}>
       <a 
-        href="/admin/collections/products" 
+        href="/" 
         style={{ 
           display: 'flex', 
           alignItems: 'center', 
