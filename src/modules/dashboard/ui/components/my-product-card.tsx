@@ -354,6 +354,7 @@ export const MyProductCard = ({
             <Button
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onEdit(id);
               }}
               variant="outline"
@@ -368,6 +369,7 @@ export const MyProductCard = ({
             <Button
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onDelete(id, name);
               }}
               variant="outline"
@@ -558,6 +560,7 @@ export const MyProductCard = ({
             <Button
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onEdit(id);
               }}
               variant="outline"
@@ -572,6 +575,7 @@ export const MyProductCard = ({
             <Button
               onClick={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onDelete(id, name);
               }}
               variant="outline"
