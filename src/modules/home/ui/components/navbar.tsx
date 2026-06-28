@@ -501,26 +501,26 @@ export const Navbar = () => {
         </div>
         {/* Mobile Icons - Right Side: Calculators, Sign In, Cart, Menu */}
         <div className="flex lg:hidden items-center gap-0 pr-0.5 flex-shrink-0">
-          <OptimizedLink
+          <Link
             href="/calculators"
             prefetch={true}
-            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
             <Calculator className="h-[18px] w-[18px]" />
-          </OptimizedLink>
-          <OptimizedLink
+          </Link>
+          <Link
             href="/sign-in"
             prefetch={true}
-            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
             <LogIn className="h-[18px] w-[18px]" />
-          </OptimizedLink>
-          <OptimizedLink
+          </Link>
+          <Link
             href="/cart"
             prefetch={true}
-            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
             <ShoppingCart className="h-[18px] w-[18px]" />
@@ -532,10 +532,10 @@ export const Navbar = () => {
                 {cartItemCount > 99 ? "99+" : cartItemCount}
               </Badge>
             )}
-          </OptimizedLink>
+          </Link>
           <button
             type="button"
-            className="h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            className="h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
             onClick={() => setIsSidebarOpen(true)}
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
             aria-label="Open menu"
@@ -797,19 +797,19 @@ export const Navbar = () => {
 
       {/* Mobile Icons - Right Side */}
         <div className="flex lg:hidden items-center gap-0 pr-0.5 flex-shrink-0">
-          <OptimizedLink
+          <Link
             href="/calculators"
             prefetch={true}
-            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
             <Calculator className="h-[18px] w-[18px]" />
-          </OptimizedLink>
+          </Link>
         {isTenant && (
-          <OptimizedLink
+          <Link
             href="/my-store"
             prefetch={true}
-            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
             <Store className="h-[18px] w-[18px]" />
@@ -821,12 +821,12 @@ export const Navbar = () => {
                 {productNotifications.count > 99 ? "99+" : productNotifications.count}
               </Badge>
             )}
-          </OptimizedLink>
+          </Link>
         )}
-        <OptimizedLink
+        <Link
           href={isTenant ? "/verify-payments" : "/orders"}
           prefetch={true}
-          className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+          className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
         >
           <Wallet className="h-[18px] w-[18px]" />
@@ -846,11 +846,11 @@ export const Navbar = () => {
               {orderNotifications.count > 99 ? "99+" : orderNotifications.count}
             </Badge>
           )}
-        </OptimizedLink>
-        <OptimizedLink
+        </Link>
+        <Link
           href="/chat"
           prefetch={true}
-          className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+          className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
         >
           <MessageCircle className="h-[18px] w-[18px]" />
@@ -862,11 +862,11 @@ export const Navbar = () => {
               {(unreadData?.totalUnread || 0) > 99 ? "99+" : unreadData?.totalUnread}
             </Badge>
           )}
-        </OptimizedLink>
-        <OptimizedLink
+        </Link>
+        <Link
           href="/cart"
           prefetch={true}
-          className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+          className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
         >
           <ShoppingCart className="h-[18px] w-[18px]" />
@@ -878,10 +878,10 @@ export const Navbar = () => {
               {cartItemCount > 99 ? "99+" : cartItemCount}
             </Badge>
           )}
-        </OptimizedLink>
+        </Link>
         <button
           type="button"
-          className="h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 hover:bg-gray-100 outline-none focus:outline-none touch-manipulation transition-all duration-75"
+          className="h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
           onClick={() => setIsSidebarOpen(true)}
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           aria-label="Open menu"
