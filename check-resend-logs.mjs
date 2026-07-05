@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 
-const resend = new Resend('re_B9Locd8M_ASuAoooS9D1RE8PTT89SYGqr');
+const resend = new Resend('<YOUR_RESEND_API_KEY>');
 
 console.log('🔍 Checking recent email activity...\n');
 
