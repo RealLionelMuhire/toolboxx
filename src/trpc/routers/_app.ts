@@ -17,6 +17,7 @@ import { usersRouter } from '@/modules/users/server/procedures';
 import { testEmailRouter } from '@/modules/test-email/server/procedures';
 import { notificationsRouter } from '@/modules/notifications/server/procedures';
 import { tendersRouter } from '@/modules/tenders/server/procedures';
+import { proformasRouter } from './proformas';
 
 export const appRouter = createTRPCRouter({
   auth: authRouter,
@@ -36,6 +37,7 @@ export const appRouter = createTRPCRouter({
   testEmail: testEmailRouter, // Temporary for debugging
   notifications: notificationsRouter,
   tenders: tendersRouter,
+  proformas: proformasRouter,
 });
 // export type definition of API
 export type AppRouter = typeof appRouter;

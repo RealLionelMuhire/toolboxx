@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp, Share2, Settings, FileText } from 'lucide-react';
+import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp, Share2, Settings, FileText, FileSignature } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { OrderStats } from '@/components/dashboard/OrderStats';
@@ -27,9 +27,10 @@ import { MySalesList, MySalesListSkeleton } from '@/modules/sales/ui/components/
 import { SalesStats } from '@/modules/sales/ui/components/sales-stats';
 import { ProductFormDialog } from '@/modules/dashboard/ui/components/product-form-dialog';
 import { DeleteProductDialog } from '@/modules/dashboard/ui/components/delete-product-dialog';
+import { ProformasSection } from '@/modules/proformas/ui/components/proformas-section';
 import { Suspense } from 'react';
 
-type TabType = 'account' | 'purchases' | 'products' | 'sales' | 'bids';
+type TabType = 'account' | 'purchases' | 'products' | 'sales' | 'bids' | 'proformas';
 
 // Notification type
 type ProductNotification = {
@@ -305,6 +306,17 @@ export default function MyStorePage() {
           <FileText className="h-4 w-4" />
           My Bids
         </button>
+        <button
+          onClick={() => setActiveTab('proformas')}
+          className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 text-sm ${
+            activeTab === 'proformas'
+              ? 'border-pink-600 text-pink-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <FileSignature className="h-4 w-4" />
+          Quotes
+        </button>
       </div>
 
       {/* Content */}
@@ -383,6 +395,7 @@ export default function MyStorePage() {
       )}
       {activeTab === 'sales' && <SalesSection />}
       {activeTab === 'bids' && <MyBidsSection />}
+      {activeTab === 'proformas' && <ProformasSection />}
     </div>
   );
 }
