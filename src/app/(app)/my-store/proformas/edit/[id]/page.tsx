@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useParams } from "next/navigation";
 import { useTRPC } from "@/trpc/client";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -21,8 +21,9 @@ type ProformaItem = {
   name: string;
 };
 
-export default function CreateProformaPage() {
+export default function EditProformaPage() {
   const router = useRouter();
+  const { id } = useParams();
   const trpc = useTRPC();
   
   const [customer, setCustomer] = useState({ name: "", phone: "", email: "", address: "" });
@@ -35,13 +36,41 @@ export default function CreateProformaPage() {
     ...trpc.products.getMyProducts.queryOptions({ limit: 100 }),
   });
   
-  const createMutation = useMutation(trpc.proformas.create.mutationOptions({
+  // Fetch existing quote
+  const { data: proforma, isLoading: isLoadingProforma } = useQuery({
+    ...trpc.proformas.getById.queryOptions({ id: id as string }),
+    enabled: !!id,
+  });
+
+  useEffect(() => {
+    if (proforma) {
+      const p = proforma as any;
+      if (p.customerDetails) {
+        setCustomer({
+          name: p.customerDetails.name || "",
+          phone: p.customerDetails.phone || "",
+          email: p.customerDetails.email || "",
+          address: p.customerDetails.address || "",
+        });
+      }
+      if (p.items && p.items.length > 0) {
+        setItems(p.items.map((item: any) => ({
+          productId: typeof item.product === 'string' ? item.product : item.product?.id || "",
+          quantity: item.quantity || 1,
+          unitPrice: item.unitPrice || 0,
+          name: typeof item.product === 'string' ? "Product" : item.product?.name || "Product",
+        })));
+      }
+    }
+  }, [proforma]);
+  
+  const updateMutation = useMutation(trpc.proformas.update.mutationOptions({
     onSuccess: (data) => {
-      toast.success("Quote created successfully!");
-      router.push(`/proforma/${data.proforma.id}`);
+      toast.success("Quote updated successfully!");
+      router.push(`/proforma/${data.id || id}`);
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to create quote");
+      toast.error(error.message || "Failed to update quote");
     },
   }));
 
@@ -93,7 +122,8 @@ export default function CreateProformaPage() {
       return toast.error("Please add at least one valid product");
     }
 
-    createMutation.mutate({
+    updateMutation.mutate({
+      id: id as string,
       customerDetails: customer,
       items: validItems.map(item => ({
         product: item.productId,
@@ -102,6 +132,14 @@ export default function CreateProformaPage() {
       })),
     });
   };
+
+  if (isLoadingProforma) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -112,7 +150,7 @@ export default function CreateProformaPage() {
             Back to Quotes
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Create New Quote / Pro Forma</h1>
+        <h1 className="text-2xl font-bold">Edit Quote / Pro Forma</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -281,9 +319,9 @@ export default function CreateProformaPage() {
 
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" onClick={() => router.back()}>Cancel</Button>
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={createMutation.isPending}>
-            {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Generate Quote
+          <Button type="submit" className="bg-blue-600 hover:bg-blue-700" disabled={updateMutation.isPending}>
+            {updateMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            Save Changes
           </Button>
         </div>
       </form>

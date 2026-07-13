@@ -179,14 +179,18 @@ export const Proformas: CollectionConfig = {
     {
       name: "status",
       type: "select",
-      defaultValue: "draft",
+      defaultValue: "pending",
       required: true,
       options: [
+        { label: "Pending", value: "pending" },
+        { label: "Paid", value: "paid" },
+        { label: "Declined", value: "declined" },
+        { label: "Converted to Order", value: "converted" },
+        // Legacy statuses kept for backward compatibility if needed
         { label: "Draft", value: "draft" },
         { label: "Sent", value: "sent" },
         { label: "Accepted", value: "accepted" },
         { label: "Rejected", value: "rejected" },
-        { label: "Converted to Order", value: "converted" },
       ],
     },
     {

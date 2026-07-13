@@ -1,13 +1,27 @@
 "use client";
 
 import { useTRPC } from '@/trpc/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Loader2, PlusIcon, FileSignature, Share2, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuPortal,
+  DropdownMenuSubContent,
+} from "@/components/ui/dropdown-menu";
 
 export function ProformasSection() {
   const trpc = useTRPC();
@@ -22,16 +36,47 @@ export function ProformasSection() {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
+      case 'paid':
       case 'accepted':
       case 'converted':
         return 'default'; // primary/greenish depending on theme
+      case 'pending':
       case 'sent':
         return 'secondary';
+      case 'declined':
       case 'rejected':
         return 'destructive';
       case 'draft':
       default:
         return 'outline';
+    }
+  };
+
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation(trpc.proformas.delete.mutationOptions({
+    onSuccess: () => {
+      toast.success("Quote deleted successfully");
+      queryClient.invalidateQueries(trpc.proformas.getMyProformas.queryFilter());
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to delete quote");
+    }
+  }));
+
+  const updateStatusMutation = useMutation(trpc.proformas.updateStatus.mutationOptions({
+    onSuccess: () => {
+      toast.success("Status updated");
+      queryClient.invalidateQueries(trpc.proformas.getMyProformas.queryFilter());
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to update status");
+    }
+  }));
+
+  const handleDelete = (id: string) => {
+    if (window.confirm("Are you sure you want to delete this quote?")) {
+      deleteMutation.mutate({ id });
     }
   };
 
@@ -84,9 +129,47 @@ export function ProformasSection() {
                       {new Date(proforma.createdAt).toLocaleDateString()}
                     </CardDescription>
                   </div>
-                  <Badge variant={getStatusBadgeVariant(proforma.status)}>
-                    {proforma.status.charAt(0).toUpperCase() + proforma.status.slice(1)}
-                  </Badge>
+                  <div className="flex flex-col items-end gap-2">
+                    <Badge variant={getStatusBadgeVariant(proforma.status)}>
+                      {proforma.status.charAt(0).toUpperCase() + proforma.status.slice(1)}
+                    </Badge>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuItem asChild>
+                          <Link href={`/my-store/proformas/edit/${proforma.id}`}>
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSub>
+                          <DropdownMenuSubTrigger>Change Status</DropdownMenuSubTrigger>
+                          <DropdownMenuPortal>
+                            <DropdownMenuSubContent>
+                              <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: proforma.id, status: 'pending' })}>
+                                Pending
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: proforma.id, status: 'paid' })}>
+                                Paid
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => updateStatusMutation.mutate({ id: proforma.id, status: 'declined' })}>
+                                Declined
+                              </DropdownMenuItem>
+                            </DropdownMenuSubContent>
+                          </DropdownMenuPortal>
+                        </DropdownMenuSub>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleDelete(proforma.id)} className="text-red-600 focus:text-red-600">
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
