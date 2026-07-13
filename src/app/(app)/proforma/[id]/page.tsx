@@ -67,8 +67,13 @@ export default function ProformaViewPage() {
   const tenant = proformaData.tenant as any;
 
   return (
-    <div className="bg-gray-50 min-h-screen py-8 print:bg-white print:py-0">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <>
+      <style dangerouslySetInnerHTML={{__html: `
+        nav { display: none !important; }
+        .fixed.bottom-4 { display: none !important; }
+      `}} />
+      <div className="bg-gray-50 min-h-screen py-8 print:bg-white print:py-0">
+        <div className="container mx-auto px-4 max-w-4xl">
         
         {/* Action Bar - Hidden on print */}
         <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm mb-6 print:hidden gap-4">
@@ -81,7 +86,7 @@ export default function ProformaViewPage() {
               <Share2 className="w-4 h-4 mr-2" /> Share Link
             </Button>
             <Button onClick={handlePrint} className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none">
-              <Printer className="w-4 h-4 mr-2" /> Print / PDF
+              <Download className="w-4 h-4 mr-2" /> Download PDF
             </Button>
           </div>
         </div>
@@ -90,25 +95,32 @@ export default function ProformaViewPage() {
         <div className="bg-white p-8 sm:p-12 rounded-lg shadow-sm border print:border-none print:shadow-none print:p-0">
           
           {/* Header */}
-          <div className="flex justify-between items-start mb-12 border-b pb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">PRO FORMA</h1>
-              <div className="flex items-center gap-3">
-                <span className="text-gray-500 font-medium">#{proformaData.proformaNumber}</span>
-                <Badge variant={proformaData.status === 'converted' ? 'default' : 'outline'} className="print:hidden">
-                  {proformaData.status.toUpperCase()}
-                </Badge>
+          <div className="flex flex-col md:flex-row justify-between items-start mb-8 border-b pb-6 gap-4">
+            <div className="flex items-center gap-4">
+              <div className="relative w-12 h-12 rounded overflow-hidden border p-1 bg-white shadow-sm flex items-center justify-center print:border-gray-200 print:shadow-none">
+                <Image src="/logo.jpeg" alt="Toolbay" fill className="object-contain" priority />
               </div>
-              <p className="text-sm text-gray-500 mt-2">
-                Date: {new Date(proformaData.createdAt).toLocaleDateString()}
-              </p>
+              <div>
+                <h1 className="text-xl font-black text-blue-900 tracking-tight leading-none mb-1">PRO FORMA</h1>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-gray-700 font-semibold bg-gray-100 px-1.5 py-0.5 rounded text-xs print:bg-transparent print:p-0 print:text-gray-600">#{proformaData.proformaNumber}</span>
+                  <Badge variant={proformaData.status === 'converted' ? 'default' : 'outline'} className="print:hidden text-[10px] px-1.5 py-0">
+                    {proformaData.status.toUpperCase()}
+                  </Badge>
+                </div>
+                <p className="text-xs text-gray-500 mt-1 font-medium">
+                  Date: {new Date(proformaData.createdAt).toLocaleDateString()}
+                </p>
+                <p className="text-xs font-semibold text-blue-600 mt-0.5">www.toolbay.net</p>
+              </div>
             </div>
             
-            <div className="text-right max-w-xs">
-              <h2 className="text-xl font-bold text-blue-900">{tenant?.name || "Toolbay Seller"}</h2>
-              {tenant?.contactEmail && <p className="text-sm text-gray-600 mt-1">{tenant.contactEmail}</p>}
-              {tenant?.contactPhone && <p className="text-sm text-gray-600">{tenant.contactPhone}</p>}
-              {tenant?.address && <p className="text-sm text-gray-600">{tenant.address}</p>}
+            <div className="text-left md:text-right max-w-xs pt-2">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Seller Details</p>
+              <h2 className="text-2xl font-bold text-gray-900">{tenant?.name || "Toolbay Seller"}</h2>
+              {tenant?.contactEmail && <p className="text-sm text-gray-600 mt-1 font-medium">{tenant.contactEmail}</p>}
+              {tenant?.contactPhone && <p className="text-sm text-gray-600 font-medium">{tenant.contactPhone}</p>}
+              {tenant?.address && <p className="text-sm text-gray-600 mt-1">{tenant.address}</p>}
             </div>
           </div>
 
@@ -180,7 +192,8 @@ export default function ProformaViewPage() {
           </div>
           
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

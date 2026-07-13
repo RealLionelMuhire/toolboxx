@@ -120,7 +120,7 @@ export default function CreateProformaPage() {
               <label className="text-sm font-medium mb-1 block">Client Name *</label>
               <Input 
                 required 
-                placeholder="e.g. John Doe Construction" 
+                placeholder="e.g. Mugisha Construction" 
                 value={customer.name}
                 onChange={e => setCustomer({...customer, name: e.target.value})}
               />
