@@ -136,7 +136,6 @@ const tenantNavbarItems: NavbarItem[] = [
       <span>My Store</span>
     </>
   ) },
-  { href: "/verify-payments", children: "Transactions" },
   { href: "/orders", children: "My Purchases" },
   { 
     href: "#tools", 
@@ -575,9 +574,15 @@ export const Navbar = () => {
                session.data.user.username || 
                'User').trim();
             
+            const formatViews = (views: number) => {
+              if (views >= 1000000) return (views / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+              if (views >= 1000) return (views / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+              return views.toString();
+            };
+            
             return (
               <div className="flex items-center gap-2 lg:hidden -mt-1">
-                <span className="text-xs text-gray-600 whitespace-nowrap">
+                <span className="text-xs text-gray-600 truncate max-w-[90px] sm:max-w-[150px]">
                   {displayName}
                 </span>
                 {/* Show total views for tenants only */}
@@ -585,7 +590,7 @@ export const Navbar = () => {
                   <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 rounded-full">
                     <Eye className="h-3 w-3 text-gray-600" />
                     <span className="text-xs font-medium text-gray-700">
-                      {totalViewsData.totalViews.toLocaleString()}
+                      {formatViews(totalViewsData.totalViews)}
                     </span>
                   </div>
                 )}
@@ -602,9 +607,15 @@ export const Navbar = () => {
              session.data.user.username || 
              'User').trim();
           
+          const formatViews = (views: number) => {
+            if (views >= 1000000) return (views / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+            if (views >= 1000) return (views / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+            return views.toString();
+          };
+          
           return (
             <div className="hidden lg:flex items-center gap-3 border-l pl-3">
-              <span className="text-base text-gray-600 whitespace-nowrap">
+              <span className="text-base text-gray-600 truncate max-w-[150px] xl:max-w-[200px]">
                 {displayName}
               </span>
               {/* Show total views for tenants only */}
@@ -612,7 +623,7 @@ export const Navbar = () => {
                 <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 rounded-full">
                   <Eye className="h-4 w-4 text-gray-600" />
                   <span className="text-sm font-medium text-gray-700">
-                    {totalViewsData.totalViews.toLocaleString()}
+                    {formatViews(totalViewsData.totalViews)}
                   </span>
                 </div>
               )}

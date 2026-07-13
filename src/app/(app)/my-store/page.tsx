@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp, Share2, Settings, FileText, FileSignature } from 'lucide-react';
+import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp, Share2, Settings, FileText, FileSignature, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { OrderStats } from '@/components/dashboard/OrderStats';
@@ -28,9 +28,10 @@ import { SalesStats } from '@/modules/sales/ui/components/sales-stats';
 import { ProductFormDialog } from '@/modules/dashboard/ui/components/product-form-dialog';
 import { DeleteProductDialog } from '@/modules/dashboard/ui/components/delete-product-dialog';
 import { ProformasSection } from '@/modules/proformas/ui/components/proformas-section';
+import VerifyPaymentsPage from '@/app/(app)/verify-payments/page';
 import { Suspense } from 'react';
 
-type TabType = 'account' | 'purchases' | 'products' | 'sales' | 'bids' | 'proformas';
+type TabType = 'account' | 'purchases' | 'products' | 'sales' | 'bids' | 'proformas' | 'transactions';
 
 // Notification type
 type ProductNotification = {
@@ -317,6 +318,17 @@ export default function MyStorePage() {
           <FileSignature className="h-4 w-4" />
           Quotes
         </button>
+        <button
+          onClick={() => setActiveTab('transactions')}
+          className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 text-sm ${
+            activeTab === 'transactions'
+              ? 'border-red-600 text-red-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <CreditCard className="h-4 w-4" />
+          Transactions
+        </button>
       </div>
 
       {/* Content */}
@@ -396,6 +408,11 @@ export default function MyStorePage() {
       {activeTab === 'sales' && <SalesSection />}
       {activeTab === 'bids' && <MyBidsSection />}
       {activeTab === 'proformas' && <ProformasSection />}
+      {activeTab === 'transactions' && (
+        <div className="pt-4 -mx-4 sm:mx-0">
+          <VerifyPaymentsPage />
+        </div>
+      )}
     </div>
   );
 }
