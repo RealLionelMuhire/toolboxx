@@ -230,28 +230,24 @@ export default function EditProformaPage() {
                           onValueChange={(val) => setSearchQueries({ ...searchQueries, [index]: val })}
                         />
                         <CommandList>
-                          {(searchQueries[index] || "").length < 3 ? (
-                            <div className="p-4 text-sm text-gray-500 text-center">Type at least 3 characters to search...</div>
-                          ) : (
-                            <CommandGroup>
-                              {productsData?.docs
-                                .filter((p: any) => p.name.toLowerCase().includes((searchQueries[index] || "").toLowerCase()))
-                                .map((p: any) => (
-                                <CommandItem 
-                                  key={p.id} 
-                                  value={p.id} 
-                                  onSelect={() => handleProductSelect(index, p.id)}
-                                >
-                                  <Check className={cn("mr-2 h-4 w-4", item.productId === p.id ? "opacity-100" : "opacity-0")} />
-                                  <span className="truncate">{p.name}</span>
-                                  <span className="ml-auto text-gray-500 whitespace-nowrap pl-2">RWF {p.price.toLocaleString()}</span>
-                                </CommandItem>
-                              ))}
-                              {productsData?.docs.filter((p: any) => p.name.toLowerCase().includes((searchQueries[index] || "").toLowerCase())).length === 0 && (
-                                <div className="p-4 text-sm text-gray-500 text-center">No products found.</div>
-                              )}
-                            </CommandGroup>
-                          )}
+                          <CommandGroup>
+                            {productsData?.docs
+                              .filter((p: any) => p.name.toLowerCase().includes((searchQueries[index] || "").toLowerCase()))
+                              .map((p: any) => (
+                              <CommandItem 
+                                key={p.id} 
+                                value={p.id} 
+                                onSelect={() => handleProductSelect(index, p.id)}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", item.productId === p.id ? "opacity-100" : "opacity-0")} />
+                                <span className="truncate">{p.name}</span>
+                                <span className="ml-auto text-gray-500 whitespace-nowrap pl-2">RWF {p.price.toLocaleString()}</span>
+                              </CommandItem>
+                            ))}
+                            {productsData?.docs.filter((p: any) => p.name.toLowerCase().includes((searchQueries[index] || "").toLowerCase())).length === 0 && (
+                              <div className="p-4 text-sm text-gray-500 text-center">No products found.</div>
+                            )}
+                          </CommandGroup>
                         </CommandList>
                       </Command>
                     </PopoverContent>

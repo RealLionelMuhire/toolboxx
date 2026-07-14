@@ -18,7 +18,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Badge } from '@/components/ui/badge';
 import { SearchIcon, PlusIcon } from 'lucide-react';
-import { NotificationPrompt } from '@/components/notification-prompt';
 import { generateTenantURL } from '@/lib/utils';
 import { ShareStoreDialog } from '@/modules/tenants/ui/components/share-store-dialog';
 
@@ -220,11 +219,6 @@ export default function MyStorePage() {
           storeUrl={generateTenantURL(tenantSlug)}
         />
       )}
-
-      {/* Browser Notification Prompt */}
-      <div className="mb-4">
-        <NotificationPrompt />
-      </div>
 
       <div className="mb-4 md:mb-8 flex items-start justify-between gap-4">
         <div>
