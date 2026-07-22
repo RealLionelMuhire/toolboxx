@@ -88,8 +88,8 @@ export default function ProformaViewPage() {
         nav { display: none !important; }
         .fixed.bottom-4 { display: none !important; }
       `}} />
-      <div className="bg-gray-50 min-h-screen py-8 print:bg-white print:py-0">
-        <div className="container mx-auto px-4 max-w-4xl">
+      <div className="bg-gray-50 min-h-screen py-8 print:bg-white print:py-0 print:min-h-0">
+        <div className="container mx-auto px-4 max-w-4xl print:px-0 print:max-w-none">
         
         {/* Action Bar - Hidden on print */}
         <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm mb-6 print:hidden gap-4">
