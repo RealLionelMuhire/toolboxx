@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp, Share2, Settings, FileText, FileSignature, CreditCard } from 'lucide-react';
+import { User, ShoppingBag, Package, TrendingUp, Loader2, Grid3x3, List, Bell, X, AlertTriangle, ChevronDown, ChevronUp, Share2, Settings, FileText, FileSignature, CreditCard, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { OrderStats } from '@/components/dashboard/OrderStats';
@@ -29,8 +29,9 @@ import { DeleteProductDialog } from '@/modules/dashboard/ui/components/delete-pr
 import { ProformasSection } from '@/modules/proformas/ui/components/proformas-section';
 import VerifyPaymentsPage from '@/app/(app)/verify-payments/page';
 import { Suspense } from 'react';
+import { TenantInsightsView } from '@/modules/tenants/ui/views/tenant-insights-view';
 
-type TabType = 'account' | 'purchases' | 'products' | 'sales' | 'bids' | 'proformas' | 'transactions';
+type TabType = 'account' | 'purchases' | 'products' | 'sales' | 'bids' | 'proformas' | 'transactions' | 'insights';
 
 // Notification type
 type ProductNotification = {
@@ -291,6 +292,17 @@ export default function MyStorePage() {
           Sales
         </button>
         <button
+          onClick={() => setActiveTab('insights')}
+          className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 text-sm ${
+            activeTab === 'insights'
+              ? 'border-purple-600 text-purple-600'
+              : 'border-transparent text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <BarChart3 className="h-4 w-4" />
+          Insights
+        </button>
+        <button
           onClick={() => setActiveTab('bids')}
           className={`flex items-center gap-2 px-4 py-3 font-medium transition-colors border-b-2 text-sm ${
             activeTab === 'bids'
@@ -328,6 +340,11 @@ export default function MyStorePage() {
       {/* Content */}
       {activeTab === 'account' && <AccountSection />}
       {activeTab === 'purchases' && <PurchasesSection />}
+      {activeTab === 'insights' && (
+        <div className="-mx-4 md:-mx-8">
+          <TenantInsightsView />
+        </div>
+      )}
       {activeTab === 'products' && (
         <>
           {/* Product Notifications */}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell, Calculator, Wrench, User } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell, Calculator, Wrench, User, ChevronRight, BarChart3 } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -763,6 +763,15 @@ export const Navbar = () => {
               </div>
               
               <DropdownMenuSeparator className="bg-gray-800 my-2" />
+              
+              {session.data.user.roles?.includes('super-admin') && (
+                <DropdownMenuItem asChild className="focus:bg-orange-500 focus:text-black hover:bg-orange-500 hover:text-black rounded-lg transition-colors cursor-pointer p-3 mb-1">
+                  <Link href="/all-tenants" className="w-full flex items-center gap-3">
+                    <BarChart3 className="h-5 w-5" />
+                    <span className="font-medium text-sm">Platform Analytics</span>
+                  </Link>
+                </DropdownMenuItem>
+              )}
               
               <DropdownMenuItem asChild className="focus:bg-orange-500 focus:text-black hover:bg-orange-500 hover:text-black rounded-lg transition-colors cursor-pointer p-3 mb-1">
                 <Link href={session.data.user.roles?.includes('super-admin') ? "/admin" : session.data.user.roles?.includes('tenant') ? "/admin" : "/my-account"} className="w-full flex items-center gap-3">

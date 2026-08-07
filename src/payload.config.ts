@@ -31,7 +31,9 @@ import { Tenders } from './collections/Tenders'
 import { TenderBids } from './collections/TenderBids'
 import { Sponsorships } from './collections/Sponsorships'
 import { Proformas } from './collections/Proformas'
+import { PageViews } from './collections/PageViews'
 import { SiteSettings } from './globals/SiteSettings'
+import { PlatformAnalytics } from './globals/PlatformAnalytics'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -45,7 +47,9 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
     components: {
-      afterNavLinks: ['@/components/admin/UserVerificationBadge'],
+      afterNavLinks: [
+        '@/components/admin/UserVerificationBadge'
+      ],
       actions: ['@/components/admin/BackToStoreButton'],
     },
   },
@@ -57,8 +61,8 @@ export default buildConfig({
     defaultFromAddress: process.env.SMTP_FROM_EMAIL || 'onboarding@resend.dev',
     defaultFromName: process.env.SMTP_FROM_NAME || 'Toolbay',
   }),
-  collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions, Notifications, Tenders, TenderBids, Sponsorships, Proformas],
-  globals: [SiteSettings],
+  collections: [Users, Media, Categories, Products, Tags, Tenants, Transactions, Orders, Reviews, Sales, Conversations, Messages, PushSubscriptions, Notifications, Tenders, TenderBids, Sponsorships, Proformas, PageViews],
+  globals: [SiteSettings, PlatformAnalytics],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
