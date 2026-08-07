@@ -304,6 +304,8 @@ export interface Tenant {
    * Total revenue after platform fees (RWF) - Updated automatically after payment verification
    */
   totalRevenue?: number | null;
+  storeViewCount?: number | null;
+  storeUniqueViewCount?: number | null;
   /**
    * ✅ SUPER ADMIN: Check this to enable tenant capabilities (product creation, selling). Only check after verifying documents.
    */
@@ -1392,6 +1394,8 @@ export interface TenantsSelect<T extends boolean = true> {
   momoAccountName?: T;
   momoCode?: T;
   totalRevenue?: T;
+  storeViewCount?: T;
+  storeUniqueViewCount?: T;
   isVerified?: T;
   verificationStatus?: T;
   verificationNotes?: T;

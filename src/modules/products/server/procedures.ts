@@ -1473,6 +1473,21 @@ export const productsRouter = createTRPCRouter({
           data: updateData,
         });
 
+        const tenantId = typeof product.tenant === 'string' ? product.tenant : product.tenant?.id;
+
+        if (tenantId) {
+          // Log the time-series event for time-based analytics
+          await ctx.db.create({
+            collection: "page-views" as any,
+            data: {
+              type: "product_view",
+              tenantId,
+              productId: input.productId,
+              visitorId: "anonymous", // In a real app, hash the IP or use a session cookie
+            },
+          });
+        }
+
         return { success: true };
       } catch (error) {
         console.error('Error tracking product view:', error);

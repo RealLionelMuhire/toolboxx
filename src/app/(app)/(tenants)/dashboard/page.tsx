@@ -129,6 +129,18 @@ const TenantDashboardPage = async () => {
                     View Store
                   </Link>
                 </div>
+                <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="flex flex-col">
+                    <span className="font-medium">📊 Store Insights</span>
+                    <span className="text-sm text-gray-600">See visitor analytics, product views, and sales performance</span>
+                  </div>
+                  <Link 
+                    href="/my-store/insights"
+                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
+                  >
+                    View Insights
+                  </Link>
+                </div>
               </div>
               
               {/* Quick Actions */}

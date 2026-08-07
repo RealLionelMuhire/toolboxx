@@ -90,7 +90,7 @@ export const Tenants: CollectionConfig = {
       beforeList: ['@/components/admin/TenantVerificationListView'],
     },
     listSearchableFields: ['name', 'slug', 'verificationStatus'],
-    defaultColumns: ['name', 'slug', 'verificationStatus', 'verificationRequested', 'updatedAt'],
+    defaultColumns: ['name', 'slug', 'verificationStatus', 'storeViewCount', 'storeUniqueViewCount', 'totalRevenue'],
   },
   fields: [
     {
@@ -414,6 +414,30 @@ export const Tenants: CollectionConfig = {
       admin: {
         description: "Total revenue after platform fees (RWF) - Updated automatically after payment verification",
         readOnly: true,
+      },
+    },
+    {
+      name: "storeViewCount",
+      type: "number",
+      defaultValue: 0,
+      min: 0,
+      index: true,
+      admin: {
+        description: "Total number of times this store page has been visited",
+        readOnly: true,
+        position: "sidebar",
+      },
+    },
+    {
+      name: "storeUniqueViewCount",
+      type: "number",
+      defaultValue: 0,
+      min: 0,
+      index: true,
+      admin: {
+        description: "Number of unique session visitors to this store page",
+        readOnly: true,
+        position: "sidebar",
       },
     },
     // Verification fields
