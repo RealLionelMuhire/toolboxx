@@ -4,7 +4,7 @@
 
 A modern e-commerce platform built with Next.js, Payload CMS, and Stripe, featuring multi-tenant architecture and platform fees capabilities.
 
-## Features
+### Features
 
 - 🏬 Multi-tenant architecture
 - 🌐 Vendor subdomains
@@ -38,7 +38,7 @@ A modern e-commerce platform built with Next.js, Payload CMS, and Stripe, featur
 #### Using Bun (Recommended)
 
 ```bash
-# Clone the repository
+# Clone this repository
 git clone https://github.com/code-with-antonio/next15-multitenant-ecommerce.git
 cd multitenant-ecommerce
 
