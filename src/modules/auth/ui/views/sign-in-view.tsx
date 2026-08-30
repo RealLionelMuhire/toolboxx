@@ -5,9 +5,9 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { Poppins } from "next/font/google";
 import { useForm } from "react-hook-form";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -33,7 +33,6 @@ const poppins = Poppins({
 });
 
 export const SignInView = () => {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect");
   const registered = searchParams.get("registered"); // Check if user just registered
@@ -41,7 +40,6 @@ export const SignInView = () => {
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   const trpc = useTRPC();
-  const queryClient = useQueryClient();
 
   const resendVerification = useMutation(trpc.auth.resendVerification.mutationOptions({
     onError: (error) => {
@@ -61,31 +59,19 @@ export const SignInView = () => {
       }
       toast.error(error.message);
     },
-    onSuccess: async (data) => {
-      // Immediately update the session cache with the logged-in user
-      // This prevents flash of logged-out state
-      if (data?.user) {
-        queryClient.setQueryData(
-          trpc.auth.session.queryKey(),
-          { user: data.user, permissions: {} }
-        );
-      }
-      
-      // Also invalidate to ensure fresh data
-      await queryClient.invalidateQueries(trpc.auth.session.queryFilter());
-      
-      // Navigate to the redirect URL if provided, otherwise go to homepage
+    onSuccess: async () => {
+      // Full page navigation rather than router.push()/router.refresh(): the
+      // destination (and /sign-in's own server component, which redirects
+      // away once it sees a session) reads the auth cookie server-side, and
+      // a client-side push+refresh right after login could race Next's
+      // router transition — the push would still be pending when refresh
+      // fired, so it refreshed the page we were navigating away from instead
+      // of the destination, leaving the URL stuck on /sign-in even though
+      // client-side state (like the navbar's own session query) had already
+      // updated. A hard navigation always hits the server with the fresh
+      // cookie, so there's nothing to race.
       const redirectUrl = redirect || "/";
-      
-      // Prefetch the redirect URL for instant navigation
-      router.prefetch(redirectUrl);
-      
-      // Small delay to ensure cache is updated before navigation
-      await new Promise(resolve => setTimeout(resolve, 50));
-      
-      // Navigate smoothly
-      router.push(redirectUrl);
-      router.refresh();
+      window.location.href = redirectUrl;
     },
   }));
 

@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 // import { tenantsArrayField } from "@payloadcms/plugin-multi-tenant/fields";
 
 import { isSuperAdmin } from '@/lib/access';
+import { getPayloadAuthCookieOptions } from '@/lib/auth-cookie-options';
 
 // Temporarily disable tenant array field
 // const defaultTenantArrayField = tenantsArrayField({
@@ -41,13 +42,7 @@ export const Users: CollectionConfig = {
   },
   auth: {
     tokenExpiration: 2592000, // 30 days in seconds (30 * 24 * 60 * 60)
-    cookies: {
-      sameSite: "Lax",
-      secure: process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_APP_URL?.includes('localhost'),
-      ...(process.env.NEXT_PUBLIC_ROOT_DOMAIN && !process.env.NEXT_PUBLIC_APP_URL?.includes('localhost') && {
-        domain: process.env.NEXT_PUBLIC_ROOT_DOMAIN,
-      }),
-    }
+    cookies: getPayloadAuthCookieOptions(),
   },
   fields: [
     {
