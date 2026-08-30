@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPayloadSingleton } from '@/lib/payload-singleton';
-import { cookies } from 'next/headers';
+import { headers as getHeaders } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,21 +25,15 @@ export async function POST(req: NextRequest) {
     const payload = await getPayloadSingleton();
 
     // ── 1. Authenticate the user from the Payload session cookie ──────────
-    const cookieStore = await cookies();
-    const cookiePrefix = process.env.PAYLOAD_COOKIE_PREFIX || 'payload';
-    const tokenCookie = cookieStore.get(`${cookiePrefix}-token`);
-
-    if (!tokenCookie?.value) {
-      return NextResponse.json(
-        { error: 'Unauthorized: no session cookie' },
-        { status: 401 }
-      );
-    }
-
-    // Verify the token and get the user via Payload's auth API
-    const { user } = await payload.auth({
-      headers: new Headers({ cookie: `${cookiePrefix}-token=${tokenCookie.value}` }),
-    });
+    // Forward the full request headers (same as the tRPC protectedProcedure)
+    // instead of hand-picking a single cookie by name. If a browser is ever
+    // holding two same-named cookies (e.g. a stale one from before a cookie
+    // attribute change), plucking just one here and letting Payload parse
+    // the full header everywhere else meant the two could disagree on which
+    // cookie was valid — causing this endpoint and the create-product
+    // mutation right after it to authenticate inconsistently.
+    const headers = await getHeaders();
+    const { user } = await payload.auth({ headers });
 
     if (!user) {
       return NextResponse.json(
