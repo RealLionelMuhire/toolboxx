@@ -14,11 +14,12 @@ import {
   resendVerificationSchema 
 } from "../schemas";
 import { registerClientSchema } from "../schemas-client";
-import { 
-  generateToken, 
-  getTokenExpiration, 
-  sendVerificationEmail, 
-  sendPasswordResetEmail 
+import {
+  generateToken,
+  getTokenExpiration,
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  isEmailVerificationRequired,
 } from "../email-utils";
 
 export const authRouter = createTRPCRouter({
@@ -202,6 +203,7 @@ export const authRouter = createTRPCRouter({
           email: newUser.email,
           username: username,
         },
+        emailVerificationRequired: isEmailVerificationRequired(),
         message: "Account created successfully! Redirecting to your dashboard...",
       };
     }),
@@ -286,6 +288,7 @@ export const authRouter = createTRPCRouter({
           email: newUser.email,
           username: input.username,
         },
+        emailVerificationRequired: isEmailVerificationRequired(),
         message: "Account created successfully! Redirecting to homepage...",
       };
     }),
@@ -369,7 +372,8 @@ export const authRouter = createTRPCRouter({
       const user = userData.docs[0];
 
       // Enforce email verification — existing users were pre-verified via migration script
-      if (user && user.emailVerified === false) {
+      // TEMPORARY: enforcement can be disabled via SKIP_EMAIL_VERIFICATION=true
+      if (isEmailVerificationRequired() && user && user.emailVerified === false) {
         await clearAuthCookie(ctx.db.config.cookiePrefix);
         throw new TRPCError({
           code: "FORBIDDEN",

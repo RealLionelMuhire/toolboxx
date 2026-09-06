@@ -19,6 +19,16 @@ export function getTokenExpiration(): Date {
 }
 
 /**
+ * TEMPORARY: when true, email verification is not enforced at login and
+ * new sign-ups are sent straight to /sign-in instead of /verify-email-pending.
+ * Verification emails are still generated and sent either way.
+ * Toggle by setting SKIP_EMAIL_VERIFICATION=true in the environment.
+ */
+export function isEmailVerificationRequired(): boolean {
+  return process.env.SKIP_EMAIL_VERIFICATION !== "true";
+}
+
+/**
  * Send email verification email
  */
 export async function sendVerificationEmail(
