@@ -69,8 +69,13 @@ export const SignUpView = () => {
     onSuccess: async (data) => {
       toast.success(data.message);
       await queryClient.invalidateQueries();
-      // Redirect to email verification pending page with email param
-      router.push(`/verify-email-pending?email=${encodeURIComponent(data.user?.email || tenantForm.getValues("email"))}`);
+      if (data.emailVerificationRequired === false) {
+        // Verification temporarily disabled — go straight to login
+        router.push("/sign-in?justRegistered=true");
+      } else {
+        // Redirect to email verification pending page with email param
+        router.push(`/verify-email-pending?email=${encodeURIComponent(data.user?.email || tenantForm.getValues("email"))}`);
+      }
       router.refresh();
     },
   }));
@@ -83,8 +88,13 @@ export const SignUpView = () => {
     onSuccess: async (data) => {
       toast.success(data.message);
       await queryClient.invalidateQueries();
-      // Redirect to email verification pending page with email param
-      router.push(`/verify-email-pending?email=${encodeURIComponent(data.user?.email || clientForm.getValues("email"))}`);
+      if (data.emailVerificationRequired === false) {
+        // Verification temporarily disabled — go straight to login
+        router.push("/sign-in?justRegistered=true");
+      } else {
+        // Redirect to email verification pending page with email param
+        router.push(`/verify-email-pending?email=${encodeURIComponent(data.user?.email || clientForm.getValues("email"))}`);
+      }
       router.refresh();
     },
   }));
