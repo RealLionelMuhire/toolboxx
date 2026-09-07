@@ -87,6 +87,14 @@ jobs:
 
             cd /home/deploy/app
 
+            # Sync docker-compose.yml and other deploy-time files with main —
+            # otherwise this directory can silently drift from the repo since
+            # only the image gets rebuilt here, not the compose file.
+            # .env / .env.production are gitignored so this won't touch them.
+            echo "🔄 Syncing deploy files with main..."
+            git fetch origin main
+            git reset --hard origin/main
+
             # Swap to the new image with zero downtime
             docker compose pull app
             docker compose up -d --no-deps --force-recreate app
