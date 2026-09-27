@@ -5,7 +5,7 @@ import { baseProcedure, protectedProcedure, createTRPCRouter } from "@/trpc/init
 import { isSuperAdmin } from "@/lib/access";
 import { Media, Tenant } from "@/payload-types";
 
-import { verifyTenantSchema } from "../schemas";
+import { updateMyStoreSchema, verifyTenantSchema } from "../schemas";
 
 export const tenantsRouter = createTRPCRouter({
   // Get tenant by slug
@@ -100,6 +100,72 @@ export const tenantsRouter = createTRPCRouter({
 
     return tenant;
   }),
+
+  // Update the current seller's store profile
+  updateMyStore: protectedProcedure
+    .input(updateMyStoreSchema)
+    .mutation(async ({ ctx, input }) => {
+      const userData = await ctx.db.findByID({
+        collection: "users",
+        id: ctx.session.user.id,
+      });
+
+      if (!userData.tenants?.[0]) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "No tenant found for user",
+        });
+      }
+
+      const tenantRel = userData.tenants[0].tenant as string | { id: string };
+      const tenantId = typeof tenantRel === "string" ? tenantRel : tenantRel?.id;
+
+      // Sellers can sign in with their exact store name, so it must stay unique
+      const nameTaken = await ctx.db.find({
+        collection: "tenants",
+        limit: 1,
+        depth: 0,
+        where: {
+          and: [
+            { name: { equals: input.name } },
+            { id: { not_equals: tenantId } },
+          ],
+        },
+      });
+
+      if (nameTaken.docs.length > 0) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "Another store already uses this name",
+        });
+      }
+
+      const isMomo = input.paymentMethod === "momo_pay";
+
+      const updatedTenant = await ctx.db.update({
+        collection: "tenants",
+        id: tenantId,
+        data: {
+          name: input.name,
+          ...(input.imageId !== undefined && { image: input.imageId }),
+          contactPhone: input.contactPhone,
+          // All location fields are sent together so the beforeChange hook rebuilds `location`
+          locationCountry: input.locationCountry,
+          locationProvince: input.locationProvince,
+          locationDistrict: input.locationDistrict,
+          locationCityOrArea: input.locationCityOrArea,
+          currency: input.currency,
+          paymentMethod: input.paymentMethod,
+          bankName: isMomo ? null : input.bankName,
+          bankAccountNumber: isMomo ? null : input.bankAccountNumber,
+          momoProviderName: isMomo ? input.momoProviderName : null,
+          momoAccountName: isMomo ? input.momoAccountName : null,
+          momoCode: isMomo && input.momoCode ? Number(input.momoCode) : null,
+        },
+      });
+
+      return updatedTenant;
+    }),
 
   // Update logistics provider profile
   updateLogisticsProfile: protectedProcedure

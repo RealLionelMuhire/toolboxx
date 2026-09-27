@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTRPC } from '@/trpc/client';
@@ -14,6 +14,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
+import { StoreProfileForm } from './store-profile-form';
+
+type ProfileFields = {
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+};
+
+const EMPTY_PROFILE: ProfileFields = { username: '', email: '', firstName: '', lastName: '', phone: '' };
+
 export default function ProfilePageClient() {
   const router = useRouter();
   const trpc = useTRPC();
@@ -23,23 +35,38 @@ export default function ProfilePageClient() {
     trpc.auth.session.queryOptions()
   );
 
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
+  const [profile, setProfile] = useState<ProfileFields>(EMPTY_PROFILE);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Initialize form with user data
-  useState(() => {
-    if (session?.user) {
-      setUsername(session.user.username || '');
-      setEmail(session.user.email || '');
-    }
-  });
+  // The generated user type doesn't include the personal fields yet
+  const user = session?.user as (NonNullable<typeof session>['user'] & Partial<ProfileFields>) | null | undefined;
+
+  const savedProfile: ProfileFields = {
+    username: user?.username || '',
+    email: user?.email || '',
+    firstName: user?.firstName || '',
+    lastName: user?.lastName || '',
+    phone: user?.phone || '',
+  };
+
+  // Fill the form once the session has loaded (and again after a save refreshes it)
+  useEffect(() => {
+    if (user) setProfile(savedProfile);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, user?.username, user?.email, user?.firstName, user?.lastName, user?.phone]);
+
+  useEffect(() => {
+    if (!sessionLoading && !session?.user) router.push('/sign-in');
+  }, [sessionLoading, session?.user, router]);
+
+  const setField = (field: keyof ProfileFields) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setProfile((prev) => ({ ...prev, [field]: e.target.value }));
 
   // Update profile mutation
   const updateProfile = useMutation({
-    mutationFn: async (data: { username?: string; email?: string }) => {
+    mutationFn: async (data: Partial<ProfileFields>) => {
       const response = await fetch('/api/users/update-profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,8 +80,8 @@ export default function ProfilePageClient() {
 
       return response.json();
     },
-    onSuccess: () => {
-      toast.success('Profile updated successfully!');
+    onSuccess: (result: { message?: string }) => {
+      toast.success(result.message || 'Profile updated successfully!');
       queryClient.invalidateQueries(trpc.auth.session.queryFilter());
     },
     onError: (error: Error) => {
@@ -92,11 +119,16 @@ export default function ProfilePageClient() {
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const updates: { username?: string; email?: string } = {};
-    
-    if (username !== session?.user?.username) updates.username = username;
-    if (email !== session?.user?.email) updates.email = email;
-    
+    const updates: Partial<ProfileFields> = {};
+    for (const field of Object.keys(profile) as (keyof ProfileFields)[]) {
+      if (profile[field].trim() !== savedProfile[field]) updates[field] = profile[field].trim();
+    }
+
+    if (updates.username === '' || updates.email === '') {
+      toast.error('Username and email cannot be empty');
+      return;
+    }
+
     if (Object.keys(updates).length === 0) {
       toast.info('No changes to save');
       return;
@@ -135,9 +167,10 @@ export default function ProfilePageClient() {
   }
 
   if (!session?.user) {
-    router.push('/sign-in');
     return null;
   }
+
+  const isSeller = session.user.roles?.includes('tenant');
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -166,18 +199,50 @@ export default function ProfilePageClient() {
               Profile Information
             </CardTitle>
             <CardDescription>
-              Update your username and email address
+              Update your personal details and email address
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input
+                    id="firstName"
+                    value={profile.firstName}
+                    onChange={setField('firstName')}
+                    placeholder="John"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last Name</Label>
+                  <Input
+                    id="lastName"
+                    value={profile.lastName}
+                    onChange={setField('lastName')}
+                    placeholder="Doe"
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <Input
                   id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={profile.username}
+                  onChange={setField('username')}
                   placeholder="johndoe"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  value={profile.phone}
+                  onChange={setField('phone')}
+                  placeholder="+250788888888"
                 />
               </div>
 
@@ -186,8 +251,8 @@ export default function ProfilePageClient() {
                 <Input
                   id="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  value={profile.email}
+                  onChange={setField('email')}
                   placeholder="john@example.com"
                 />
                 <p className="text-xs text-muted-foreground">
@@ -210,6 +275,9 @@ export default function ProfilePageClient() {
             </form>
           </CardContent>
         </Card>
+
+        {/* Store Profile (sellers only) */}
+        {isSeller && <StoreProfileForm />}
 
         {/* Account Details */}
         <Card>

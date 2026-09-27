@@ -11,9 +11,10 @@ interface Props {
   category?: string;
   tenantSlug?: string;
   narrowView?: boolean;
+  seed?: number;
 };
 
-export const ProductListView = ({ category, tenantSlug, narrowView }: Props) => {
+export const ProductListView = ({ category, tenantSlug, narrowView, seed }: Props) => {
   // Set initial view mode based on screen size
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
@@ -57,7 +58,7 @@ export const ProductListView = ({ category, tenantSlug, narrowView }: Props) => 
 
       <div className="w-full overflow-x-hidden">
         <Suspense fallback={<ProductListSkeleton narrowView={narrowView} viewMode={viewMode} />}>
-          <ProductList category={category} tenantSlug={tenantSlug} narrowView={narrowView} viewMode={viewMode} />
+          <ProductList category={category} tenantSlug={tenantSlug} narrowView={narrowView} viewMode={viewMode} seed={seed} />
         </Suspense>
       </div>
     </div>
