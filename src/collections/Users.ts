@@ -55,6 +55,12 @@ export const Users: CollectionConfig = {
       unique: true,
       type: "text",
     },
+    // Profile picture, uploaded through /api/users/avatar (buyers can't use the general upload)
+    {
+      name: "image",
+      type: "upload",
+      relationTo: "media",
+    },
     // Personal details - private to the user, since the collection's read access is public
     {
       name: "firstName",

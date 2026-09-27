@@ -66,6 +66,7 @@ export default async function middleware(req: NextRequest) {
       '/verify-tenants',
       '/my-store',
       '/my-account',
+      '/profile',
       '/my-products',
       '/my-sales',
       '/orders',

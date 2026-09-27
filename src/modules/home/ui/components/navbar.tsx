@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell, Calculator, Wrench, User, ChevronRight, BarChart3 } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell, Calculator, Wrench, User, UserCog, ChevronRight, BarChart3 } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -29,6 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { NavbarSidebar } from "./navbar-sidebar";
 import { useCartStore } from "@/modules/checkout/store/use-cart-store";
 import { NotificationIndicator } from "@/components/notification-indicator";
+import { UserAvatar, getUserAvatarUrl } from "@/components/user-avatar";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -707,9 +708,14 @@ export const Navbar = () => {
             <DropdownMenuTrigger asChild>
               <Button 
                 variant="outline" 
-                className="relative h-10 w-10 rounded-full bg-black text-white border-transparent hover:bg-orange-500 hover:text-black transition-colors focus-visible:ring-0"
+                aria-label="Account menu"
+                className="relative h-10 w-10 p-0 rounded-full bg-black text-white border-transparent hover:bg-orange-500 hover:text-black transition-colors focus-visible:ring-0"
               >
-                <User className="h-5 w-5" />
+                {getUserAvatarUrl(session.data.user) ? (
+                  <UserAvatar user={session.data.user} className="h-10 w-10" />
+                ) : (
+                  <User className="h-5 w-5" />
+                )}
                 {((cartItemCount > 0) || (unseenNotifications && unseenNotifications.count > 0) || (unreadData && unreadData.totalUnread > 0)) && (
                   <Badge
                     variant="destructive"
@@ -719,6 +725,13 @@ export const Navbar = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64 bg-black text-white border-gray-800 p-2 rounded-xl shadow-2xl mt-2">
+              <DropdownMenuItem asChild className="focus:bg-orange-500 focus:text-black hover:bg-orange-500 hover:text-black rounded-lg transition-colors cursor-pointer p-3 mb-1">
+                <Link href="/profile" className="w-full flex items-center gap-3">
+                  <UserCog className="h-5 w-5" />
+                  <span className="font-medium text-sm">Edit Profile</span>
+                </Link>
+              </DropdownMenuItem>
+
               <DropdownMenuItem asChild className="focus:bg-orange-500 focus:text-black hover:bg-orange-500 hover:text-black rounded-lg transition-colors cursor-pointer p-3 mb-1">
                 <Link href="/cart" className="w-full flex items-center gap-3">
                   <ShoppingCart className="h-5 w-5" />
