@@ -4,7 +4,8 @@ import type { Sort, Where } from "payload";
 import { headers as getHeaders } from "next/headers";
 
 import { DEFAULT_LIMIT } from "@/constants";
-import { getProvinceByCode, getDistrictByCode } from "@/lib/location-data";
+import { COUNTRIES, getProvinceByCode, getDistrictByCode } from "@/lib/location-data";
+import { getOutOfWindowSponsoredProductIds } from "@/lib/sponsorships";
 import { Category, Media, Tenant, Product } from "@/payload-types";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 
@@ -14,6 +15,183 @@ import { sortValues } from "../search-params";
 type PopulatedProduct = Product & {
   image?: Media | null;
   tenant?: Tenant & { image?: Media | null };
+};
+
+// Curated feed fallback: without a seed, the order rotates every 5 minutes
+const CURATED_SEED_WINDOW_MS = 5 * 60 * 1000;
+
+// Deterministic PRNG (mulberry32) so a seed yields the same order on every page request
+const createSeededRandom = (seed: number) => {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
+
+const shuffleInPlace = <T>(items: T[], random: () => number): T[] => {
+  for (let i = items.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    const a = items[i];
+    const b = items[j];
+    if (a !== undefined && b !== undefined) {
+      items[i] = b;
+      items[j] = a;
+    }
+  }
+  return items;
+};
+
+type CuratedCandidate = {
+  id: string;
+  name?: string | null;
+  tags?: Array<string | { id: string }> | null;
+  tenant?: string | { id: string } | null;
+  sponsorshipStatus?: string | null;
+};
+
+const getTenantId = (candidate: CuratedCandidate) =>
+  typeof candidate.tenant === "string" ? candidate.tenant : candidate.tenant?.id ?? "unknown";
+
+/**
+ * Round-robin across stores so every store gets one slot per round. The store order is
+ * reshuffled each round, so no store is always ahead of another.
+ */
+const interleaveByStore = (ids: CuratedCandidate[], random: () => number): string[] => {
+  const productsByTenant = new Map<string, string[]>();
+  for (const candidate of ids) {
+    const tenantId = getTenantId(candidate);
+    const list = productsByTenant.get(tenantId) ?? [];
+    list.push(candidate.id);
+    productsByTenant.set(tenantId, list);
+  }
+
+  let queues = [...productsByTenant.values()].map((queue) => shuffleInPlace(queue, random));
+  const ordered: string[] = [];
+  while (queues.length > 0) {
+    for (const queue of shuffleInPlace(queues, random)) {
+      const id = queue.shift();
+      if (id) ordered.push(id);
+    }
+    queues = queues.filter((queue) => queue.length > 0);
+  }
+  return ordered;
+};
+
+/**
+ * Orders product IDs for the curated feed:
+ * - with a search, products are grouped by `relevance` (highest first) and stores are only
+ *   rotated within a group, so strong name matches aren't buried under weak ones
+ * - stores are interleaved so no store owns the first rows
+ * - approved sponsored products go first, then one after every `injectionInterval` organic
+ *   products, with at most one sponsored product per store on each page
+ *   (products whose sponsorship is outside its start/end window are treated as organic)
+ */
+const buildCuratedOrder = (
+  candidates: CuratedCandidate[],
+  options: {
+    seed: number;
+    injectionInterval: number;
+    pageSize: number;
+    outOfWindowSponsoredIds: Set<string>;
+    relevance?: (candidate: CuratedCandidate) => number;
+  },
+): string[] => {
+  const random = createSeededRandom(options.seed);
+  const sponsored: CuratedCandidate[] = [];
+  const organicByRelevance = new Map<number, CuratedCandidate[]>();
+
+  for (const candidate of candidates) {
+    if (candidate.sponsorshipStatus === "approved" && !options.outOfWindowSponsoredIds.has(candidate.id)) {
+      sponsored.push(candidate);
+      continue;
+    }
+    const score = options.relevance?.(candidate) ?? 0;
+    const group = organicByRelevance.get(score) ?? [];
+    group.push(candidate);
+    organicByRelevance.set(score, group);
+  }
+
+  const organic = [...organicByRelevance.keys()]
+    .sort((a, b) => b - a)
+    .flatMap((score) => interleaveByStore(organicByRelevance.get(score) ?? [], random));
+
+  // Most relevant sponsored products first; stores rotate within the same relevance
+  const sponsoredQueue = [...new Set(sponsored.map((c) => options.relevance?.(c) ?? 0))]
+    .sort((a, b) => b - a)
+    .flatMap((score) => interleaveByStore(sponsored.filter((c) => (options.relevance?.(c) ?? 0) === score), random));
+  const tenantBySponsoredId = new Map(sponsored.map((c) => [c.id, getTenantId(c)]));
+
+  const interval = Math.max(1, Math.floor(options.injectionInterval));
+  const pageSize = Math.max(1, options.pageSize);
+  const ordered: string[] = [];
+  const sponsoredTenantsByPage = new Map<number, Set<string>>();
+
+  // Takes the next sponsored product whose store has no sponsored slot on this page yet
+  const takeSponsoredFor = (position: number) => {
+    const page = Math.floor(position / pageSize);
+    const usedTenants = sponsoredTenantsByPage.get(page) ?? new Set<string>();
+    const index = sponsoredQueue.findIndex((id) => !usedTenants.has(tenantBySponsoredId.get(id) ?? ""));
+    if (index === -1) return null;
+    const [id] = sponsoredQueue.splice(index, 1);
+    usedTenants.add(tenantBySponsoredId.get(id!) ?? "");
+    sponsoredTenantsByPage.set(page, usedTenants);
+    return id!;
+  };
+
+  organic.forEach((id, index) => {
+    if (index % interval === 0) {
+      const sponsoredId = takeSponsoredFor(ordered.length);
+      if (sponsoredId) ordered.push(sponsoredId);
+    }
+    ordered.push(id);
+  });
+  ordered.push(...sponsoredQueue);
+
+  return ordered;
+};
+
+// Search relevance for the curated feed: 3 = name is or starts with the search,
+// 2 = name has every word, 1 = name has some word or a matching tag, 0 = other matches
+// (store name, location)
+const createSearchRelevance = (search: string, matchingTagIds: Set<string>) => {
+  const phrase = search.trim().toLowerCase();
+  const words = phrase.split(/\s+/).filter(Boolean);
+
+  return (candidate: CuratedCandidate) => {
+    const name = (candidate.name ?? "").toLowerCase();
+    if (phrase && name.startsWith(phrase)) return 3;
+    const matchedWords = words.filter((word) => name.includes(word)).length;
+    if (words.length > 0 && matchedWords === words.length) return 2;
+    const hasMatchingTag = (candidate.tags ?? []).some((tag) =>
+      matchingTagIds.has(typeof tag === "string" ? tag : tag.id),
+    );
+    if (matchedWords > 0 || hasMatchingTag) return 1;
+    return 0;
+  };
+};
+
+// Resolves place names in search text (e.g. "Gasabo", "Kigali") to province/district codes,
+// since the stored free-text location strings can be stale or incomplete
+const findLocationCodesMatching = (search: string) => {
+  const term = search.trim().toLowerCase();
+  const provinces = new Set<string>();
+  const districts = new Set<string>();
+  if (term.length < 3) return { provinces: [], districts: [] };
+
+  for (const country of COUNTRIES) {
+    for (const province of country.provinces) {
+      if (province.name.toLowerCase().includes(term)) provinces.add(province.code);
+      for (const district of province.districts) {
+        if (district.name.toLowerCase().includes(term)) districts.add(district.code);
+      }
+    }
+  }
+
+  return { provinces: [...provinces], districts: [...districts] };
 };
 
 // Validation schemas for product CRUD
@@ -318,6 +496,8 @@ export const productsRouter = createTRPCRouter({
         locationCountry: z.string().optional(),
         locationProvince: z.string().optional(),
         locationDistrict: z.string().optional(),
+        // Seed for the curated order; keeps the order stable across pages of one listing
+        seed: z.number().int().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
@@ -326,6 +506,7 @@ export const productsRouter = createTRPCRouter({
           not_equals: true,
         },
       };
+      const andConditions: Where[] = [];
       let sort: Sort = "-createdAt";
       let shouldRandomize = false;
 
@@ -397,35 +578,53 @@ export const productsRouter = createTRPCRouter({
         }
       }
       
-      // Location-based filtering (match by code or name so UI codes match DB whether stored as code or name)
+      // Location-based filtering. Products using their store's default location don't carry
+      // their own location fields (the beforeChange copy only runs for admin-panel creates),
+      // so those are matched on the tenant's location instead of the product's.
+      // Values match by code or name so UI codes match DB whether stored as code or name.
+      const locationFilters: Array<{ field: string; values: string[] }> = [];
+
       if (input.locationCountry && input.locationCountry.trim() !== "") {
-        where["locationCountry"] = {
-          equals: input.locationCountry,
-        };
+        locationFilters.push({ field: "locationCountry", values: [input.locationCountry] });
       }
 
       if (input.locationProvince && input.locationProvince.trim() !== "") {
         const provinceMeta = input.locationCountry
           ? getProvinceByCode(input.locationCountry, input.locationProvince)
           : undefined;
-        const provinceValues = provinceMeta
-          ? [input.locationProvince, provinceMeta.name]
-          : [input.locationProvince];
-        where["locationProvince"] = provinceValues.length === 1
-          ? { equals: provinceValues[0] }
-          : { in: provinceValues };
+        locationFilters.push({
+          field: "locationProvince",
+          values: provinceMeta ? [input.locationProvince, provinceMeta.name] : [input.locationProvince],
+        });
       }
 
       if (input.locationDistrict && input.locationDistrict.trim() !== "") {
         const districtMeta = input.locationCountry && input.locationProvince
           ? getDistrictByCode(input.locationCountry, input.locationProvince, input.locationDistrict)
           : undefined;
-        const districtValues = districtMeta
-          ? [input.locationDistrict, districtMeta.name]
-          : [input.locationDistrict];
-        where["locationDistrict"] = districtValues.length === 1
-          ? { equals: districtValues[0] }
-          : { in: districtValues };
+        locationFilters.push({
+          field: "locationDistrict",
+          values: districtMeta ? [input.locationDistrict, districtMeta.name] : [input.locationDistrict],
+        });
+      }
+
+      if (locationFilters.length > 0) {
+        andConditions.push({
+          or: [
+            {
+              and: [
+                { useDefaultLocation: { not_equals: false } },
+                ...locationFilters.map(({ field, values }) => ({ [`tenant.${field}`]: { in: values } })),
+              ],
+            },
+            {
+              and: [
+                { useDefaultLocation: { equals: false } },
+                ...locationFilters.map(({ field, values }) => ({ [field]: { in: values } })),
+              ],
+            },
+          ],
+        });
       }
       
       // Handle multiple categories filter
@@ -482,99 +681,163 @@ export const productsRouter = createTRPCRouter({
         };
       }
 
-      // Multi-field search: searches across product name, description, location, tenant name, and tags
-      // MongoDB text indexes improve performance for large datasets
+      // Multi-field search: product name, store name, tags and location.
+      // Location text comes from the product for custom locations, otherwise from the store.
       if (input.search) {
-        const searchConditions: any[] = [
-          {
-            name: {
-              like: input.search,
-            },
-          },
-          {
-            "tenant.name": {
-              like: input.search,
-            },
-          },
-          {
-            "tags.name": {
-              like: input.search,
-            },
-          },
-          {
-            locationCityOrArea: {
-              like: input.search,
-            },
-          },
+        const locationCodes = findLocationCodesMatching(input.search);
+        const locationCodeConditions = (prefix: string): Where[] => [
+          ...(locationCodes.provinces.length > 0
+            ? [{ [`${prefix}locationProvince`]: { in: locationCodes.provinces } }]
+            : []),
+          ...(locationCodes.districts.length > 0
+            ? [{ [`${prefix}locationDistrict`]: { in: locationCodes.districts } }]
+            : []),
         ];
 
-        // If there's already an 'or' condition (e.g., for stock status), combine them
-        if (where.or) {
-          where.and = [
-            { or: where.or as any },
-            { or: searchConditions as any },
-          ] as any;
-          delete where.or;
-        } else {
-          where.or = searchConditions as any;
-        }
+        andConditions.push({
+          or: [
+            { name: { like: input.search } },
+            { "tenant.name": { like: input.search } },
+            { "tags.name": { like: input.search } },
+            { location: { like: input.search } },
+            { locationCityOrArea: { like: input.search } },
+            ...locationCodeConditions(""),
+            {
+              and: [
+                { useDefaultLocation: { not_equals: false } },
+                {
+                  or: [
+                    { "tenant.location": { like: input.search } },
+                    { "tenant.locationCityOrArea": { like: input.search } },
+                    ...locationCodeConditions("tenant."),
+                  ],
+                },
+              ],
+            },
+          ],
+        });
       }
 
       // Filter out out-of-stock products from public lists (unless allowBackorder/pre-order is enabled)
       // This ensures tenants can still see their out-of-stock products in their management area
       // but customers won't see them in public product lists unless pre-order is enabled
       if (!input.tenantSlug) {
-        // For public product lists, exclude products where:
-        // - quantity is 0 AND allowBackorder is false
-        // Show products that have quantity > 0 OR (quantity = 0 AND allowBackorder = true)
-        const stockConditions = [
-          {
-            quantity: {
-              greater_than: 0,
+        andConditions.push({
+          or: [
+            { quantity: { greater_than: 0 } },
+            {
+              and: [
+                { quantity: { equals: 0 } },
+                { allowBackorder: { equals: true } },
+              ],
             },
-          },
-          {
-            and: [
-              {
-                quantity: {
-                  equals: 0,
-                },
-              },
-              {
-                allowBackorder: {
-                  equals: true,
-                },
-              },
-            ],
-          },
-        ];
-
-        // Combine stock filter with existing search conditions if they exist
-        if (where.or || where.and) {
-          // Search conditions already exist, combine them
-          const existingConditions = where.and ? where.and : [{ or: where.or }];
-          where.and = [
-            ...existingConditions,
-            { or: stockConditions as any },
-          ] as any;
-          delete where.or;
-        } else {
-          // No search conditions, just apply stock filter
-          where.or = stockConditions as any;
-        }
+          ],
+        });
       }
 
-      const data = await ctx.db.find({
-        collection: "products",
-        depth: 1, // Reduced from 2 to 1 - loads category, image, tenant (without nested relationships)
-        where,
-        sort,
-        page: input.cursor,
-        limit: input.limit,
-        select: {
-          content: false,
-        },
-      });
+      if (andConditions.length > 0) {
+        where.and = andConditions;
+      }
+
+      // Curated (default) feed: order the *whole* result set, then slice the requested page.
+      // Shuffling only the fetched page kept the newest products' stores pinned to the top,
+      // and only sponsored products that happened to be on that page were promoted.
+      // Sponsorships past their end date may still read "approved" until the expiry job runs
+      const outOfWindowSponsoredIds = await getOutOfWindowSponsoredProductIds(ctx.db);
+
+      const findCuratedPage = async () => {
+        let injectionInterval = 6;
+        try {
+          const settings = await ctx.db.findGlobal({
+            slug: "site-settings" as any as never,
+          });
+          if (settings && typeof (settings as any).sponsoredProductInjectionRate === "number") {
+            injectionInterval = (settings as any).sponsoredProductInjectionRate;
+          }
+        } catch (error) {
+          console.error("Error fetching site settings for injection rate:", error);
+        }
+
+        const candidates = await ctx.db.find({
+          collection: "products",
+          depth: 0,
+          where,
+          sort: "createdAt",
+          pagination: false,
+          select: {
+            name: true,
+            tags: true,
+            tenant: true,
+            sponsorshipStatus: true,
+          },
+        });
+
+        let relevance: ((candidate: CuratedCandidate) => number) | undefined;
+        if (input.search) {
+          const matchingTags = await ctx.db.find({
+            collection: "tags",
+            depth: 0,
+            pagination: false,
+            where: { name: { like: input.search } },
+            select: { name: true },
+          });
+          relevance = createSearchRelevance(input.search, new Set(matchingTags.docs.map((tag) => tag.id)));
+        }
+
+        const orderedIds = buildCuratedOrder(candidates.docs, {
+          seed: input.seed ?? Math.floor(Date.now() / CURATED_SEED_WINDOW_MS),
+          injectionInterval,
+          pageSize: input.limit,
+          outOfWindowSponsoredIds,
+          relevance,
+        });
+
+        const page = input.cursor;
+        const totalDocs = orderedIds.length;
+        const totalPages = Math.max(1, Math.ceil(totalDocs / input.limit));
+        const pageIds = orderedIds.slice((page - 1) * input.limit, page * input.limit);
+
+        const pageData = await ctx.db.find({
+          collection: "products",
+          depth: 1,
+          where: { id: { in: pageIds } },
+          limit: input.limit,
+          select: {
+            content: false,
+          },
+        });
+
+        const docsById = new Map(pageData.docs.map((doc) => [doc.id, doc]));
+
+        return {
+          ...pageData,
+          docs: pageIds.flatMap((id) => docsById.get(id) ?? []),
+          totalDocs,
+          limit: input.limit,
+          totalPages,
+          page,
+          pagingCounter: (page - 1) * input.limit + 1,
+          hasPrevPage: page > 1,
+          hasNextPage: page < totalPages,
+          prevPage: page > 1 ? page - 1 : null,
+          nextPage: page < totalPages ? page + 1 : null,
+        };
+      };
+
+      const data = shouldRandomize
+        ? await findCuratedPage()
+        : await ctx.db.find({
+            collection: "products",
+            depth: 1, // Reduced from 2 to 1 - loads category, image, tenant (without nested relationships)
+            where,
+            sort,
+            page: input.cursor,
+            limit: input.limit,
+            select: {
+              content: false,
+            },
+          });
+
 
       // Fetch all reviews for all products in one query to avoid N+1 problem
       const productIds = data.docs.map(doc => doc.id);
@@ -636,129 +899,11 @@ export const productsRouter = createTRPCRouter({
         };
       });
 
-      // Randomize only when sort is "curated" (default): fair rotation for stores and products per request.
-      // When user chooses a sort (price, newest, etc.), order is deterministic and not randomized.
-      let finalDocs = dataWithSummarizedReviews;
-      if (shouldRandomize) {
-        // Per-request seed so each refresh gives a different order (not tied to registration time)
-        const seed =
-          Date.now() * 1000 + Math.floor(Math.random() * 1000);
-
-        const seededRandom = (seedValue: number) => {
-          const next = (seedValue * 9301 + 49297) % 233280;
-          return { value: next / 233280, next };
-        };
-
-        let state = seed;
-
-        const nextRand = () => {
-          const out = seededRandom(state);
-          state = out.next;
-          return out.value;
-        };
-
-        // Group products by tenant
-        const productsByTenant = dataWithSummarizedReviews.reduce(
-          (acc, product) => {
-            const tenantId =
-              typeof product.tenant === "string"
-                ? product.tenant
-                : product.tenant?.id ?? "unknown";
-            if (!acc[tenantId]) acc[tenantId] = [];
-            acc[tenantId].push(product);
-            return acc;
-          },
-          {} as Record<string, typeof dataWithSummarizedReviews>,
-        );
-
-        // Shuffle products within each tenant so which product leads also rotates
-        for (const tenantId of Object.keys(productsByTenant)) {
-          const arr = productsByTenant[tenantId];
-          if (!arr || arr.length <= 1) continue;
-          for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(nextRand() * (i + 1));
-            const a = arr[i];
-            const b = arr[j];
-            if (a != null && b != null) {
-              arr[i] = b;
-              arr[j] = a;
-            }
-          }
-        }
-
-        // Shuffle tenant order (Fisher–Yates) so which store appears first changes each request
-        const tenantIds = Object.keys(productsByTenant);
-        for (let i = tenantIds.length - 1; i > 0; i--) {
-          const j = Math.floor(nextRand() * (i + 1));
-          const a = tenantIds[i];
-          const b = tenantIds[j];
-          if (a !== undefined && b !== undefined) {
-            tenantIds[i] = b;
-            tenantIds[j] = a;
-          }
-        }
-
-        // Interleave by tenant so multiple stores get visibility in the first rows
-        finalDocs = [];
-        const maxPerTenant = Math.max(
-          ...Object.values(productsByTenant).map((p) => p.length),
-        );
-        for (let i = 0; i < maxPerTenant; i++) {
-          for (const tenantId of tenantIds) {
-            const list = productsByTenant[tenantId];
-            const doc = list?.[i];
-            if (doc) finalDocs.push(doc);
-          }
-        }
-        
-        // --- SPONSORED PRODUCTS INJECTION ---
-        // Separate approved sponsored products from organic ones
-        const sponsoredProducts = finalDocs.filter((p: any) => p.sponsorshipStatus === 'approved');
-        const organicProducts = finalDocs.filter((p: any) => p.sponsorshipStatus !== 'approved');
-        
-        // Rebuild finalDocs with injected sponsored products
-        if (sponsoredProducts.length > 0) {
-          const interleavedDocs = [];
-          let sponsoredIndex = 0;
-          let organicIndex = 0;
-          
-          // Pattern: 1 sponsored at the very top, then 1 every N organic products
-          let INJECTION_INTERVAL = 6; 
-          try {
-            const settings = await ctx.db.findGlobal({
-              slug: "site-settings" as any as never,
-            });
-            if (settings && typeof (settings as any).sponsoredProductInjectionRate === 'number') {
-              INJECTION_INTERVAL = (settings as any).sponsoredProductInjectionRate;
-            }
-          } catch (error) {
-            console.error("Error fetching site settings for injection rate:", error);
-          }
-          while (organicIndex < organicProducts.length || sponsoredIndex < sponsoredProducts.length) {
-            const currentPosition = interleavedDocs.length;
-            
-            // Inject sponsored product at index 0 or every INJECTION_INTERVAL slots
-            if (sponsoredIndex < sponsoredProducts.length && 
-                (currentPosition === 0 || currentPosition % INJECTION_INTERVAL === 0)) {
-              interleavedDocs.push(sponsoredProducts[sponsoredIndex]);
-              sponsoredIndex++;
-            } else if (organicIndex < organicProducts.length) {
-              interleavedDocs.push(organicProducts[organicIndex]);
-              organicIndex++;
-            } else if (sponsoredIndex < sponsoredProducts.length) {
-              // If we ran out of organic products, just append the rest of sponsored ones
-              interleavedDocs.push(sponsoredProducts[sponsoredIndex]);
-              sponsoredIndex++;
-            }
-          }
-          finalDocs = interleavedDocs as typeof finalDocs;
-        }
-      }
-
       return {
         ...data,
-        docs: finalDocs.map((doc) => ({
+        docs: dataWithSummarizedReviews.map((doc) => ({
           ...doc,
+          sponsorshipStatus: outOfWindowSponsoredIds.has(doc.id) ? "none" : (doc as any).sponsorshipStatus,
           image: (doc as PopulatedProduct).image,
           tenant: (doc as PopulatedProduct).tenant as Tenant & { image: Media | null; location?: string | null },
         }))

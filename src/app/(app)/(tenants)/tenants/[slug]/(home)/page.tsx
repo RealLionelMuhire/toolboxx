@@ -19,10 +19,14 @@ const Page = async ({ params, searchParams }: Props) => {
   const { slug } = await params;
   const filters = await loadProductFilters(searchParams);
 
+    // New curated order per visit, shared with the client so infinite-scroll pages stay consistent
+    const seed = Math.floor(Math.random() * 2 ** 31);
+
     const queryClient = getQueryClient();
     void queryClient.prefetchInfiniteQuery(trpc.products.getMany.infiniteQueryOptions({
       ...filters,
       tenantSlug: slug,
+      seed,
       limit: DEFAULT_LIMIT,
     }));
 
@@ -30,7 +34,7 @@ const Page = async ({ params, searchParams }: Props) => {
       <HydrationBoundary state={dehydrate(queryClient)}>
         {/* Invisible tracking — increments storeViewCount on each visit */}
         <TrackStoreView slug={slug} />
-        <ProductListView tenantSlug={slug} narrowView />
+        <ProductListView tenantSlug={slug} narrowView seed={seed} />
       </HydrationBoundary>
     );
 }

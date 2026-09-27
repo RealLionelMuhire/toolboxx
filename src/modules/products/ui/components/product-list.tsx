@@ -17,9 +17,10 @@ interface Props {
   tenantSlug?: string;
   narrowView?: boolean;
   viewMode?: "grid" | "list";
+  seed?: number;
 };
 
-export const ProductList = ({ category, tenantSlug, narrowView, viewMode = "grid" }: Props) => {
+export const ProductList = ({ category, tenantSlug, narrowView, viewMode = "grid", seed }: Props) => {
   const [filters] = useProductFilters();
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -34,6 +35,7 @@ export const ProductList = ({ category, tenantSlug, narrowView, viewMode = "grid
       ...filters,
       category,
       tenantSlug,
+      seed,
       limit: DEFAULT_LIMIT,
     },
     {

@@ -20,16 +20,20 @@ const Page = async ({ params, searchParams }: Props) => {
   const { category } = await params;
   const filters = await loadProductFilters(searchParams);
 
+  // New curated order per visit, shared with the client so infinite-scroll pages stay consistent
+  const seed = Math.floor(Math.random() * 2 ** 31);
+
   const queryClient = getQueryClient();
   void queryClient.prefetchInfiniteQuery(trpc.products.getMany.infiniteQueryOptions({
     ...filters,
     category,
+    seed,
     limit: DEFAULT_LIMIT,
   }));
 
   return ( 
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <ProductListView category={category} />
+      <ProductListView category={category} seed={seed} />
     </HydrationBoundary>
   );
 };
