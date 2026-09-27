@@ -111,7 +111,7 @@ export function LogisticsProviderProfile() {
         }
 
         const uploadedData = await uploadResponse.json();
-        vehicleImageId = uploadedData.id;
+        vehicleImageId = uploadedData.doc?.id;
       } catch (error) {
         console.error("Image upload error:", error);
         toast.error("Image upload failed. Please try again.");

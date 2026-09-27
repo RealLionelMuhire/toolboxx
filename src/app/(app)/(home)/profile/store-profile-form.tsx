@@ -132,7 +132,8 @@ export function StoreProfileForm() {
           return;
         }
 
-        imageId = (await uploadResponse.json()).id;
+        // /api/upload responds with { doc }
+        imageId = (await uploadResponse.json()).doc?.id;
       } catch (error) {
         console.error('Logo upload error:', error);
         toast.error('Logo upload failed. Please try again.');

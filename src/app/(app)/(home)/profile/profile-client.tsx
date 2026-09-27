@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 
+import { ProfilePictureEditor } from './profile-picture-editor';
 import { StoreProfileForm } from './store-profile-form';
 
 type ProfileFields = {
@@ -199,10 +200,14 @@ export default function ProfilePageClient() {
               Profile Information
             </CardTitle>
             <CardDescription>
-              Update your personal details and email address
+              Update your photo, personal details and email address
             </CardDescription>
           </CardHeader>
           <CardContent>
+            <div className="mb-6">
+              <ProfilePictureEditor user={session.user} />
+            </div>
+
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
