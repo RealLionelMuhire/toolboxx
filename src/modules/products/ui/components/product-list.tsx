@@ -108,7 +108,8 @@ export const ProductList = ({ category, tenantSlug, narrowView, viewMode = "grid
 
           return (
             <ProductCard
-              key={product.id}
+              // Sponsored products can repeat in the list, so the id alone isn't unique
+              key={`${product.id}-${index}`}
               id={product.id}
               name={product.name}
               imageUrl={product.image?.url}

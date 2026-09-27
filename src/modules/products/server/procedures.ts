@@ -86,50 +86,34 @@ const interleaveByStore = (ids: CuratedCandidate[], random: () => number): strin
 
 type SponsoredPlacement = {
   injectionInterval: number;
-  pageSize: number;
-  // Browsing spreads paid visibility across stores; searches show every matching sponsored product
-  onePerStorePerPage: boolean;
 };
 
 /**
- * Puts sponsored products first, then one after every `injectionInterval` organic products.
- * Leftover sponsored products (not enough organic ones) are appended at the end.
+ * Sponsored slots: one at the top, then one after every `injectionInterval` organic products,
+ * all the way down the listing. The sponsored products take turns filling the slots (in the
+ * given order, which alternates stores for the curated feed), so a small pool repeats rather
+ * than leaving slots empty. Sponsored products never also appear as organic products.
  */
 const injectSponsored = (
   organic: string[],
   sponsored: CuratedCandidate[],
   placement: SponsoredPlacement,
 ): string[] => {
-  const sponsoredQueue = sponsored.map((candidate) => candidate.id);
-  const tenantBySponsoredId = new Map(sponsored.map((candidate) => [candidate.id, getTenantId(candidate)]));
-
   const interval = Math.max(1, Math.floor(placement.injectionInterval));
-  const pageSize = Math.max(1, placement.pageSize);
+  const pool = sponsored.map((candidate) => candidate.id);
+  if (pool.length === 0) return organic;
+
   const ordered: string[] = [];
-  const sponsoredTenantsByPage = new Map<number, Set<string>>();
-
-  const takeSponsoredFor = (position: number) => {
-    if (!placement.onePerStorePerPage) return sponsoredQueue.shift() ?? null;
-
-    // Next sponsored product whose store has no sponsored slot on this page yet
-    const page = Math.floor(position / pageSize);
-    const usedTenants = sponsoredTenantsByPage.get(page) ?? new Set<string>();
-    const index = sponsoredQueue.findIndex((id) => !usedTenants.has(tenantBySponsoredId.get(id) ?? ""));
-    if (index === -1) return null;
-    const [id] = sponsoredQueue.splice(index, 1);
-    usedTenants.add(tenantBySponsoredId.get(id!) ?? "");
-    sponsoredTenantsByPage.set(page, usedTenants);
-    return id!;
-  };
-
+  let slot = 0;
   organic.forEach((id, index) => {
     if (index % interval === 0) {
-      const sponsoredId = takeSponsoredFor(ordered.length);
-      if (sponsoredId) ordered.push(sponsoredId);
+      ordered.push(pool[slot % pool.length]!);
+      slot++;
     }
     ordered.push(id);
   });
-  ordered.push(...sponsoredQueue);
+  // Too few organic products for every sponsored product to get a slot: show the rest at the end
+  ordered.push(...pool.slice(slot));
 
   return ordered;
 };
@@ -142,7 +126,7 @@ const isLiveSponsored = (candidate: CuratedCandidate, outOfWindowSponsoredIds: S
  * - with a search, products are grouped by `relevance` (highest first) and stores are only
  *   rotated within a group, so strong name matches aren't buried under weak ones
  * - stores are interleaved so no store owns the first rows
- * - sponsored products are placed by `injectSponsored`
+ * - sponsored products fill the slots from `injectSponsored`, alternating stores
  *   (products whose sponsorship is outside its start/end window are treated as organic)
  */
 const buildCuratedOrder = (
@@ -831,11 +815,7 @@ export const productsRouter = createTRPCRouter({
           relevance = createSearchRelevance(input.search, new Set(matchingTags.docs.map((tag) => tag.id)));
         }
 
-        const placement: SponsoredPlacement = {
-          injectionInterval,
-          pageSize: input.limit,
-          onePerStorePerPage: !input.search,
-        };
+        const placement: SponsoredPlacement = { injectionInterval };
 
         const orderedIds = isCurated
           ? buildCuratedOrder(candidates.docs, {
@@ -847,8 +827,10 @@ export const productsRouter = createTRPCRouter({
           : buildSortedOrder(candidates.docs, { ...placement, outOfWindowSponsoredIds });
 
         const page = input.cursor;
-        const totalDocs = orderedIds.length;
-        const totalPages = Math.max(1, Math.ceil(totalDocs / input.limit));
+        // Sponsored products repeat in their slots, so the listing is longer than the number
+        // of matching products; totalDocs stays the real product count (used for result counts)
+        const totalDocs = candidates.docs.length;
+        const totalPages = Math.max(1, Math.ceil(orderedIds.length / input.limit));
         const pageIds = orderedIds.slice((page - 1) * input.limit, page * input.limit);
 
         const pageData = await ctx.db.find({
