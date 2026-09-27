@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, FieldAccess } from 'payload'
 // import { tenantsArrayField } from "@payloadcms/plugin-multi-tenant/fields";
 
 import { isSuperAdmin } from '@/lib/access';
@@ -20,6 +20,10 @@ import { getPayloadAuthCookieOptions } from '@/lib/auth-cookie-options';
 //     update: ({ req }) => isSuperAdmin(req.user),
 //   },
 // })
+
+// `doc` is set when reading lists (find), `id` when reading a single document
+const canReadOwnPrivateField: FieldAccess = ({ req, id, doc }) =>
+  isSuperAdmin(req.user) || (!!req.user && req.user.id === (doc?.id ?? id));
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -50,6 +54,22 @@ export const Users: CollectionConfig = {
       required: true,
       unique: true,
       type: "text",
+    },
+    // Personal details - private to the user, since the collection's read access is public
+    {
+      name: "firstName",
+      type: "text",
+      access: { read: canReadOwnPrivateField },
+    },
+    {
+      name: "lastName",
+      type: "text",
+      access: { read: canReadOwnPrivateField },
+    },
+    {
+      name: "phone",
+      type: "text",
+      access: { read: canReadOwnPrivateField },
     },
     {
       admin: {

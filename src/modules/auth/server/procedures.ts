@@ -254,6 +254,9 @@ export const authRouter = createTRPCRouter({
           email: input.email,
           username: input.username,
           password: input.password,
+          firstName: input.firstName || undefined,
+          lastName: input.lastName || undefined,
+          phone: input.phone || undefined,
           roles: ["client"], // Explicitly set client role
           emailVerified: false,
           verificationToken: verificationToken,
