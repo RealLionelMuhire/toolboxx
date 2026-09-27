@@ -387,9 +387,22 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
                   <Button
                     className="w-full"
                     variant="outline"
-                    onClick={() => {
+                    onClick={async () => {
+                      const url = window.location.href;
+
+                      // Native share sheet on phones (WhatsApp, etc.); the preview comes from the page's og tags
+                      if (typeof navigator.share === "function") {
+                        try {
+                          await navigator.share({ title: data.name, url });
+                          return;
+                        } catch (error) {
+                          // Closing the share sheet is not an error worth reporting
+                          if (error instanceof DOMException && error.name === "AbortError") return;
+                        }
+                      }
+
                       setIsCopied(true);
-                      navigator.clipboard.writeText(window.location.href);
+                      navigator.clipboard.writeText(url);
                       toast.success("URL copied to clipboard")
 
                       setTimeout(() => {

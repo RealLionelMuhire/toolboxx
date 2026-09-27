@@ -29,8 +29,17 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
+  // Makes relative link-preview URLs (og:image, ...) absolute
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: "ToolBay - Materials Marketplace",
   description: "The Premier online marketplace for materials, tools, and engineering supplies",
+  openGraph: {
+    type: "website",
+    siteName: "ToolBay",
+    title: "ToolBay - Materials Marketplace",
+    description: "The Premier online marketplace for materials, tools, and engineering supplies",
+    images: [{ url: "/logo_toolbay.png", alt: "ToolBay" }],
+  },
   manifest: "/manifest.json",
   icons: {
     icon: [
