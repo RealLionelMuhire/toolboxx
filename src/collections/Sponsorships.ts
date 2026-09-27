@@ -33,11 +33,28 @@ export const Sponsorships: CollectionConfig = {
   },
   hooks: {
     beforeChange: [
-      ({ req, data, operation }) => {
+      ({ req, data, operation, originalDoc }) => {
         // Auto-assign tenant for non-super-admin users on create
         if (!isSuperAdmin(req.user) && req.user?.tenants?.[0]?.tenant && operation === 'create') {
           const userTenant = req.user.tenants[0].tenant;
           data.tenant = typeof userTenant === 'string' ? userTenant : userTenant.id;
+        }
+
+        // The paid period starts on approval, not on request: shift the window so the
+        // seller gets the full duration they paid for, however long approval took.
+        // Dates an admin edited in the same save are left as they are.
+        if (operation === 'update' && data.status === 'active' && originalDoc?.status === 'pending') {
+          const toTime = (value: unknown) => (value ? new Date(value as string).getTime() : null);
+          const start = toTime(originalDoc.startDate);
+          const end = toTime(originalDoc.endDate);
+          const datesEdited =
+            (data.startDate !== undefined && toTime(data.startDate) !== start) ||
+            (data.endDate !== undefined && toTime(data.endDate) !== end);
+          if (!datesEdited && start !== null && end !== null && end > start) {
+            const now = Date.now();
+            data.startDate = new Date(now).toISOString();
+            data.endDate = new Date(now + (end - start)).toISOString();
+          }
         }
         return data;
       }
