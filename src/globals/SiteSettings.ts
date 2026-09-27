@@ -15,10 +15,10 @@ export const SiteSettings: GlobalConfig = {
     {
       name: "sponsoredProductInjectionRate",
       type: "number",
-      defaultValue: 6,
+      defaultValue: 4,
       required: true,
       admin: {
-        description: "The frequency of sponsored products in search results. E.g., '6' means 1 sponsored product is injected for every 6 organic products.",
+        description: "How often sponsored products appear in every product listing: one at the top, then one after every N products. E.g. '4' means a sponsored product after every 4 products.",
       },
       min: 1,
       max: 50,

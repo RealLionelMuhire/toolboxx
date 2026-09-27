@@ -17,6 +17,9 @@ type PopulatedProduct = Product & {
   tenant?: Tenant & { image?: Media | null };
 };
 
+// Sponsored products: one at the top, then one after every N products (Site Settings can override)
+const DEFAULT_SPONSORED_INJECTION_INTERVAL = 4;
+
 // Curated feed fallback: without a seed, the order rotates every 5 minutes
 const CURATED_SEED_WINDOW_MS = 5 * 60 * 1000;
 
@@ -81,57 +84,34 @@ const interleaveByStore = (ids: CuratedCandidate[], random: () => number): strin
   return ordered;
 };
 
+type SponsoredPlacement = {
+  injectionInterval: number;
+  pageSize: number;
+  // Browsing spreads paid visibility across stores; searches show every matching sponsored product
+  onePerStorePerPage: boolean;
+};
+
 /**
- * Orders product IDs for the curated feed:
- * - with a search, products are grouped by `relevance` (highest first) and stores are only
- *   rotated within a group, so strong name matches aren't buried under weak ones
- * - stores are interleaved so no store owns the first rows
- * - approved sponsored products go first, then one after every `injectionInterval` organic
- *   products, with at most one sponsored product per store on each page
- *   (products whose sponsorship is outside its start/end window are treated as organic)
+ * Puts sponsored products first, then one after every `injectionInterval` organic products.
+ * Leftover sponsored products (not enough organic ones) are appended at the end.
  */
-const buildCuratedOrder = (
-  candidates: CuratedCandidate[],
-  options: {
-    seed: number;
-    injectionInterval: number;
-    pageSize: number;
-    outOfWindowSponsoredIds: Set<string>;
-    relevance?: (candidate: CuratedCandidate) => number;
-  },
+const injectSponsored = (
+  organic: string[],
+  sponsored: CuratedCandidate[],
+  placement: SponsoredPlacement,
 ): string[] => {
-  const random = createSeededRandom(options.seed);
-  const sponsored: CuratedCandidate[] = [];
-  const organicByRelevance = new Map<number, CuratedCandidate[]>();
+  const sponsoredQueue = sponsored.map((candidate) => candidate.id);
+  const tenantBySponsoredId = new Map(sponsored.map((candidate) => [candidate.id, getTenantId(candidate)]));
 
-  for (const candidate of candidates) {
-    if (candidate.sponsorshipStatus === "approved" && !options.outOfWindowSponsoredIds.has(candidate.id)) {
-      sponsored.push(candidate);
-      continue;
-    }
-    const score = options.relevance?.(candidate) ?? 0;
-    const group = organicByRelevance.get(score) ?? [];
-    group.push(candidate);
-    organicByRelevance.set(score, group);
-  }
-
-  const organic = [...organicByRelevance.keys()]
-    .sort((a, b) => b - a)
-    .flatMap((score) => interleaveByStore(organicByRelevance.get(score) ?? [], random));
-
-  // Most relevant sponsored products first; stores rotate within the same relevance
-  const sponsoredQueue = [...new Set(sponsored.map((c) => options.relevance?.(c) ?? 0))]
-    .sort((a, b) => b - a)
-    .flatMap((score) => interleaveByStore(sponsored.filter((c) => (options.relevance?.(c) ?? 0) === score), random));
-  const tenantBySponsoredId = new Map(sponsored.map((c) => [c.id, getTenantId(c)]));
-
-  const interval = Math.max(1, Math.floor(options.injectionInterval));
-  const pageSize = Math.max(1, options.pageSize);
+  const interval = Math.max(1, Math.floor(placement.injectionInterval));
+  const pageSize = Math.max(1, placement.pageSize);
   const ordered: string[] = [];
   const sponsoredTenantsByPage = new Map<number, Set<string>>();
 
-  // Takes the next sponsored product whose store has no sponsored slot on this page yet
   const takeSponsoredFor = (position: number) => {
+    if (!placement.onePerStorePerPage) return sponsoredQueue.shift() ?? null;
+
+    // Next sponsored product whose store has no sponsored slot on this page yet
     const page = Math.floor(position / pageSize);
     const usedTenants = sponsoredTenantsByPage.get(page) ?? new Set<string>();
     const index = sponsoredQueue.findIndex((id) => !usedTenants.has(tenantBySponsoredId.get(id) ?? ""));
@@ -152,6 +132,67 @@ const buildCuratedOrder = (
   ordered.push(...sponsoredQueue);
 
   return ordered;
+};
+
+const isLiveSponsored = (candidate: CuratedCandidate, outOfWindowSponsoredIds: Set<string>) =>
+  candidate.sponsorshipStatus === "approved" && !outOfWindowSponsoredIds.has(candidate.id);
+
+/**
+ * Orders product IDs for the curated (default) feed:
+ * - with a search, products are grouped by `relevance` (highest first) and stores are only
+ *   rotated within a group, so strong name matches aren't buried under weak ones
+ * - stores are interleaved so no store owns the first rows
+ * - sponsored products are placed by `injectSponsored`
+ *   (products whose sponsorship is outside its start/end window are treated as organic)
+ */
+const buildCuratedOrder = (
+  candidates: CuratedCandidate[],
+  options: SponsoredPlacement & {
+    seed: number;
+    outOfWindowSponsoredIds: Set<string>;
+    relevance?: (candidate: CuratedCandidate) => number;
+  },
+): string[] => {
+  const random = createSeededRandom(options.seed);
+  const scoreOf = (candidate: CuratedCandidate) => options.relevance?.(candidate) ?? 0;
+  const sponsored: CuratedCandidate[] = [];
+  const organicByRelevance = new Map<number, CuratedCandidate[]>();
+
+  for (const candidate of candidates) {
+    if (isLiveSponsored(candidate, options.outOfWindowSponsoredIds)) {
+      sponsored.push(candidate);
+      continue;
+    }
+    const group = organicByRelevance.get(scoreOf(candidate)) ?? [];
+    group.push(candidate);
+    organicByRelevance.set(scoreOf(candidate), group);
+  }
+
+  const byRelevanceThenStore = (items: CuratedCandidate[]) =>
+    [...new Set(items.map(scoreOf))]
+      .sort((a, b) => b - a)
+      .flatMap((score) => interleaveByStore(items.filter((c) => scoreOf(c) === score), random));
+
+  const organic = byRelevanceThenStore([...organicByRelevance.values()].flat());
+  const candidatesById = new Map(sponsored.map((c) => [c.id, c]));
+  const sponsoredOrdered = byRelevanceThenStore(sponsored).flatMap((id) => candidatesById.get(id) ?? []);
+
+  return injectSponsored(organic, sponsoredOrdered, options);
+};
+
+/**
+ * Orders product IDs for an explicit sort (price, newest, ...): the chosen order is kept
+ * and sponsored products are placed by `injectSponsored`, in that same order.
+ */
+const buildSortedOrder = (
+  sortedCandidates: CuratedCandidate[],
+  options: SponsoredPlacement & { outOfWindowSponsoredIds: Set<string> },
+): string[] => {
+  const sponsored = sortedCandidates.filter((c) => isLiveSponsored(c, options.outOfWindowSponsoredIds));
+  const organic = sortedCandidates
+    .filter((c) => !isLiveSponsored(c, options.outOfWindowSponsoredIds))
+    .map((c) => c.id);
+  return injectSponsored(organic, sponsored, options);
 };
 
 // Search relevance for the curated feed: 3 = name is or starts with the search,
@@ -508,17 +549,17 @@ export const productsRouter = createTRPCRouter({
       };
       const andConditions: Where[] = [];
       let sort: Sort = "-createdAt";
-      let shouldRandomize = false;
+      let isCurated = false;
 
       // Default to "curated" if no sort specified or if explicitly set to "curated"
       if (!input.sort || input.sort === "curated") {
         // Default - use randomization for fair product visibility
-        shouldRandomize = true;
+        isCurated = true;
         sort = "-createdAt"; // Initial sort, will be randomized
       }
 
       if (input.sort === "hot_and_new") {
-        sort = "+createdAt";
+        sort = "createdAt";
       }
 
       if (input.sort === "trending") {
@@ -526,7 +567,7 @@ export const productsRouter = createTRPCRouter({
       }
 
       if (input.sort === "price_low_to_high") {
-        sort = "+price";
+        sort = "price";
       }
 
       if (input.sort === "price_high_to_low") {
@@ -538,7 +579,7 @@ export const productsRouter = createTRPCRouter({
       }
 
       if (input.sort === "oldest") {
-        sort = "+createdAt";
+        sort = "createdAt";
       }
 
       if (input.minPrice && input.maxPrice) {
@@ -745,8 +786,10 @@ export const productsRouter = createTRPCRouter({
       // Sponsorships past their end date may still read "approved" until the expiry job runs
       const outOfWindowSponsoredIds = await getOutOfWindowSponsoredProductIds(ctx.db);
 
-      const findCuratedPage = async () => {
-        let injectionInterval = 6;
+      // Every listing (any sort, with or without search) is ordered in full here, then paged,
+      // so sponsored products can be placed at the top and at a fixed interval on every page
+      const findOrderedPage = async () => {
+        let injectionInterval = DEFAULT_SPONSORED_INJECTION_INTERVAL;
         try {
           const settings = await ctx.db.findGlobal({
             slug: "site-settings" as any as never,
@@ -762,7 +805,11 @@ export const productsRouter = createTRPCRouter({
           collection: "products",
           depth: 0,
           where,
-          sort: "createdAt",
+          // Curated order is built from a stable base. Price sorts get a tie-breaker so the
+          // order is stable when many products share a price
+          sort: isCurated
+            ? "createdAt"
+            : String(sort).includes("price") ? [sort as string, "-createdAt"] : sort,
           pagination: false,
           select: {
             name: true,
@@ -773,7 +820,7 @@ export const productsRouter = createTRPCRouter({
         });
 
         let relevance: ((candidate: CuratedCandidate) => number) | undefined;
-        if (input.search) {
+        if (input.search && isCurated) {
           const matchingTags = await ctx.db.find({
             collection: "tags",
             depth: 0,
@@ -784,13 +831,20 @@ export const productsRouter = createTRPCRouter({
           relevance = createSearchRelevance(input.search, new Set(matchingTags.docs.map((tag) => tag.id)));
         }
 
-        const orderedIds = buildCuratedOrder(candidates.docs, {
-          seed: input.seed ?? Math.floor(Date.now() / CURATED_SEED_WINDOW_MS),
+        const placement: SponsoredPlacement = {
           injectionInterval,
           pageSize: input.limit,
-          outOfWindowSponsoredIds,
-          relevance,
-        });
+          onePerStorePerPage: !input.search,
+        };
+
+        const orderedIds = isCurated
+          ? buildCuratedOrder(candidates.docs, {
+              ...placement,
+              seed: input.seed ?? Math.floor(Date.now() / CURATED_SEED_WINDOW_MS),
+              outOfWindowSponsoredIds,
+              relevance,
+            })
+          : buildSortedOrder(candidates.docs, { ...placement, outOfWindowSponsoredIds });
 
         const page = input.cursor;
         const totalDocs = orderedIds.length;
@@ -824,20 +878,7 @@ export const productsRouter = createTRPCRouter({
         };
       };
 
-      const data = shouldRandomize
-        ? await findCuratedPage()
-        : await ctx.db.find({
-            collection: "products",
-            depth: 1, // Reduced from 2 to 1 - loads category, image, tenant (without nested relationships)
-            where,
-            sort,
-            page: input.cursor,
-            limit: input.limit,
-            select: {
-              content: false,
-            },
-          });
-
+      const data = await findOrderedPage();
 
       // Fetch all reviews for all products in one query to avoid N+1 problem
       const productIds = data.docs.map(doc => doc.id);
