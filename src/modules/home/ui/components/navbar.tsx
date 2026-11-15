@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell, Calculator, Wrench, User, UserCog, ChevronRight, BarChart3 } from "lucide-react";
+import { MenuIcon, LogOut, ShoppingCart, LogIn, Store, ChevronDown, Wallet, MessageCircle, BookmarkCheck, Eye, Bell, Calculator, Wrench, User, UserCog, ChevronRight, BarChart3, HomeIcon } from "lucide-react";
 import { Poppins } from "next/font/google";
 import { usePathname, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -408,6 +408,10 @@ export const Navbar = () => {
     href: item.children === "My Account" ? accountHref : item.href,
   }));
   const sidebarItems = isLoggedIn ? navbarItems : publicNavbarItems;
+  // The desktop account dropdown holds the analytics link, so phones get it in the menu instead
+  const loggedInSidebarItems: NavbarItem[] = session.data?.user?.roles?.includes('super-admin')
+    ? [...navbarItems, { href: "/all-tenants", children: "Platform Analytics" }]
+    : navbarItems;
 
   const handleLogoClick = (e: React.MouseEvent) => {
     const homeUrl = getHomeUrl();
@@ -502,6 +506,15 @@ export const Navbar = () => {
         {/* Mobile Icons - Right Side: Calculators, Sign In, Cart, Menu */}
         <div className="flex lg:hidden items-center gap-0 pr-0.5 flex-shrink-0">
           <Link
+            href={getHomeUrl()}
+            onClick={handleLogoClick}
+            aria-label="Home"
+            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
+          >
+            <HomeIcon className="h-[18px] w-[18px]" />
+          </Link>
+          <Link
             href="/calculators"
             prefetch={true}
             className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
@@ -583,12 +596,12 @@ export const Navbar = () => {
             
             return (
               <div className="flex items-center gap-2 lg:hidden -mt-1">
-                <span className="text-xs text-gray-600 truncate max-w-[90px] sm:max-w-[150px]">
+                <span className="text-xs text-gray-600 truncate max-w-[64px] min-[400px]:max-w-[90px] sm:max-w-[150px]">
                   {displayName}
                 </span>
                 {/* Show total views for tenants only */}
                 {isTenant && totalViewsData && (
-                  <div className="flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 rounded-full">
+                  <div className="hidden min-[400px]:flex items-center gap-1 px-1.5 py-0.5 bg-gray-100 rounded-full">
                     <Eye className="h-3 w-3 text-gray-600" />
                     <span className="text-xs font-medium text-gray-700">
                       {formatViews(totalViewsData.totalViews)}
@@ -634,7 +647,7 @@ export const Navbar = () => {
       </Link>
 
       <NavbarSidebar
-        items={navbarItems}
+        items={loggedInSidebarItems}
         open={isSidebarOpen}
         onOpenChange={setIsSidebarOpen}
         isLoggedIn={isLoggedIn}
@@ -831,9 +844,18 @@ export const Navbar = () => {
       {/* Mobile Icons - Right Side */}
         <div className="flex lg:hidden items-center gap-0 pr-0.5 flex-shrink-0">
           <Link
+            href={getHomeUrl()}
+            onClick={handleLogoClick}
+            aria-label="Home"
+            className="relative h-11 w-8 min-w-[32px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
+          >
+            <HomeIcon className="h-[18px] w-[18px]" />
+          </Link>
+          <Link
             href="/calculators"
             prefetch={true}
-            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            className="relative h-11 w-8 min-w-[32px] hidden min-[400px]:flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
             <Calculator className="h-[18px] w-[18px]" />
@@ -842,7 +864,7 @@ export const Navbar = () => {
           <Link
             href="/my-store"
             prefetch={true}
-            className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+            className="relative h-11 w-8 min-w-[32px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
             style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           >
             <Store className="h-[18px] w-[18px]" />
@@ -859,7 +881,7 @@ export const Navbar = () => {
         <Link
           href={isTenant ? "/verify-payments" : "/orders"}
           prefetch={true}
-          className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+          className="relative h-11 w-8 min-w-[32px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
         >
           <Wallet className="h-[18px] w-[18px]" />
@@ -883,7 +905,7 @@ export const Navbar = () => {
         <Link
           href="/chat"
           prefetch={true}
-          className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+          className="relative h-11 w-8 min-w-[32px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
         >
           <MessageCircle className="h-[18px] w-[18px]" />
@@ -899,7 +921,7 @@ export const Navbar = () => {
         <Link
           href="/cart"
           prefetch={true}
-          className="relative h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+          className="relative h-11 w-8 min-w-[32px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
         >
           <ShoppingCart className="h-[18px] w-[18px]" />
@@ -914,7 +936,7 @@ export const Navbar = () => {
         </Link>
         <button
           type="button"
-          className="h-11 w-9 min-w-[36px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
+          className="h-11 w-8 min-w-[32px] flex items-center justify-center rounded-full active:bg-gray-200 active:scale-95 touch-manipulation outline-none focus:outline-none transition-all duration-75"
           onClick={() => setIsSidebarOpen(true)}
           style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', willChange: 'transform' }}
           aria-label="Open menu"

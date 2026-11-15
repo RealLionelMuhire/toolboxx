@@ -21,6 +21,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useTRPC } from "@/trpc/client";
+import { TIME_RANGE_OPTIONS, getViewerTzOffset, type TimeRange } from "@/lib/time-range";
 import { TenantInsightsView } from "@/modules/tenants/ui/views/tenant-insights-view";
 
 // ────────────────────────────────────────────────────────────
@@ -63,14 +64,14 @@ function StatCard({ label, value, icon, sub, accent = "from-indigo-500 to-purple
   return (
     <div className="relative overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm">
       <div className={`absolute inset-0 bg-gradient-to-br ${accent} opacity-5`} />
-      <div className="relative p-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-medium text-gray-500">{label}</span>
+      <div className="relative p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-2 mb-3 sm:mb-4">
+          <span className="text-xs sm:text-sm font-medium text-gray-500">{label}</span>
           <div className={`p-2 rounded-xl bg-gradient-to-br ${accent} text-white shadow-sm`}>
             {icon}
           </div>
         </div>
-        <p className="text-3xl font-bold text-gray-900">{typeof value === "number" ? fmt(value) : value}</p>
+        <p className="text-2xl sm:text-3xl font-bold text-gray-900">{typeof value === "number" ? fmt(value) : value}</p>
         {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
       </div>
     </div>
@@ -94,9 +95,9 @@ export function AdminInsightsView() {
   const [sortKey, setSortKey] = useState<SortKey>("storeViewCount");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
-  const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d" | "all">("all");
+  const [timeRange, setTimeRange] = useState<TimeRange>("all");
 
-  const { data, isLoading, error } = useQuery(trpc.tenants.getAdminInsights.queryOptions({ timeRange }));
+  const { data, isLoading, error } = useQuery(trpc.tenants.getAdminInsights.queryOptions({ timeRange, tzOffset: getViewerTzOffset() }));
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -168,7 +169,7 @@ export function AdminInsightsView() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-purple-50/20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8">
 
         {/* ── Header ── */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -178,16 +179,15 @@ export function AdminInsightsView() {
               Cross-tenant visitor insights for all stores
             </p>
           </div>
-          <div>
+          <div className="w-full sm:w-auto">
             <select
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value as any)}
-              className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              onChange={(e) => setTimeRange(e.target.value as TimeRange)}
+              className="w-full sm:w-auto px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="all">All Time</option>
-              <option value="30d">Last 30 Days</option>
-              <option value="7d">Last 7 Days</option>
-              <option value="24h">Last 24 Hours</option>
+              {TIME_RANGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -195,7 +195,7 @@ export function AdminInsightsView() {
         {/* ── Platform Stats ── */}
         <div>
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Platform Overview</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <StatCard
               label="Total Stores"
               value={platform.totalTenants}
@@ -230,7 +230,7 @@ export function AdminInsightsView() {
         {/* ── Tenant Table ── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
           {/* Table header with search */}
-          <div className="px-6 py-4 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h2 className="text-base font-semibold text-gray-800">
               Tenant Breakdown
               <span className="text-xs font-normal text-gray-400 ml-2">({filtered.length} stores)</span>
@@ -247,7 +247,7 @@ export function AdminInsightsView() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full min-w-[720px] text-left whitespace-nowrap">
               <thead>
                 <tr className="bg-gray-50/80 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">
                   <th

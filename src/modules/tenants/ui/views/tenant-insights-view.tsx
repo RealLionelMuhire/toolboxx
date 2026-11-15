@@ -21,6 +21,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useTRPC } from "@/trpc/client";
+import { TIME_RANGE_OPTIONS, getViewerTzOffset, type TimeRange } from "@/lib/time-range";
 import { generateTenantURL } from "@/lib/utils";
 
 // ────────────────────────────────────────────────────────────
@@ -163,10 +164,10 @@ export function TenantInsightsView({ tenantId }: TenantInsightsViewProps = {}) {
     if (sessionFetched && !session?.user) router.push("/");
   }, [sessionFetched, session?.user, router]);
 
-  const [timeRange, setTimeRange] = useState<"24h" | "7d" | "30d" | "all">("all");
+  const [timeRange, setTimeRange] = useState<TimeRange>("all");
 
   const { data, isLoading, error } = useQuery(
-    trpc.tenants.getTenantInsights.queryOptions({ tenantId, timeRange })
+    trpc.tenants.getTenantInsights.queryOptions({ tenantId, timeRange, tzOffset: getViewerTzOffset() })
   );
 
   if (isLoading || !sessionFetched) {
@@ -216,13 +217,12 @@ export function TenantInsightsView({ tenantId }: TenantInsightsViewProps = {}) {
           <div className="flex items-center gap-4">
             <select
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value as any)}
+              onChange={(e) => setTimeRange(e.target.value as TimeRange)}
               className="px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              <option value="all">All Time</option>
-              <option value="30d">Last 30 Days</option>
-              <option value="7d">Last 7 Days</option>
-              <option value="24h">Last 24 Hours</option>
+              {TIME_RANGE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
             {!tenantId && (
               <Link 

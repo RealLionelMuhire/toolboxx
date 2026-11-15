@@ -4,11 +4,12 @@ import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { ShoppingCartIcon, Share2 } from "lucide-react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { ShoppingCartIcon, Share2, PlusIcon } from "lucide-react";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useTRPC } from "@/trpc/client";
+import { ADD_PRODUCT_PARAM } from "@/constants";
 import { generateTenantURL } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ShareStoreDialog } from "./share-store-dialog";
@@ -35,6 +36,13 @@ export const Navbar = ({ slug }: Props) => {
   const trpc = useTRPC();
   const { data } = useSuspenseQuery(trpc.tenants.getOne.queryOptions({ slug }));
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const { data: session } = useQuery(trpc.auth.session.queryOptions());
+
+  // The owner sees "Add Product" on every page of their own store
+  const isOwnStore = !!session?.user?.tenants?.some((entry) => {
+    const tenant = entry?.tenant;
+    return (typeof tenant === "string" ? tenant : tenant?.id) === data.id;
+  });
 
   const handleShare = async () => {
     const storeUrl = generateTenantURL(slug);
@@ -102,7 +110,22 @@ export const Navbar = ({ slug }: Props) => {
               <span className="xs:hidden">Share</span>
             </Button>
           </div>
-          <CheckoutButton hideIfEmpty tenantSlug={slug} />
+          <div className="flex items-center gap-2">
+            {isOwnStore && (
+              <Button
+                asChild
+                size="sm"
+                className="h-8 sm:h-9 px-2 sm:px-3 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <Link href={`/my-store?${ADD_PRODUCT_PARAM}=1`}>
+                  <PlusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden xs:inline">Add Product</span>
+                  <span className="xs:hidden">Add</span>
+                </Link>
+              </Button>
+            )}
+            <CheckoutButton hideIfEmpty tenantSlug={slug} />
+          </div>
         </div>
       </nav>
     </>
