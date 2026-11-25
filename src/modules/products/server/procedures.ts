@@ -1347,7 +1347,7 @@ export const productsRouter = createTRPCRouter({
       z.object({
         productId: z.string(),
         tenantSlug: z.string().optional(),
-        limit: z.number().default(8),
+        limit: z.number().int().min(1).max(96).default(8),
       })
     )
     .query(async ({ ctx, input }) => {

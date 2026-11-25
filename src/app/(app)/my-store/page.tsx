@@ -19,6 +19,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Badge } from '@/components/ui/badge';
 import { SearchIcon, PlusIcon } from 'lucide-react';
 import { generateTenantURL } from '@/lib/utils';
+import { ADD_PRODUCT_PARAM } from '@/constants';
 import { ShareStoreDialog } from '@/modules/tenants/ui/components/share-store-dialog';
 
 import { MyProductsList, MyProductsListSkeleton } from '@/modules/dashboard/ui/components/my-products-list';
@@ -51,6 +52,13 @@ export default function MyStorePage() {
   const [dismissedNotifications, setDismissedNotifications] = useState<Set<string>>(new Set());
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+
+  // "Add Product" on the storefront links here with ?addProduct=1
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has(ADD_PRODUCT_PARAM)) {
+      setActiveTab('products');
+    }
+  }, []);
 
   // Load dismissed notifications from localStorage on mount
   useEffect(() => {
@@ -757,6 +765,15 @@ function ProductsSection() {
     setSelectedProductId(null);
     setIsProductDialogOpen(true);
   };
+
+  // Open the create dialog straight away when arriving from the storefront's "Add Product" button
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(ADD_PRODUCT_PARAM)) return;
+    handleCreateProduct();
+    url.searchParams.delete(ADD_PRODUCT_PARAM);
+    window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+  }, []);
 
   const handleEditProduct = (productId: string) => {
     setDialogMode("edit");

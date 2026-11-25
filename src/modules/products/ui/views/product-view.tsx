@@ -6,8 +6,8 @@ import { Fragment, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
-import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp, Eye, Maximize2, Phone, Loader2, MapPin } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { CheckIcon, LinkIcon, StarIcon, MessageCircle, ChevronDown, ChevronUp, Eye, Maximize2, Phone, Loader2, MapPin, Store, HomeIcon } from "lucide-react";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { RichText } from "@payloadcms/richtext-lexical/react";
 
 import { useTRPC } from "@/trpc/client";
@@ -41,6 +41,15 @@ const BuyNowButton = dynamic(
   },
 );
 
+const SUGGESTED_PAGE_SIZE = 8;
+const SUGGESTED_MAX = 96; // matches the getSuggested input cap
+
+// On a store subdomain "/" is the store itself, so Home has to point at the main site
+const getMarketplaceHomeURL = () =>
+  process.env.NEXT_PUBLIC_ENABLE_SUBDOMAIN_ROUTING === "true" && process.env.NEXT_PUBLIC_APP_URL
+    ? process.env.NEXT_PUBLIC_APP_URL
+    : "/";
+
 interface ProductViewProps {
   productId: string;
   tenantSlug: string;
@@ -60,14 +69,23 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   
-  // Fetch suggested products
-  const { data: suggestedProducts, isLoading: isLoadingSuggested } = useQuery(
-    trpc.products.getSuggested.queryOptions({
+  // Fetch suggested products; "Load more" raises the limit and keeps the current cards on screen meanwhile
+  const [suggestedLimit, setSuggestedLimit] = useState(SUGGESTED_PAGE_SIZE);
+  const {
+    data: suggestedProducts,
+    isLoading: isLoadingSuggested,
+    isPlaceholderData: isLoadingMoreSuggested,
+  } = useQuery({
+    ...trpc.products.getSuggested.queryOptions({
       productId,
       tenantSlug,
-      limit: 8,
-    })
-  );
+      limit: suggestedLimit,
+    }),
+    placeholderData: keepPreviousData,
+  });
+  // A full page back means there may be more; a short page means everything is shown
+  const hasMoreSuggested =
+    suggestedLimit < SUGGESTED_MAX && (suggestedProducts?.docs.length ?? 0) >= suggestedLimit;
 
   const [isCopied, setIsCopied] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -558,6 +576,35 @@ export const ProductView = ({ productId, tenantSlug }: ProductViewProps) => {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Load more / Visit store / Home */}
+      {!isLoadingSuggested && (
+        <div className="mt-8 max-w-7xl mx-auto flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
+          {hasMoreSuggested && (
+            <Button
+              variant="outline"
+              className="bg-white"
+              disabled={isLoadingMoreSuggested}
+              onClick={() => setSuggestedLimit((limit) => limit + SUGGESTED_PAGE_SIZE)}
+            >
+              {isLoadingMoreSuggested && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Load more
+            </Button>
+          )}
+          <Button asChild variant="outline" className="bg-white">
+            <Link href={generateTenantURL(tenantSlug)}>
+              <Store className="mr-2 h-4 w-4" />
+              Visit store
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="bg-white">
+            <Link href={getMarketplaceHomeURL()}>
+              <HomeIcon className="mr-2 h-4 w-4" />
+              Home
+            </Link>
+          </Button>
         </div>
       )}
 

@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 
 import { baseProcedure, protectedProcedure, createTRPCRouter } from "@/trpc/init";
 import { isSuperAdmin } from "@/lib/access";
+import { timeRangeSchema, tzOffsetSchema, getTimeRangeBounds, createdAtInRange } from "@/lib/time-range";
 import { Media, Tenant } from "@/payload-types";
 
 import { updateMyStoreSchema, verifyTenantSchema } from "../schemas";
@@ -400,7 +401,8 @@ export const tenantsRouter = createTRPCRouter({
   getTenantInsights: protectedProcedure
     .input(z.object({ 
       tenantId: z.string().optional(),
-      timeRange: z.enum(['24h', '7d', '30d', 'all']).default('all')
+      timeRange: timeRangeSchema.default('all'),
+      tzOffset: tzOffsetSchema,
     }))
     .query(async ({ ctx, input }) => {
       const isAdmin = isSuperAdmin(ctx.session.user);
@@ -436,13 +438,8 @@ export const tenantsRouter = createTRPCRouter({
         overrideAccess: isAdmin,
       }) as any;
 
-      let dateThreshold: Date | undefined;
-      if (input.timeRange !== 'all') {
-        dateThreshold = new Date();
-        if (input.timeRange === '24h') dateThreshold.setHours(dateThreshold.getHours() - 24);
-        if (input.timeRange === '7d') dateThreshold.setDate(dateThreshold.getDate() - 7);
-        if (input.timeRange === '30d') dateThreshold.setDate(dateThreshold.getDate() - 30);
-      }
+      const range = getTimeRangeBounds(input.timeRange, input.tzOffset);
+      const dateThreshold = range?.from;
 
       // Fetch all active products for this tenant
       const productsData = await ctx.db.find({
@@ -464,7 +461,7 @@ export const tenantsRouter = createTRPCRouter({
         ? await ctx.db.find({
             collection: "reviews",
             where: dateThreshold 
-              ? { and: [{ product: { in: productIds } }, { createdAt: { greater_than_equal: dateThreshold.toISOString() } }] }
+              ? { and: [{ product: { in: productIds } }, createdAtInRange(range!)] }
               : { product: { in: productIds } },
             pagination: false,
             depth: 0,
@@ -479,7 +476,7 @@ export const tenantsRouter = createTRPCRouter({
               and: [
                 { product: { in: productIds } },
                 { status: { not_in: ["cancelled", "refunded"] } },
-                ...(dateThreshold ? [{ createdAt: { greater_than_equal: dateThreshold.toISOString() } }] : []),
+                ...(dateThreshold ? [createdAtInRange(range!)] : []),
               ],
             },
             pagination: false,
@@ -518,7 +515,7 @@ export const tenantsRouter = createTRPCRouter({
           where: {
             and: [
               { tenantId: { equals: tenantId } },
-              { createdAt: { greater_than_equal: dateThreshold.toISOString() } }
+              createdAtInRange(range!)
             ]
           },
           pagination: false,
@@ -593,7 +590,8 @@ export const tenantsRouter = createTRPCRouter({
   // Get aggregated analytics for all tenants (super-admin only)
   getAdminInsights: protectedProcedure
     .input(z.object({ 
-      timeRange: z.enum(['24h', '7d', '30d', 'all']).default('all') 
+      timeRange: timeRangeSchema.default('all'),
+      tzOffset: tzOffsetSchema,
     }))
     .query(async ({ ctx, input }) => {
       if (!isSuperAdmin(ctx.session.user)) {
@@ -607,13 +605,8 @@ export const tenantsRouter = createTRPCRouter({
         depth: 0,
       }) as any;
 
-      let dateThreshold: Date | undefined;
-      if (input.timeRange !== 'all') {
-        dateThreshold = new Date();
-        if (input.timeRange === '24h') dateThreshold.setHours(dateThreshold.getHours() - 24);
-        if (input.timeRange === '7d') dateThreshold.setDate(dateThreshold.getDate() - 7);
-        if (input.timeRange === '30d') dateThreshold.setDate(dateThreshold.getDate() - 30);
-      }
+      const range = getTimeRangeBounds(input.timeRange, input.tzOffset);
+      const dateThreshold = range?.from;
 
       // Aggregate product views per tenant in one query
       const allProducts = await ctx.db.find({
@@ -632,7 +625,7 @@ export const tenantsRouter = createTRPCRouter({
       if (dateThreshold) {
         pageViewsData = await ctx.db.find({
           collection: "page-views" as any,
-          where: { createdAt: { greater_than_equal: dateThreshold.toISOString() } },
+          where: createdAtInRange(range!),
           pagination: false,
           depth: 0,
           overrideAccess: true,
@@ -643,7 +636,7 @@ export const tenantsRouter = createTRPCRouter({
           where: {
             and: [
               { status: { not_in: ["cancelled", "refunded"] } },
-              { createdAt: { greater_than_equal: dateThreshold.toISOString() } },
+              createdAtInRange(range!),
             ],
           },
           pagination: false,
