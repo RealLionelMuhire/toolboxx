@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
+import { getVisitorId } from "@/lib/visitor-id";
 
 /**
  * Custom hook to track tenant store page visits.
@@ -27,6 +28,7 @@ export const useTrackStoreView = (slug: string) => {
     trackView.mutate({
       slug,
       isUnique: !hasViewedInSession,
+      visitorId: getVisitorId(),
     });
 
     if (!hasViewedInSession) {

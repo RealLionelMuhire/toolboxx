@@ -12,9 +12,13 @@ export function makeQueryClient() {
         staleTime: 10 * 60 * 1000, // 10 minutes (was 5)
         gcTime: 30 * 60 * 1000, // 30 minutes (was 10) - keep cached data longer
         retry: (failureCount, error) => {
-          // Don't retry on certain errors
-          if (error?.message?.includes('UNAUTHORIZED')) return false;
-          if (error?.message?.includes('FORBIDDEN')) return false;
+          // Client errors (auth, permission, not found, bad input) won't fix themselves on retry;
+          // retrying them only keeps the spinner up for seconds before the error shows.
+          // tRPC puts the HTTP status on error.data; the message rarely contains the code name.
+          const data = (error as { data?: { httpStatus?: number; code?: string } } | null)?.data;
+          const status = data?.httpStatus;
+          if (status && status >= 400 && status < 500) return false;
+          if (data?.code && ['UNAUTHORIZED', 'FORBIDDEN', 'NOT_FOUND', 'BAD_REQUEST'].includes(data.code)) return false;
           return failureCount < 3;
         },
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),

@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { baseProcedure, protectedProcedure, createTRPCRouter } from "@/trpc/init";
 import { isSuperAdmin } from "@/lib/access";
 import { timeRangeSchema, tzOffsetSchema, getTimeRangeBounds, createdAtInRange } from "@/lib/time-range";
+import { visitorIdSchema, ANONYMOUS_VISITOR } from "@/lib/visitor-id";
 import { Media, Tenant } from "@/payload-types";
 
 import { updateMyStoreSchema, verifyTenantSchema } from "../schemas";
@@ -352,6 +353,7 @@ export const tenantsRouter = createTRPCRouter({
       z.object({
         slug: z.string(),
         isUnique: z.boolean().default(false),
+        visitorId: visitorIdSchema,
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -386,7 +388,7 @@ export const tenantsRouter = createTRPCRouter({
           data: {
             type: "store_view",
             tenantId: tenant.id,
-            visitorId: "anonymous", // In a real app, hash the IP or use a session cookie
+            visitorId: input.visitorId ?? ANONYMOUS_VISITOR,
           },
         });
 
@@ -435,11 +437,13 @@ export const tenantsRouter = createTRPCRouter({
         collection: "tenants",
         id: tenantId,
         depth: 1,
-        overrideAccess: isAdmin,
+        // Access is enforced above: tenantId is either the caller's own tenant or
+        // one a super admin asked for. Local API calls carry no user, so leaving
+        // access on makes Payload reject every non-admin seller (NotFound/Forbidden).
+        overrideAccess: true,
       }) as any;
 
       const range = getTimeRangeBounds(input.timeRange, input.tzOffset);
-      const dateThreshold = range?.from;
 
       // Fetch all active products for this tenant
       const productsData = await ctx.db.find({
@@ -452,7 +456,7 @@ export const tenantsRouter = createTRPCRouter({
         },
         pagination: false,
         depth: 0,
-        overrideAccess: isAdmin,
+        overrideAccess: true,
       });
 
       // Fetch reviews for all products in one query
@@ -460,29 +464,29 @@ export const tenantsRouter = createTRPCRouter({
       const reviewsData = productIds.length > 0
         ? await ctx.db.find({
             collection: "reviews",
-            where: dateThreshold 
-              ? { and: [{ product: { in: productIds } }, createdAtInRange(range!)] }
+            where: range
+              ? { and: [{ product: { in: productIds } }, createdAtInRange(range)] }
               : { product: { in: productIds } },
             pagination: false,
             depth: 0,
           })
         : { docs: [] };
 
-      // Fetch sales for all products
-      const salesData = productIds.length > 0
-        ? await ctx.db.find({
-            collection: "sales",
-            where: {
-              and: [
-                { product: { in: productIds } },
-                { status: { not_in: ["cancelled", "refunded"] } },
-                ...(dateThreshold ? [createdAtInRange(range!)] : []),
-              ],
-            },
-            pagination: false,
-            depth: 0,
-          })
-        : { docs: [] };
+      // Fetch the store's sales (by tenant, so sales of since-archived products still count)
+      const salesData = await ctx.db.find({
+        collection: "sales",
+        where: {
+          and: [
+            { tenant: { equals: tenantId } },
+            { status: { not_in: ["cancelled", "refunded"] } },
+            ...(range ? [createdAtInRange(range)] : []),
+          ],
+        },
+        pagination: false,
+        depth: 0,
+        overrideAccess: true,
+        select: { product: true, quantity: true, totalAmount: true } as any,
+      });
 
       // Group reviews by product
       const reviewsByProduct = reviewsData.docs.reduce((acc: Record<string, any[]>, review: any) => {
@@ -492,42 +496,54 @@ export const tenantsRouter = createTRPCRouter({
         return acc;
       }, {});
 
-      // Group sales totals by product
-      const soldByProduct = salesData.docs.reduce((acc: Record<string, number>, sale: any) => {
+      // Group sales and revenue by product. Sellers receive the full sale amount (no platform fee).
+      const soldByProduct: Record<string, number> = {};
+      const revenueByProduct: Record<string, number> = {};
+      let totalSold = 0;
+      let totalRevenue = 0;
+      for (const sale of salesData.docs as any[]) {
         const pid = typeof sale.product === "string" ? sale.product : sale.product?.id;
-        acc[pid] = (acc[pid] || 0) + (sale.quantity || 0);
-        return acc;
-      }, {});
-      
-      const revenueByProduct = salesData.docs.reduce((acc: Record<string, number>, sale: any) => {
-        const pid = typeof sale.product === "string" ? sale.product : sale.product?.id;
-        acc[pid] = (acc[pid] || 0) + (sale.total || 0);
-        return acc;
-      }, {});
+        const qty = sale.quantity || 0;
+        const amount = sale.totalAmount || 0;
+        totalSold += qty;
+        totalRevenue += amount;
+        if (pid) {
+          soldByProduct[pid] = (soldByProduct[pid] || 0) + qty;
+          revenueByProduct[pid] = (revenueByProduct[pid] || 0) + amount;
+        }
+      }
 
-      // Aggregate time-series page views if needed
+      // For a time range, count views and distinct visitors from the page-view log.
+      // Views recorded before visitor IDs existed are counted as views but not as unique visitors.
       let timeFilteredStoreViews = 0;
+      const storeVisitors = new Set<string>();
       const timeFilteredProductViews: Record<string, number> = {};
-      
-      if (dateThreshold) {
+      const productVisitors: Record<string, Set<string>> = {};
+
+      if (range) {
         const pageViews = await ctx.db.find({
           collection: "page-views" as any,
           where: {
             and: [
               { tenantId: { equals: tenantId } },
-              createdAtInRange(range!)
-            ]
+              createdAtInRange(range),
+            ],
           },
           pagination: false,
-          depth: 0
+          depth: 0,
+          overrideAccess: true,
+          select: { type: true, productId: true, visitorId: true } as any,
         });
-        
+
         pageViews.docs.forEach((pv: any) => {
-          if (pv.type === 'store_view') {
+          const visitor = pv.visitorId && pv.visitorId !== ANONYMOUS_VISITOR ? pv.visitorId : null;
+          if (pv.type === "store_view") {
             timeFilteredStoreViews++;
-          } else if (pv.type === 'product_view' && pv.productId) {
-            const pid = typeof pv.productId === 'string' ? pv.productId : pv.productId.id;
+            if (visitor) storeVisitors.add(visitor);
+          } else if (pv.type === "product_view" && pv.productId) {
+            const pid = typeof pv.productId === "string" ? pv.productId : pv.productId.id;
             timeFilteredProductViews[pid] = (timeFilteredProductViews[pid] || 0) + 1;
+            if (visitor) (productVisitors[pid] ??= new Set()).add(visitor);
           }
         });
       }
@@ -542,8 +558,8 @@ export const tenantsRouter = createTRPCRouter({
           ? 0
           : pReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviewCount;
 
-        const pViewCount = dateThreshold ? (timeFilteredProductViews[product.id] || 0) : (product.viewCount || 0);
-        const pUniqueViewCount = dateThreshold ? 0 : (product.uniqueViewCount || 0);
+        const pViewCount = range ? (timeFilteredProductViews[product.id] || 0) : (product.viewCount || 0);
+        const pUniqueViewCount = range ? (productVisitors[product.id]?.size || 0) : (product.uniqueViewCount || 0);
 
         totalProductViews += pViewCount;
         totalUniqueProductViews += pUniqueViewCount;
@@ -569,9 +585,9 @@ export const tenantsRouter = createTRPCRouter({
           id: tenant.id,
           name: tenant.name,
           slug: tenant.slug,
-          storeViewCount: dateThreshold ? timeFilteredStoreViews : (tenant.storeViewCount || 0),
-          storeUniqueViewCount: dateThreshold ? 0 : (tenant.storeUniqueViewCount || 0),
-          totalRevenue: dateThreshold ? Object.values(revenueByProduct).reduce((a, b) => a + b, 0) : (tenant.totalRevenue || 0),
+          storeViewCount: range ? timeFilteredStoreViews : (tenant.storeViewCount || 0),
+          storeUniqueViewCount: range ? storeVisitors.size : (tenant.storeUniqueViewCount || 0),
+          totalRevenue,
           isVerified: tenant.isVerified,
           verificationStatus: tenant.verificationStatus,
           category: tenant.category,
@@ -581,7 +597,7 @@ export const tenantsRouter = createTRPCRouter({
           totalProducts: products.length,
           totalProductViews,
           totalUniqueProductViews,
-          totalSold: Object.values(soldByProduct).reduce((a, b) => a + b, 0),
+          totalSold,
         },
         products,
       };
@@ -618,10 +634,9 @@ export const tenantsRouter = createTRPCRouter({
         select: { id: true, tenant: true, viewCount: true, uniqueViewCount: true } as any,
       });
 
-      // If timeRange is not all, we need page views and sales
+      // Page views are only needed for a time range; sales are always summed so revenue
+      // means the same thing for every range (sellers receive the full sale amount).
       let pageViewsData: { docs: any[] } = { docs: [] };
-      let salesData: { docs: any[] } = { docs: [] };
-      
       if (dateThreshold) {
         pageViewsData = await ctx.db.find({
           collection: "page-views" as any,
@@ -629,58 +644,50 @@ export const tenantsRouter = createTRPCRouter({
           pagination: false,
           depth: 0,
           overrideAccess: true,
-        });
-
-        salesData = await ctx.db.find({
-          collection: "sales",
-          where: {
-            and: [
-              { status: { not_in: ["cancelled", "refunded"] } },
-              createdAtInRange(range!),
-            ],
-          },
-          pagination: false,
-          depth: 0,
-          overrideAccess: true,
+          select: { type: true, tenantId: true, productId: true, visitorId: true } as any,
         });
       }
 
-      const tenantTimeFilteredViews: Record<string, number> = {};
-      const tenantTimeFilteredProductViews: Record<string, number> = {};
-      const productTimeFilteredViews: Record<string, number> = {};
-      
-      if (dateThreshold) {
-        pageViewsData.docs.forEach((pv: any) => {
-          const tid = typeof pv.tenantId === 'string' ? pv.tenantId : pv.tenantId?.id;
-          if (!tid) return;
-          
-          if (pv.type === 'store_view') {
-            tenantTimeFilteredViews[tid] = (tenantTimeFilteredViews[tid] || 0) + 1;
-          } else if (pv.type === 'product_view' && pv.productId) {
-            const pid = typeof pv.productId === 'string' ? pv.productId : pv.productId?.id;
-            tenantTimeFilteredProductViews[tid] = (tenantTimeFilteredProductViews[tid] || 0) + 1;
-            productTimeFilteredViews[pid] = (productTimeFilteredViews[pid] || 0) + 1;
-          }
-        });
-      }
-
-      // Map products to their tenant IDs to attribute sales correctly
-      const productToTenantMap: Record<string, string> = {};
-      allProducts.docs.forEach((p: any) => {
-        const tid = typeof p.tenant === 'string' ? p.tenant : p.tenant?.id;
-        if (tid) productToTenantMap[p.id] = tid;
+      const salesData = await ctx.db.find({
+        collection: "sales",
+        where: {
+          and: [
+            { status: { not_in: ["cancelled", "refunded"] } },
+            ...(range ? [createdAtInRange(range)] : []),
+          ],
+        },
+        pagination: false,
+        depth: 0,
+        overrideAccess: true,
+        select: { tenant: true, totalAmount: true } as any,
       });
 
-      const tenantTimeFilteredRevenue: Record<string, number> = {};
-      if (dateThreshold) {
-        salesData.docs.forEach((sale: any) => {
-          const pid = typeof sale.product === 'string' ? sale.product : sale.product?.id;
-          const tid = productToTenantMap[pid];
-          if (tid) {
-            tenantTimeFilteredRevenue[tid] = (tenantTimeFilteredRevenue[tid] || 0) + (sale.total || 0);
-          }
-        });
-      }
+      const tenantTimeFilteredViews: Record<string, number> = {};
+      const tenantStoreVisitors: Record<string, Set<string>> = {};
+      const tenantTimeFilteredProductViews: Record<string, number> = {};
+      const tenantProductVisitors: Record<string, Set<string>> = {};
+
+      pageViewsData.docs.forEach((pv: any) => {
+        const tid = typeof pv.tenantId === 'string' ? pv.tenantId : pv.tenantId?.id;
+        if (!tid) return;
+        const visitor = pv.visitorId && pv.visitorId !== ANONYMOUS_VISITOR ? pv.visitorId : null;
+
+        if (pv.type === 'store_view') {
+          tenantTimeFilteredViews[tid] = (tenantTimeFilteredViews[tid] || 0) + 1;
+          if (visitor) (tenantStoreVisitors[tid] ??= new Set()).add(visitor);
+        } else if (pv.type === 'product_view' && pv.productId) {
+          const pid = typeof pv.productId === 'string' ? pv.productId : pv.productId?.id;
+          tenantTimeFilteredProductViews[tid] = (tenantTimeFilteredProductViews[tid] || 0) + 1;
+          // Unique product views = distinct (product, visitor) pairs
+          if (visitor) (tenantProductVisitors[tid] ??= new Set()).add(`${pid}:${visitor}`);
+        }
+      });
+
+      const tenantRevenue: Record<string, number> = {};
+      salesData.docs.forEach((sale: any) => {
+        const tid = typeof sale.tenant === 'string' ? sale.tenant : sale.tenant?.id;
+        if (tid) tenantRevenue[tid] = (tenantRevenue[tid] || 0) + (sale.totalAmount || 0);
+      });
 
       // Aggregate product counts + view counts per tenant
       const productStatsByTenant = allProducts.docs.reduce((acc: Record<string, { count: number; views: number; uniqueViews: number }>, product: any) => {
@@ -716,12 +723,12 @@ export const tenantsRouter = createTRPCRouter({
           isVerified: tenant.isVerified,
           verificationStatus: tenant.verificationStatus,
           storeViewCount: storeViews,
-          storeUniqueViewCount: dateThreshold ? 0 : (tenant.storeUniqueViewCount || 0),
-          totalRevenue: dateThreshold ? (tenantTimeFilteredRevenue[tenant.id] || 0) : (tenant.totalRevenue || 0),
+          storeUniqueViewCount: dateThreshold ? (tenantStoreVisitors[tenant.id]?.size || 0) : (tenant.storeUniqueViewCount || 0),
+          totalRevenue: tenantRevenue[tenant.id] || 0,
           currency: tenant.currency,
           productCount: productStats.count,
           totalProductViews: productViews,
-          totalUniqueProductViews: dateThreshold ? 0 : productStats.uniqueViews,
+          totalUniqueProductViews: dateThreshold ? (tenantProductVisitors[tenant.id]?.size || 0) : productStats.uniqueViews,
           createdAt: tenant.createdAt,
         };
       });

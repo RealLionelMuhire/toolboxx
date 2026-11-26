@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
+import { getVisitorId } from "@/lib/visitor-id";
 
 /**
  * Custom hook to track product views
@@ -34,6 +35,7 @@ export const useTrackProductView = (productId: string) => {
     trackView.mutate({
       productId,
       isUnique: !hasViewedInSession, // Mark as unique if not viewed in this session
+      visitorId: getVisitorId(),
     });
     
     // Mark as viewed in this session

@@ -1,3 +1,4 @@
+import { visitorIdSchema, ANONYMOUS_VISITOR } from "@/lib/visitor-id";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import type { Sort, Where } from "payload";
@@ -1617,6 +1618,7 @@ export const productsRouter = createTRPCRouter({
       z.object({
         productId: z.string(),
         isUnique: z.boolean().default(false),
+        visitorId: visitorIdSchema,
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -1651,7 +1653,7 @@ export const productsRouter = createTRPCRouter({
               type: "product_view",
               tenantId,
               productId: input.productId,
-              visitorId: "anonymous", // In a real app, hash the IP or use a session cookie
+              visitorId: input.visitorId ?? ANONYMOUS_VISITOR,
             },
           });
         }

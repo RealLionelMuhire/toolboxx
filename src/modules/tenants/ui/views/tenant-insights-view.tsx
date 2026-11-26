@@ -23,6 +23,7 @@ import {
 import { useTRPC } from "@/trpc/client";
 import { TIME_RANGE_OPTIONS, getViewerTzOffset, type TimeRange } from "@/lib/time-range";
 import { generateTenantURL } from "@/lib/utils";
+import { ADD_PRODUCT_PARAM, MY_STORE_TAB_PARAM } from "@/constants";
 
 // ────────────────────────────────────────────────────────────
 // Helpers
@@ -151,9 +152,14 @@ function ProductInsightRow({ product, currency }: { product: ProductRow; currenc
 interface TenantInsightsViewProps {
   /** When provided (super-admin drill-down), show this specific tenant's data */
   tenantId?: string;
+  /**
+   * When embedded in the My Store page, switch tabs in place instead of navigating
+   * (a link back to the same page would not re-run its URL handling).
+   */
+  onOpenProducts?: (options: { create: boolean }) => void;
 }
 
-export function TenantInsightsView({ tenantId }: TenantInsightsViewProps = {}) {
+export function TenantInsightsView({ tenantId, onOpenProducts }: TenantInsightsViewProps = {}) {
   const trpc = useTRPC();
   const router = useRouter();
 
@@ -169,6 +175,21 @@ export function TenantInsightsView({ tenantId }: TenantInsightsViewProps = {}) {
   const { data, isLoading, error } = useQuery(
     trpc.tenants.getTenantInsights.queryOptions({ tenantId, timeRange, tzOffset: getViewerTzOffset() })
   );
+
+  // Seller-facing links to the products tab of My Store (not the Payload admin panel)
+  const ProductsLink = ({ create, className, children }: { create: boolean; className: string; children: React.ReactNode }) =>
+    onOpenProducts ? (
+      <button type="button" onClick={() => onOpenProducts({ create })} className={className}>
+        {children}
+      </button>
+    ) : (
+      <Link
+        href={create ? `/my-store?${ADD_PRODUCT_PARAM}=1` : `/my-store?${MY_STORE_TAB_PARAM}=products`}
+        className={className}
+      >
+        {children}
+      </Link>
+    );
 
   if (isLoading || !sessionFetched) {
     return (
@@ -204,7 +225,7 @@ export function TenantInsightsView({ tenantId }: TenantInsightsViewProps = {}) {
             <div className="flex items-center gap-3">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{tenant.name} Insights</h1>
               {badge && (
-                <div className={`px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1.5 ${statusColors[tenant.verificationStatus ?? "pending"]}`}>
+                <div className={`px-2.5 py-1 text-xs font-medium rounded-full flex items-center gap-1.5 ${badge.color}`}>
                   {badge.icon}
                   {badge.label}
                 </div>
@@ -251,7 +272,7 @@ export function TenantInsightsView({ tenantId }: TenantInsightsViewProps = {}) {
               label="Unique Visitors"
               value={tenant.storeUniqueViewCount}
               icon={<Users className="h-4 w-4" />}
-              sub="Per browser session"
+              sub={timeRange === "all" ? "Per browser session" : "Distinct browsers in period"}
               accent="from-violet-500 to-purple-600"
             />
             <StatCard
@@ -265,7 +286,7 @@ export function TenantInsightsView({ tenantId }: TenantInsightsViewProps = {}) {
               label="Unique Product Views"
               value={summary.totalUniqueProductViews}
               icon={<BarChart3 className="h-4 w-4" />}
-              sub="Per-session deduped"
+              sub={timeRange === "all" ? "Per-session deduped" : "Distinct browsers per product"}
               accent="from-cyan-500 to-blue-600"
             />
           </div>
@@ -293,7 +314,7 @@ export function TenantInsightsView({ tenantId }: TenantInsightsViewProps = {}) {
               label="Total Revenue"
               value={`${currency} ${tenant.totalRevenue.toLocaleString()}`}
               icon={<ArrowUpRight className="h-4 w-4" />}
-              sub="After platform fees"
+              sub="Excludes cancelled & refunded sales"
               accent="from-amber-500 to-orange-600"
             />
           </div>
@@ -310,12 +331,11 @@ export function TenantInsightsView({ tenantId }: TenantInsightsViewProps = {}) {
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Package className="h-12 w-12 text-gray-200" />
               <p className="text-gray-400 text-sm">No products yet</p>
-              <Link
-                href="/admin/collections/products/create"
-                className="text-indigo-500 text-sm font-medium hover:underline"
-              >
-                Add your first product →
-              </Link>
+              {!tenantId && (
+                <ProductsLink create className="text-indigo-500 text-sm font-medium hover:underline">
+                  Add your first product →
+                </ProductsLink>
+              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -343,19 +363,19 @@ export function TenantInsightsView({ tenantId }: TenantInsightsViewProps = {}) {
         {/* ── Quick Actions ── */}
         {!tenantId && (
           <div className="flex flex-wrap gap-3 pt-2">
-            <Link
-              href="/admin/collections/products"
+            <ProductsLink
+              create={false}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
             >
               <Package className="h-4 w-4" />
               Manage Products
-            </Link>
-            <Link
-              href="/admin/collections/products/create"
+            </ProductsLink>
+            <ProductsLink
+              create
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
             >
               + Add Product
-            </Link>
+            </ProductsLink>
             <Link
               href="/dashboard"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"

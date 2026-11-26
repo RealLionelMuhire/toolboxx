@@ -19,7 +19,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Badge } from '@/components/ui/badge';
 import { SearchIcon, PlusIcon } from 'lucide-react';
 import { generateTenantURL } from '@/lib/utils';
-import { ADD_PRODUCT_PARAM } from '@/constants';
+import { ADD_PRODUCT_PARAM, MY_STORE_TAB_PARAM } from '@/constants';
 import { ShareStoreDialog } from '@/modules/tenants/ui/components/share-store-dialog';
 
 import { MyProductsList, MyProductsListSkeleton } from '@/modules/dashboard/ui/components/my-products-list';
@@ -32,7 +32,8 @@ import VerifyPaymentsPage from '@/app/(app)/verify-payments/page';
 import { Suspense } from 'react';
 import { TenantInsightsView } from '@/modules/tenants/ui/views/tenant-insights-view';
 
-type TabType = 'account' | 'purchases' | 'products' | 'sales' | 'bids' | 'proformas' | 'transactions' | 'insights';
+const MY_STORE_TABS = ['account', 'purchases', 'products', 'sales', 'bids', 'proformas', 'transactions', 'insights'] as const;
+type TabType = (typeof MY_STORE_TABS)[number];
 
 // Notification type
 type ProductNotification = {
@@ -53,12 +54,29 @@ export default function MyStorePage() {
   const [showAllNotifications, setShowAllNotifications] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
-  // "Add Product" on the storefront links here with ?addProduct=1
+  // "Add Product" on the storefront links here with ?addProduct=1; other pages can open a tab with ?tab=<name>
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).has(ADD_PRODUCT_PARAM)) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has(ADD_PRODUCT_PARAM)) {
       setActiveTab('products');
+      return;
+    }
+    const tab = params.get(MY_STORE_TAB_PARAM);
+    if (tab && (MY_STORE_TABS as readonly string[]).includes(tab)) {
+      setActiveTab(tab as TabType);
     }
   }, []);
+
+  // From the embedded insights view: switch to Products, optionally opening the create dialog.
+  // ProductsSection mounts on the switch and picks up ?addProduct=1 like an incoming link.
+  const openProductsTab = ({ create }: { create: boolean }) => {
+    if (create) {
+      const url = new URL(window.location.href);
+      url.searchParams.set(ADD_PRODUCT_PARAM, '1');
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
+    setActiveTab('products');
+  };
 
   // Load dismissed notifications from localStorage on mount
   useEffect(() => {
@@ -350,7 +368,7 @@ export default function MyStorePage() {
       {activeTab === 'purchases' && <PurchasesSection />}
       {activeTab === 'insights' && (
         <div className="-mx-4 md:-mx-8">
-          <TenantInsightsView />
+          <TenantInsightsView onOpenProducts={openProductsTab} />
         </div>
       )}
       {activeTab === 'products' && (
